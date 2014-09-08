@@ -134,7 +134,7 @@ sudo -u postgres psql -c "CREATE USER ${PGUSER} WITH PASSWORD '${PGPASSWORD}';"
 
 #Create the lrs database
 echo "Creating the lrs database"
-sudo -u postgres psql -c "CREATE DATABASE lrs OWNER ${PGUSER};"
+sudo -u postgres psql -c "CREATE DATABASE umcdj OWNER ${PGUSER};"
 DB_CREATE_FLAG="${?}"
 
 #Update settings.py to have access to database via these credentials
