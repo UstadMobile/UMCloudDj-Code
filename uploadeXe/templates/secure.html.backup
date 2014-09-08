@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>
+I'm secure.
+	<ul>
+		<li><a href="/myapp/">Upload eXe elp files</li>
+		<li><a href="/logout/">Logout</li>
+	</ul>
+</body>
+</html>

@@ -1,0 +1,60 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/upload/"><button id="coursesnav" class="ui-state-hover" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+
+
+{% block scriptjs %}
+<style>
+#managecourses {
+    background-image: url(/media/images/course.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: right;
+}
+#uploadelp {
+    background-image: url(/media/images/upload.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: right;
+}
+#manageelp {
+    background-image: url(/media/images/package.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: right;
+}
+
+</style>
+<script type="text/javascript">
+          $(function() { 
+			$('#viewelp').puibutton();
+                        $('#uploadelp').puibutton(); 
+			$('#manageelp').puibutton();
+			$('#managecourses').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+
+{% block content %}
+<h2>Ustad Mobile Courses and Blocks (eXe)</h2> <img src="/media/images/user-home.png" align="right">
+<p><i></i></p> 
+     <div id="toolbarbottom" class="toolbar" >
+	<ul>
+
+		<a href="/managecourses/"><button id="managecourses" type="button" style="width:200px;height:100px;">Manage Courses</button></a>
+                <!--<a href="/uploadeXe/"><button id="viewelp" type="button"style="width:200px;height:100px">View Packages</button></a>-->
+		<a href="/uploadeXe/new"><button id="uploadelp" type="button"style="width:200px;height:100px">Upload Blocks</button></a>
+		<a href="/manageeXe/"><button id="manageelp" type="button"style="width:200px;height:100px">Manage Blocks</button></a>
+
+	</ul>
+    </div>
+
+{% endblock %}

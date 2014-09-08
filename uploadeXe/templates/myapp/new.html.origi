@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Upload eXe course {% endblock %}
+
+{% block scriptjs %} 
+<script type="text/javascript">
+          $(function() { 
+			var students_map = [{% for student in student_list %}
+                        { "value" : "{{ student.id }}",
+                        "label" : "{{student.first_name}}({{student.username}})"
+                        },
+                {% endfor %}];
+          $(function() { 
+                        $('#selectstudentsfornewallclass').puipicklist({  
+                                		effect: 'clip',  
+                                		showSourceControls: true,  
+                                		showTargetControls: true,  
+                                		sourceCaption: 'Available',  
+                                		targetCaption: 'Selected',  
+                                		filter: true,  
+                                		sourceData:students_map,  
+                                		content: function(option) {  
+                                        		return '<img src="/media/' + "user" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                		}  
+                        		});  
+				
+                		}
+          	); 
+                        $('#submit').puibutton(); 
+                }
+          ); 
+</script>
+{% endblock %}
+
+{% block content %}
+		
+		<script type="text/JavaScript">
+		function TestFileType( fileName, fileTypes ) {
+			if (!fileName) return;
+			dots = fileName.split(".")
+			fileType = "." + dots[dots.length-1];
+			console.log("Type: " + fileType);
+			return (fileTypes.join(".").indexOf(fileType) != -1) ?
+			console.log('That file is OK!') : 
+			alert("Please only upload files that end in types: \n\n" + (fileTypes.join(" .")) + "\n\nPlease select a new file and try again.");
+		}
+		</script>	
+
+		<h3>1. Choose your file</h3>
+		<!-- Upload form. Note enctype attribute! -->
+		<form action="{% url "list" %}" method="post" enctype="multipart/form-data">
+			{% csrf_token %}
+			<p>{{ form.non_field_errors }}</p>
+			<p>{{ form.exefile.label_tag }} {{ form.exefile.help_text }}</p>
+			<p>
+				{{ form.exefile.errors }}
+				<!--{{ form.exefile }}-->
+				<input id="id_exefile" name="exefile" type="file" accept=".elp" >
+				
+			</p>
+			
+		        <h3>2. Select Students Picklist</h3>
+			<div id="selectstudentsfornewallclass" >
+    				<select multiple="multiple" id="source" name="source">
+    				</select>
+    				<select multiple="multiple" id="target" name="target">
+    				</select>
+			</div>
+
+			<h3>3. Click Upload</h3>
+			<button id="submit" type="submit" name="submit" value="upload">Upload</button>
+			<img src="/media/images/address-book-new-3-medium.png" align="right">
+		</form>
+		<p></p>
+{% endblock %}

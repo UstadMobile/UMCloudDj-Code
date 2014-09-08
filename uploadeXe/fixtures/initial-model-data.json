@@ -1,0 +1,72 @@
+[
+  {
+    "model": "uploadeXe.role",
+    "pk": 1,
+    "fields": {
+      "role_name": "Administrator",
+      "role_desc": "Super Administrator of the whole project. Reserved internally."
+    }
+  },
+  {
+    "model": "uploadeXe.role",
+    "pk": 2,
+    "fields": {
+      "role_name": "Organisational Manager",
+      "role_desc": "Manager of a particular linked organisation. Has control and views over its Students, Teachers and Content Authors."
+    }
+  },
+  {
+    "model": "uploadeXe.role",
+    "pk": 3,
+    "fields": {
+      "role_name": "Content Authors",
+      "role_desc": "Content Authors that have access to the usage and teachers and students that will get access to the course. Shares relation with Org Manager."
+    }
+  },
+  {
+    "model": "uploadeXe.role",
+    "pk": 4,
+    "fields": {
+      "role_name": "School Manager",
+      "role_desc": "School Managers have access to their schools only and only the school's teachers and students."
+    }
+  },
+  {
+    "model": "uploadeXe.role",
+    "pk": 5,
+    "fields": {
+      "role_name": "Teacher",
+      "role_desc": "A Teacher has access to all the students under the school and under his/her classes."
+    }
+  },
+  {
+    "model": "uploadeXe.role",
+    "pk": 6,
+    "fields": {
+      "role_name": "Student",
+      "role_desc": "A Student is the driving force for all the statistics and has its logs available to its school and organisation."
+    }
+  },
+  {
+    "model": "organisation.umcloud_package",
+    "pk": 1,
+    "fields": {
+      "package_name" : "WebsitePackage",
+      "package_desc" :"Default Package for all new organisations and users registering from the umcloud website.",
+      "max_students" : 30,
+      "max_publishers" : 3,
+      "price_rate_permonth" : 0
+    }
+  },
+  {
+    "model": "organisation.organisation",
+    "pk": 1,
+    "fields": {
+      "organisation_name" : "IndividualOrg",
+      "organisation_desc" : "This is the default organisation for users from the website.",
+      "set_package": 1
+    }
+  }
+
+
+]

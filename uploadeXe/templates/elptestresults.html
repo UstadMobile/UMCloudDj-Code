@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Course Test Report {% endblock %}
+{% block content %}
+
+<p> Hi. the variables you provided were: </p>
+
+<li>Date_since: <i>{{date_since}}</i></li>
+<li>Date_until: <i>{{date_until}}</i></li>
+<p></p>
+<p></p>
+<p> The test results of the course gotten from the above query is: </p>
+
+<div id="mydiv"></div>
+
+
+<script>
+        $(function () {
+                var json_dump = "{{data}}";
+                //var st = "{{data}}";
+		var st = "{{data}}"
+		
+                if (json_dump !=null && json_dump !=" "){
+                        console.log("Getting JSON by variable");
+			//console.log(json_dump);
+                        st = JSON.parse(json_dump.replace(/u&#39;/g,"\"").replace(/&#39;/g, "\"").replace(/False/g, "false").replace(/True/g, "true").replace(/&quot;/g,"\""));
+                        console.log("st variable: " + st);
+                 }
+		
+
+                 $("#mydiv").mrjsontable({
+                    pageSize: 9,
+                    columns: [
+			new $.fn.mrjsontablecolumn({
+                            heading: "Course",
+                            data: "name",
+                        }),
+			new $.fn.mrjsontablecolumn({
+                            heading: "Result",
+                            data: "result",
+                        }),
+                        new $.fn.mrjsontablecolumn({
+                            heading: "Type",
+                            data: "dategroup",
+                        }),
+                        new $.fn.mrjsontablecolumn({
+                            heading: "Date/Time",
+                            data: "pub_date"
+                        })],
+                    data: st
+               });
+           });
+
+
+
+</script>
+
+
+
+
+<h3>Thank You</h3>
+
+{% endblock %}
+

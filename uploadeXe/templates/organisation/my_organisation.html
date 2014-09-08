@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+                        $('#neworganisation').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+{% block title %}My Organisations - UstadMobile Cloud {% endblock %}
+{% block content %}
+
+
+<script type="text/javascript">
+  $(function() { 
+    $('#tblorganisations').puidatatable({
+            caption: '{{organisation.organisation_name}} Code',
+            paginator: {
+                rows: 10
+            },
+            columns: [
+                {field:'pk', headerText: 'ID', sortable:true},
+                //{field:'model', headerText: 'Django Model', sortable:true},
+                {field:'organisation_name', headerText: 'Organisation Name', sortable:true},
+		{field:'code', headerText: 'Code', sortable:true},
+
+            ],
+            datasource: [
+                {% if organisation_code %}
+                        {"pk":"{{organisation_code.pk}}","model":"{{organisation_code.model}}","organisation_name":"{{organisation_code.organisation.organisation_name}}", "code":"{{organisation_code.code}}"}
+                {% endif %}
+                ],
+            selectionMode: 'single',
+            rowSelect: function(event, data) {
+                console.log("Wassup?")
+                $('#messages').puigrowl('show', [{severity:'info', summary: 'Row Selected', detail: (data.organisation_name + ' ' + data.pk)}]);
+                var edit="/myorganisationedit/"+data.pk;
+                window.open(edit, "_self");
+            },
+            rowUnselect: function(event, data) {
+                //$('#messages').puigrowl('show', [{severity:'info', summary: 'Row Unselected', detail: (data.brand + ' ' + data.vin)}]);
+            }
+   });
+  }
+  ); 
+</script>
+<p cass="error" style="color:red;"><i>{{state}}</i></p>
+<div id="tblorganisations"> </div>
+{% endblock %}

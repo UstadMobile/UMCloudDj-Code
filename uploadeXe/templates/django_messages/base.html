@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load url from future %} 
+{% block bodyclass %}about{% endblock %}
+{% block content %}  
+{% endblock %}
+ <script type="text/javascript">
+          $(function() { 
+                        $('#pm1').puimenu(); 
+			$('#ptb').puimenubar();
+                }
+          ); 
+        </script>
+
+{% block sidebar %}
+	<ul id="pm1">
+		<li><a data-icon="ui-icon-home" href="/home/">Home</a></li>
+		<li><a data-icon="ui-icon-mail-closed" href="{% url 'messages_inbox' %} ">Inbox</a></li>
+    		<li><a data-icon="ui-icon-document-b" href="{% url 'messages_compose' %} ">New Message</a></li>
+		<li><a data-icon="ui-icon-mail-open" href="{% url 'messages_outbox' %} ">Sent Messages</a></li>
+    		<li><a data-icon="ui-icon-trash" href="{% url 'messages_trash' %} ">Trash</a></li>
+		<li><a data-icon="ui-icon-power" href="/logout/">Logout</a></li>
+	</ul>
+
+{% endblock %}

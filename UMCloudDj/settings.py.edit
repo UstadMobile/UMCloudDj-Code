@@ -1,0 +1,271 @@
+"""
+Django settings for UMCloudDj project.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/1.6/topics/settings/
+
+For the full list of settings and their values, see
+https://docs.djangoproject.com/en/1.6/ref/settings/
+"""
+
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+import os
+import sys
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+
+
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
+
+# SECURITY WARNING: keep the secret key used in production secret!
+## = 'ChangeMeLikeYouChange'
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = True
+TEMPLATE_DEBUG = False
+
+ADMINS = (
+    ('Varuna Singh', 'varuna@ustadmobile.com'),
+)
+
+#ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'umcloud1.ustadmobile.com','54.72.83.134']
+ALLOWED_HOSTS =[]
+#Varuna Singh: Need to add admins.
+
+
+# Application definition
+
+INSTALLED_APPS = (
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'uploadeXe',
+    'organisation',
+    'school',
+    'allclass',
+    'users',
+    'lrs',
+    'lrs.util',
+    'adl_lrs',
+    'oauth_provider',
+    'gunicorn',
+    'django_extensions',
+    'django_messages', #Added 110824012121S
+    'report_statement', #basic db report application
+)
+
+#For lrs entry trial 190820142046
+# Caches for /more endpoint and attachments
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cache_statement_list',
+        'TIMEOUT': 86400,
+    },
+    'attachment_cache':{
+        'BACKEND':'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION':'attachment_cache',
+    },
+}
+
+
+MIDDLEWARE_CLASSES = (
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
+)
+
+ROOT_URLCONF = 'UMCloudDj.urls'
+
+WSGI_APPLICATION = 'UMCloudDj.wsgi.application'
+
+
+# Database
+# https://docs.djangoproject.com/en/1.6/ref/settings/#databases
+
+PROJECT_ROOT = os.path.realpath(os.path.dirname(__file__))
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'umcdj',
+##USER
+##PASSWORD
+        'HOST': 'localhost',
+        'PORT': '',
+    }
+}
+
+if 'test' in sys.argv:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+	'NAME': os.path.join(PROJECT_ROOT, 'database/umcloud.sqlite3'),
+    }
+
+# Absolute filesystem path to the directory that will hold user-uploaded files.
+# Example: "/home/media/media.lawrence.com/media/"
+MEDIA_ROOT = os.path.join(PROJECT_ROOT, 'media')
+
+# URL that handles the media served from MEDIA_ROOT. Make sure to use a
+# trailing slash.
+# Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
+MEDIA_URL = '/media/'
+
+# Internationalization
+# https://docs.djangoproject.com/en/1.6/topics/i18n/
+
+# Language code for this installation. All choices can be found here:
+# http://www.i18nguy.com/unicode/language-identifiers.html
+LANGUAGE_CODE = 'en-us'
+
+#Added AUTHENTICATION PROFILE TO EXTEND USER MODEL OF DJANGO
+#AUTH_PROFILE_MODULE = 'users.UserProfile'
+#This has been depreciated as of Django 1.5
+
+#Authentication backend for authenticating against custom backend and extending and syncing new users
+
+#Checks in Django first, then in Custom Backend
+AUTHENTICATION_BACKENDS = ( 'django.contrib.auth.backends.ModelBackend', 'UMCloudDj.authbackend.backend.MyCustomBackend', )
+
+#Checks in Custom Backend first, then in Django
+#AUTHENTICATION_BACKENDS = ( 'UMCloudDj.authbackend.backend.MyCustomBackend', 'django.contrib.auth.backends.ModelBackend', )
+
+#Checks only in Django (default)
+#AUTHENTICATION_BACKENDS = ( 'UMCloudDj.authbackend.backend.MyCustomBackend', )
+
+#Checks only in Custom Backend
+#AUTHENTICATION_BACKENDS = ( 'UMCloudDj.authbackend.backend.MyCustomBackend', )
+
+#TIME_ZONE = 'UTC'
+# Local time zone for this installation. Choices can be found here:
+# http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
+# although not all choices may be available on all operating systems.
+# In a Windows environment this must be set to your system time zone.
+TIME_ZONE = 'Asia/Dubai' #Added Dubai(UAE)
+
+# If you set this to False, Django will make some optimizations so as not
+# to load the internationalization machinery.
+USE_I18N = True
+
+# If you set this to False, Django will not format dates, numbers and
+# calendars according to the current locale.
+USE_L10N = True
+
+# If you set this to False, Django will not use timezone-aware datetimes.
+USE_TZ = False
+
+# Absolute path to the directory static files should be collected to.
+# Don't put anything in this directory yourself; store your static files
+# in apps' "static/" subdirectories and in STATICFILES_DIRS.
+# Example: "/home/media/media.lawrence.com/static/"
+STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/1.6/howto/static-files/
+
+STATIC_URL = '/static/'
+
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, "static"),
+)
+
+#Added by Varuna Singh 13012014
+# URL of the login page
+LOGIN_URL = '/login/'
+
+#Added UstadMobile TinCan LRS 
+UMLRS = "http://svr2.ustadmobile.com:8001/xAPI/statements"
+##
+
+# Where to be redirected after logging in
+LOGIN_REDIRECT_URL = '/login/'
+
+# Me view has a tab of user's statements
+STMTS_PER_PAGE = 10
+
+# Whether HTTP auth or OAuth is enabled
+HTTP_AUTH_ENABLED = True
+OAUTH_ENABLED = False
+
+# OAuth callback views
+OAUTH_AUTHORIZE_VIEW = 'oauth_provider.views.authorize_client'
+OAUTH_CALLBACK_VIEW = 'oauth_provider.views.callback_view'
+OAUTH_SIGNATURE_METHODS = ['plaintext','hmac-sha1','rsa-sha1']
+OAUTH_REALM_KEY_NAME = 'http://localhost:8000/XAPI'
+
+# Limit on number of statements the server will return
+SERVER_STMT_LIMIT = 100
+
+# ActivityID resolve timeout (seconds)
+ACTIVITY_ID_RESOLVE_TIMEOUT = .2
+
+# The ID, as an integer, of the current site in the django_site database table.
+# This is used so that application data can hook into specific sites and a single database can manage
+# content for multiple sites.
+SITE_ID = 1
+SITE_SCHEME = 'http'
+
+REQUEST_HANDLER_LOG_DIR = os.path.join(BASE_DIR, 'logs/django_request.log')
+DEFAULT_LOG_DIR = os.path.join(BASE_DIR, 'logs/lrs.log')
+
+# See http://docs.djangoproject.com/en/dev/topics/logging for
+# more details on how to customize your logging configuration.
+# lrs logger is used in views.py for LRS specific logging
+# django.request logger logs warning and error server requests
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'verbose': {
+            'format': u'%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+        'standard': {
+            'format': u'%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+        },
+        'simple': {
+            'format': u'%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        'default': {
+            'level':'DEBUG',
+            'class':'logging.handlers.RotatingFileHandler',
+            'filename': DEFAULT_LOG_DIR,
+            'maxBytes': 1024*1024*5, # 5 MB
+            'backupCount': 5,
+            'formatter':'standard',
+        },  
+        'request_handler': {
+                'level':'DEBUG',
+                'class':'logging.handlers.RotatingFileHandler',
+                'filename': REQUEST_HANDLER_LOG_DIR,
+                'maxBytes': 1024*1024*5, # 5 MB
+                'backupCount': 5,
+                'formatter':'standard',
+        },
+    },
+    'loggers': {
+        'lrs': {
+            'handlers': ['default'],
+            'level': 'DEBUG',
+            'propagate': True
+        },
+        'django.request': {
+            'handlers': ['request_handler'],
+            'level': 'WARNING',
+            'propagate': False
+        },
+    }
+}
+
+
+##
+SECRET_KEY="ChangeMeLikeYouChange"

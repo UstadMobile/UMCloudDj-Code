@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}UstadMobile App Unit Test Report {% endblock %}
+{% block content %}
+
+<h1>Roles</h1>
+<ul>
+    {% for role in object_list %}
+    <li>{{ role.name }}  :  
+    <a href="{% url "role_edit" role.id %}">{{ role.role_name }}</a>
+    <a href="{% url "role_delete" role.id %}">  (Delete)</a>
+    </li>
+    {% endfor %}
+</ul>
+
+<a href="{% url "role_new" %}">New</a>
+
+{% endblock %}

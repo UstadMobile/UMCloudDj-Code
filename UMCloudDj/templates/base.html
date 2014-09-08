@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>{% block title %}Home{% endblock %} Ustad Mobile Cloud Django</title>
+	<style type="text/css">
+
+	  body{
+		text-align: center;
+	  }
+
+	  #page {
+		width: 960px;
+		text-align: left;
+		background-color: grey;
+	  }
+
+	  #sidebar {
+		float: left;
+		width: 200px;
+		border: 1px solid blue;
+	  }
+
+	  #content {
+		float: left;
+		width: 600px;
+		border: 1px solid #f00;
+		padding: 10px;
+	  }
+
+	  #header {
+		float: top;
+		border: 2px solid grey;
+		width: 820px;
+	  }
+
+	  #toolbarbottom li {
+   		float: left; 
+   		width: 80px; 
+   		height: 80px; 
+   		border: 1px solid #000; /* not required, just to show where individual links are */
+	   } 
+
+	</style>
+
+</head>
+
+<body>
+	<div id="header">
+		 <img src="/media/images/logoUMlong.png" alt="Ustad_Mobile_UMCloud_logo" align=""/>
+		<p><i>Welcome to Ustad Mobile Cloud Django v 0.0.1, deja-vu 1990</i></p>
+		{% if current_user %}
+			<i>Logged in as: {{current_user}}</i>
+		{% endif %}
+
+		<!--<i>{{current_user}}</i>-->
+	</div>
+	<p></p>
+	<div id="page">
+	<div id="sidebar">
+		{% block sidebar %}
+		<!--<img src="../media/images/logoUMlong.png" alt="Ustad_Mobile_UMCloud_logo"/>-->
+		<ul>
+			<li><a href="/">Home</a></li>
+			<li><a href="/logout/">Logout</a></li>
+		</ul>
+		{% endblock %}
+	</div>
+	<div></div>
+	<div id="content">
+		{% block content %}{% endblock %}
+	</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Login {% endblock %}
+
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+			$('#username').puiinputtext();
+			$('#password').puiinputtext();
+			$('#loginpanel').puipanel(); 
+			$('#submit').puibutton();
+			$('#register').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+
+
+{% block content %}
+
+	{% if form.errors %}
+    		<p class="error"> Sorry, that is not a valid username/password</p>
+	{% endif %}
+	{% if statesuccess == 1 %}
+		<img src="/media/images/tick.png" alt=""><p style="color:green;"><i>{{state}}<i></p>
+	{% else %}
+		<p style="color:red;" class="error"><i>{{state}}<i></p>
+	{% endif %}
+	
+	<form action="/auth/" method="POST"> {% csrf_token %}
+		<div id="loginpanel" title="Log in to Ustad Mobile Cloud">  
+		<div data-role="fieldcontain">
+                <label for="username">Username: &nbsp;</label><input type="text" name="username" id="username" value="" />
+                </div>
+                <div data-role="fieldcontain">
+                <label for="password">Password:&nbsp;&nbsp;&nbsp;</label><input type="password" name="password" id="password" value="" />
+                </div>
+		<p></p>
+                <button id="submit" type="submit" name="submit" value="submit-value">Sign in</button>
+
+		</div>  
+	</form>
+
+	<br></br>
+	<i>Click register to create a new basic account with us</i>
+	<form action="/register/start/">
+		<button id="register" type="submit" name="register" value="Register">Register</button>
+	</form>
+
+{% endblock %}

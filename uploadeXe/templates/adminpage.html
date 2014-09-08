@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Admin Page</h2> <img src="/media/images/user-home.png" align="right">
+
+<p><i>You are logged in. Here is what you can do</i></p> 
+     <div id="toolbarbottom" class="toolbar" >
+	<ul>
+                <a href="/uploadeXe/"><button id="default" type="button"style="width:200px;height:100px"> Upload eXe elp files</button></a>
+		<a href="/roles/"><button id="default" type="button"style="width:200px;height:100px">Manage Roles</button></a>
+		<a href="/users/"><button id="default" type="button"style="width:200px;height:100px">Manage Users</button></a>
+		<a href="/organisations/"><button id="default" type="button"style="width:200px;height:100px">Manage Organisations</button></a>
+		<a href="/umpackages/"><button id="default" type="button"style="width:200px;height:100px">Manage UMCloud Packages</button></a>
+		<a href="/schools/"><button id="default" type="button"style="width:200px;height:100px">Manage Schools</button></a>
+		<a href="/allclasses/"><button id="default" type="button"style="width:200px;height:100px">Manage Classes</button></a>
+		<a href="/logout/"><button id="default" type="button"style="width:200px;height:100px">Logout</button></a>
+		<br></br>
+		<p><i>Other:</i></p>
+                <a href="/reports/"><button id="default" type="button"style="width:200px;height:100px">Get reports</button></a>
+                <a href="/testelpfiles/"><button id="default" type="button"style="width:200px;height:100px">TEST MODE: BATCH TEST ALL ELP FILES IN: eXeTestElp</button></a>
+                <a href="/selectelptest/"><button id="default" type="button"style="width:200px;height:100px">TEST MODE Show elp file test results</button></a>
+                <a href="/selectapptest/"><button id="default" type="button"style="width:200px;height:100px">TEST MODE: Show UstadMobile app unit test results</button></a>
+                <br></br>
+
+	</ul>
+    </div>
+
+{% endblock %}

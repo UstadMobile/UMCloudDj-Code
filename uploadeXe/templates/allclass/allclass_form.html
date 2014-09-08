@@ -1,0 +1,158 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" class="ui-state-hover" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+		
+                var all_students = [{% for student in all_students %}
+                        { "value" : "{{ student.id }}",
+                        "label" : "{{student.first_name}} {{student.last_name}} ({{student.username}})"
+                        },
+                {% endfor %}];  
+                var assigned_students = [{% for student in assigned_students %}
+                        { "value" : "{{ student.id }}",
+                        "label" : "{{student.first_name}} {{student.last_name}} ({{student.username}})"
+                        },
+                {% endfor %}];
+		 var all_teachers = [{% for teacher in all_teachers %}
+                        { "value" : "{{ teacher.id }}",
+                        "label" : "{{teacher.first_name}} {{teacher.last_name}} ({{teacher.username}})"
+                        },
+                {% endfor %}];  
+                var assigned_teachers = [{% for teacher in assigned_teachers %}
+                        { "value" : "{{ teacher.id }}",
+                        "label" : "{{teacher.first_name}} {{teacher.last_name}} ({{teacher.username}})"
+                        },
+                {% endfor %}];
+
+		 var all_courses = [{% for course in all_courses %}
+                        { "value" : "{{ course.id }}",
+                        "label" : "{{course.name}} (ID: {{course.id}})"
+                        },
+                {% endfor %}];  
+                var assigned_courses = [{% for course in assigned_courses %}
+                        { "value" : "{{ course.id }}",
+			"label" : "{{course.name}} (ID: {{course.id}})"
+                        },
+                {% endfor %}];
+			$('#school').puidropdown();
+
+			$('#assignedcourses').puipicklist({
+                                effect: 'clip',  
+                                showSourceControls: true,  
+                                showTargetControls: true,  
+                                sourceCaption: 'Available',  
+                                targetCaption: 'Selected',  
+                                filter: true,  
+				filterMatchMode: 'contains',
+                                sourceData:all_courses,  
+                                targetData:assigned_courses,
+                                content: function(option) {  
+                                        return '<img src="/media/images/' + "course-small" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                         }  
+                        }); 
+
+
+
+			$('#assignedstudents').puipicklist({
+                                effect: 'clip',  
+                                showSourceControls: true,  
+                                showTargetControls: true,  
+                                sourceCaption: 'Available',  
+                                targetCaption: 'Selected',  
+                                filter: true,  
+				filterMatchMode: 'contains',
+                                sourceData:all_students,  
+                                targetData:assigned_students,
+                                content: function(option) {  
+                                        return '<img src="/media/' + "user" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                         }  
+                        }); 
+			$('#assignedteachers').puipicklist({
+                                effect: 'clip',  
+                                showSourceControls: true,  
+                                showTargetControls: true,  
+                                sourceCaption: 'Available',  
+                                targetCaption: 'Selected',  
+                                filter: true,  
+				filterMatchMode: 'contains',
+                                sourceData:all_teachers,  
+                                targetData:assigned_teachers,
+                                content: function(option) {  
+                                        return '<img src="/media/' + "user" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                         }  
+                        }); 
+                        $('#id_allclass_name').puiinputtext();
+                        $('#id_allclass_desc').puiinputtext();
+                        $('#id_allclass_location').puiinputtext();
+		        $('#id_school').puidropdown();
+			
+                        $('#submit').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+{% block title %}Edit Class{% endblock %}
+{% block content %}
+<p cass="error" style="color:red;"><i>{{state}}</i></p>
+<form id="allclassedit" method="post">{% csrf_token %}
+    <!--{{ form.as_p }}-->
+
+    <label>Class Name</label>
+	{{form.allclass_name}}
+    <p></p>
+    <label>Class Desc</label>
+	{{form.allclass_desc}}
+    <p></p>
+    <label>Class Location</label>
+	{{form.allclass_location}}
+     <p></p>
+     <label>School</label>
+	<select id="school" form="allclassedit" name="school">
+        {% for school in all_schools %}
+                {% if school.id == assignedschool.id %}
+                        <option selected="Selected" value="{{ school.id }}">{{ school.school_name }}</option>
+                {% else %}
+                        <option value="{{ school.id }}">{{ school.school_name }}</option>
+                {% endif%}
+        {% endfor %}
+   </select>
+
+
+
+    <h3>Assigned Students</h3>
+        <div id="assignedstudents" >
+                <select multiple="multiple" id="source" name="source">
+                </select>
+                <select multiple="multiple" id="target" name="target">
+                </select>
+        </div>
+
+    <h3>Assigned Teachers</h3>
+        <div id="assignedteachers" >
+                <select multiple="multiple" id="source" name="source">
+                </select>
+                <select multiple="multiple" id="target2" name="target2">
+                </select>
+        </div>
+    <h3>Assigned Courses</h3>
+        <div id="assignedcourses" >
+                <select multiple="multiple" id="source" name="source">
+                </select>
+                <select multiple="multiple" id="target3" name="target3">
+                </select>
+        </div>
+
+    <button id="submit" type="submit" name="submit" value="Create">Submit</button>
+</form>
+
+{% endblock %}

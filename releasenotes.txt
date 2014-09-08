@@ -1,0 +1,218 @@
+v0.8.4
+- Updated production server and migrated to postgres.
+- Tested prod server okay.
+- Fixed small report bug.
+
+v0.8.3
+- Small update to development deployment script to auto install without prompting for a particular dependency.
+- Updated ReadMe
+
+v0.8.2
+- Updated jenkins test script to ignore a few applications in testing for now.
+- Updated build development script to account for installing postgres, creating users. 
+- Added simplejson and other dependencvies (postgres related)
+- Removed import from django-util simplejson because Django 1.5 removed support for in built simplejson (https://docs.djangoproject.com/en/dev/releases/1.5/)
+- Updated build script to install simplejson
+
+v0.8.1
+- Updated settings.py to have a different database for unit testing (sqlite3) since postgres is troubling. it doesn't matter since django creates a new database anyway.  
+- Fixed some bugs
+- Updated build script and jenkins script. 
+- Added HTML5 canvas report (demonstration)
+- Further tests and fixes including postgres tests and migration trial
+
+v0.8.0
+- Django and ADL_LRS (Ustad Mobile custom) integrated to a point where statements can be worked and retrieved from the database.
+- Updated ADL_LRS (UM) on own seperate repository and changed prefered sql to be postgres
+- Basic statement for all report supporting this milestone. 
+
+
+v0.7.9c
+- Added reporting application, tested basic report fetch of statements. Looking good.
+
+v0.7.9b
+- Added ability for superuser to log in without external approval checks.
+
+v0.7.9
+- Fixed unit tests
+- minor tweaks for usability
+- Fixed build bug01
+- Fixed build bug02
+
+v0.7.5
+- Fixed log out bug
+
+v0.7.4
+- Accept approval of users: just change to make final screen as 'confirmation' with a reassuring checkbox or something of the like (can't be reasonably confused with an error message).
+- Users: make sure to show extra fields in the edit user section.  Add textfield 'notes' (multi line extended length text field - only visible on edit user)
+- New Class screen: change 'associative school' to just 'school'.  Remove link to 'create an associative school first'.  Remove link to 'create a new user'.
+- Picklists - check icon size (e.g. http://umcloud1.ustadmobile.com:8010/allclassnew/ new class screen).  Check occurrences of class picklist use the icon which is three users instead of black boxes.
+- Add organization code at the top for admin - so they know what code to give out.
+- Add green confirmation bar on success of save student, school, etc.
+- Messages functionality hidden. 
+-Bug Fixes and Organisational and initial Role based filtering.
+
+v0.7.3
+-Developed and added messages to message users and made it look fairly decent but not mordern yet.
+
+v0.7.2
+- Registration and Sign up divided into two.
+
+v0.7.1
+-Added organisation management for staff/super users
+-Polish the User Requests page.
+
+v0.7.0
+-Eliminate ID from table list
+-Email is not mandatory
+-Phone number mandatory
+-Added field to user's profile: date of birth
+-Added field to user's profile: gender, location
+-Added "Add another" on all creation forms.
+-Basic implementation of confirmations.
+-First Name and Last name are mandatory
+-Search in picklist is against all contains and not just starts with
+-Packages called blocks.
+-Toolbar on top has blocks and blocks view created
+-User Approval: Intuitive way to accept and reject users 
+-Icons are coloured
+-Manage Blocks
+-Save terminology and Gramatical errors fixed
+-Added doublt type password fields for sigups
+
+
+v0.6.2
+-Updated picklists to filter and search for contains instead of starts-with
+
+v0.6.1
+-89% unit test code coverage updates.
+
+v0.6.0
+-82% unit test code coverage updates.
+
+v0.5.9.1
+-Fixed unit test bug to account for test files not present (exe elp file)
+
+v0.5.9
+-Added nother option in user_new to submit user creation and create another which redirects to another form.
+-Got rid of ID fields in most tables but retained number in first field (usually name)
+-Make pick list of user approval for org manager
+-Make course pic black and white too to avoid confusion.
+-Made First Name , Last Name, DOB fields required in register (website)
+-Fixed bug in pending requests check for non organisation managers.
+-Made First Name, Last Name, UserName, fields mandatory in New User
+-Re ordered the Toolbar at the top to be Users, Schools, Classes, Courses
+-Renamed Packages to Blocks (to be more in line with how other LMSs name course blocks)
+-Disabled grunt testing on course upload.
+-Updated user creation (internal) and website unit tests.
+-Added more tests to unit testing including file (block/elp/package/exe) upload
+-More updates to unit testing
+
+v0.5.8
+-Renamed Managemewnt's Manage X to X
+-Removed duplicate new X / Add New buttons
+-Removed extra text on pages.
+-Fixed bug in creating class when no teachers defined.
+-Changed icons to show classes are 3 users and users as 1 user (icon)
+-Included a navigation panel on Management on top.
+-Sign in loads to Users Management.
+-Added Hover effect for selected menu.
+
+v0.5.7
+-Fixed course creation bug: It was still looking for price in code. Fixed it and model's updated to default to 0
+-Seperated logic and UI for uploading, exe export and grunt tests
+
+v0.5.6
+-Added 404.html and 500.html pages. These get active when Debug is False
+-Updated umclouddj-server-tar-deployment.sh to set Debug as False and add allowed hosts to the server in production.
+-Added organisational constraints to Allclasses's school field.
+-Modified Class to return name on model's object call
+-Modified getassigned: /getassignedcourseids/ param: username/password to get course ids.
+-Modified getassigned: /getassignedcourseids/ to return an xml with package and course details.
+-Fixed bug in package upload . replaced all spaces in elp file with underscores.
+-Seperated exe export and ui/cloud stuff. seperated Grunt tests as well.
+-Fixed bug and now umcloud1 can recieve elp files from eXe 
+
+v0.5.3
+-Added coverage of unit tests in jenkins build script.
+-Updates server steps to install coverage
+-Added coverage to umclouddj-server-tar-deployment.sh
+-Changed logged in message to show user's organisation and role at the top.
+-Added icons to Management. 
+-Moved Courses to Managemwent
+-Added icons and fixed alignment issue on drop down lists.
+-School updated to ignore organnisation (as default creates to logged in users' organisation
+-Re ordered picklist to be able to filter better.
+-Git ignoring *.pyc
+-Price hidden (feature not implemented yet)
+-Added class list to add a new user page and ability to assign new user to multiple classes.
+-Updated ALLOWED_HOSTS to include umcloud1.ustadmobile.com
+
+
+v0.5.0
+-Updated courses to have allclass fields as well.
+-Updated course creation to have org filters.
+-Updated class creation to have org filters.
+-Updated new User add to show only current user's organisation.
+-Updated user tabble to show roles and only users from the logged in user's organisation
+-Fixed unit test to consider Package model. Will finish test previously for CRUD successfully.
+-Got rid of Role and Subscription management in the Management view. We do not want people directly fiddling with it.
+-Updated school table to show org filters.
+-Added package viewer link to package edit.
+-Modified package table viewer to show Publisher associated.
+-Modified allclasses to show courses assigned to it.
+-Modified allclasses edit to show courses assigned working.
+
+v0.4.8
+-Shuffled and reduced steps to get to Courses and Packages and make the Course form cleaner.
+-Added course add option when creating new class
+-Added course option on uploading packages
+-Fixed bug in Packages and Courses where it wasnt being updated.
+-Fixed bug in New user create and Students roles.
+-Added ability to delete package.
+-Added basic org specific table views.
+
+v0.4.7
+-Added loading screen in Package upload
+-Changed courses to packages.
+-Added Course model.
+-Added CRUD for course model
+
+
+v0.4.6
+-Updated SERVER STEPS and ReadMe
+-USE_TZ set to False in main server
+-AllClasses unit tested.
+-School unit tested
+-Updated Subscription model and views to operate if logged in only.
+-Updated Subscription Unit tests
+-Updated Organisation CRUD Unit Tests
+-Removed un-necessary and depriciated JSON checks
+-coverage tested with unit tests
+
+
+v0.3.5
+-Fixed id tag in /auth and login.html to suggest username as username and not email. 
+-Added and gitignored password file for ustadmobile.com wordpress and lrs 
+-UMLRS is now a global variable in UstadMobbile settings.py Views changed to reflect that
+-Fixed website create of users to take in username (unique)
+-Added alerts for wrong username / password combination
+-Added alerts for username already existing in register link (over umcloudjd website)
+-Added Allclass unit tests
+-Updated test logic for wp login check.
+-
+
+v0.3.4
+-Fixed auth backend to also authenticate locally for testing
+-Added a few tests for UMcloudDj.views
+-Modified getcourses to return apt return code in  try-catch bracket
+
+
+v0.3.3
+-Started this release notes
+-Updated and fixed some table bugs.
+-Added a simple User CRUD unittest test
+-Updated Fixtures to reflect new model
+-Tidyup the code (UMCloudDj.views)
+
+

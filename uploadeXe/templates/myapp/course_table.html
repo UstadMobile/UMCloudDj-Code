@@ -1,0 +1,69 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" class="ui-state-hover" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+
+{% block title %}Manage Courses{% endblock %}
+{% block content %}
+<style>
+#newcourse, #addnew {
+    background-image: url(/media/images/plus.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: right;
+    padding-left: 10px;
+}
+
+</style>
+<script type="text/javascript">
+  $(function() { 
+    $('#newcourse').puibutton();
+    $('#addnew').puibutton();
+    $('#tblcourses').puidatatable({
+            caption: 'Courses',
+            paginator: {
+                rows: 10
+            },
+            columns: [
+                {field:'name', headerText: 'Name', sortable:true},
+		{field:'category', headerText: 'Category', sortable:true},
+		{field:'publisher', headerText: 'Publisher', sortable:true},
+
+
+            ],
+            datasource: [
+                {% if courses_as_json %}
+                        {% for c,publisher_detail in courses_as_json %}
+                        {"pk":"{{c.pk}}", "name":"{{c.pk}}: {{c.fields.name}}","category":"{{c.fields.category}}","publisher":"{{publisher_detail}}","success":"{{c.fields.success}}"}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                {% endif %}
+                ],
+            selectionMode: 'single',
+            rowSelect: function(event, data) {
+                $('#messages').puigrowl('show', [{severity:'info', summary: 'Row Selected', detail: (data.school_name + ' ' + data.pk)}]);
+                var edit="/uploadeXe/courseedit/"+data.pk;
+                window.open(edit, "_self");
+            },
+            rowUnselect: function(event, data) {
+                //$('#messages').puigrowl('show', [{severity:'info', summary: 'Row Unselected', detail: (data.brand + ' ' + data.vin)}]);
+            }
+   });
+  }
+  ); 
+
+
+</script>
+<a href="/uploadeXe/coursenew"><button id="newcourse" type="button">New Course</button></a>
+<p></p>
+<i>Click an entry to edit the course</i>
+<div id="tblcourses"> </div>
+<!--<a href="/uploadeXe/coursenew"><button id="addnew" type="button">Add New</button></a>  -->
+                                                                             
+{% endblock %}

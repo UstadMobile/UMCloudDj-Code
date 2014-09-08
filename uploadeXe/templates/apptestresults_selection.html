@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Generate a Report {% endblock %}
+{% block content %}
+{% if form.errors %}
+    <p class="error"> Sorry, that is not a valid selection</p>
+{% endif %}
+<p></p>
+<i>Select the filters below to generate the UstadMobile app Unit test report</i>
+<p></p>
+
+<form action="/apptestresults/" method="POST"> {% csrf_token %}
+
+    <div>
+        Since:<input type="text" name="since_1" id="since_1" value="" />
+    </div>
+
+    <div style="display: none;">
+    <input type="text" name="since_1_alt" id="since_1_alt" value="" style="cursor: pointer;">
+    </div>
+
+    <div >
+        Until:<input type="text" name="until_1" id="until_1" value="" />
+    </div>
+
+    <div style="display: none;">
+        <input type="text" name="until_1_alt" id="until_1_alt" value="" style="cursor: pointer;">
+    </div>
+
+    <button type="submit" name="submit" value="submit-value">Submit</button>
+</form>
+
+<script>
+	$('#since_1').datetimepicker({
+		altField: "#since_1_alt",
+		altFieldTimeOnly: false,
+		altFormat: "yy-mm-dd",
+		altTimeFormat: "h:m",
+		altSeparator: "T"
+	});
+	$('#until_1').datetimepicker({
+                altField: "#until_1_alt",
+                altFieldTimeOnly: false,
+                altFormat: "yy-mm-dd",
+                altTimeFormat: "h:m",
+                altSeparator: "T"
+
+	});
+</script>
+
+{% endblock %}
+

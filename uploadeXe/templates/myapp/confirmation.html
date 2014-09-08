@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Login {% endblock %}
+
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+			$('#username').puiinputtext();
+			$('#password').puiinputtext();
+			$('#loginpanel').puipanel(); 
+			$('#submit').puibutton();
+			$('#home').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+
+
+{% block content %}
+
+	{% if state %}
+		<p style="color:green;"><i><img src="/media/images/tick.png" alt="">{{state}}<i></p>
+	{% endif %}
+	
+  	<a href="/uploadeXe/managecourses/"><button id="home" type="button">Go Back</button></a>
+
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" class="ui-state-hover"  type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+{% block title %}Manage Schools{% endblock %}
+{% block content %}
+<style>
+#newschool, #newschool1 {
+    background-image: url(/media/images/plus.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: right;
+    padding-left: 10px;
+}
+
+</style>
+<script type="text/javascript">
+  $(function() { 
+    $('#newschool').puibutton();
+    $('#newschool1').puibutton();
+    $('#tblschools').puidatatable({
+            caption: 'Schools',
+            paginator: {
+                rows: 10
+            },
+            columns: [
+                //{field:'pk', headerText: 'ID', sortable:true},
+                //{field:'model', headerText: 'Django Model', sortable:true},
+                {field:'school_name', headerText: 'School Name', sortable:true},
+                {field:'school_desc', headerText: 'Desc', sortable:true},
+		//{field:'organisation', headerText: 'Org', sortable:true},
+
+            ],
+            datasource: [
+                {% if schools_as_json %}
+                        {% for c in schools_as_json %}
+                        {"pk":"{{c.pk}}", "school_name":"{{c.pk}}: {{c.fields.school_name}}","school_desc":"{{c.fields.school_desc}}", "organisation":"{{c.fields.organisation}}"}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                {% endif %}
+                ],
+            selectionMode: 'single',
+            rowSelect: function(event, data) {
+                console.log("Wassup?")
+                $('#messages').puigrowl('show', [{severity:'info', summary: 'Row Selected', detail: (data.school_name + ' ' + data.pk)}]);
+                var edit="/schooledit/"+data.pk;
+                window.open(edit, "_self");
+            },
+            rowUnselect: function(event, data) {
+                //$('#messages').puigrowl('show', [{severity:'info', summary: 'Row Unselected', detail: (data.brand + ' ' + data.vin)}]);
+            }
+   });
+   $('#notifyme').puigrowl();                  
+   	addMessage = function(msg) {  
+        	$('#notifyme').puigrowl('show', msg);  
+        }  
+  }); 
+  function codeAddress() {
+                var state="{{state}}"
+                addMessage([{severity: 'info', summary: state, detail: ''}]);
+        }
+        var state="{{state}}";
+        if(state){
+                window.onload = codeAddress;
+        }
+
+
+</script>
+<p></p>
+<div id="notifyme"></div>
+<a href="/schoolnew/"><button id="newschool1" type="button">New School</button></a>
+<p></p>
+<!--<i>Click a row to edit School</i>-->
+<div id="tblschools"> </div>
+<!--<a href="/schoolnew/"><button id="newschool" type="button">Add New</button></a>  -->
+{% endblock %}

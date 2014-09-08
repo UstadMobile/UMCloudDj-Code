@@ -1,0 +1,145 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" class="ui-state-hover" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+
+{% block title %}Add a New Course {% endblock %}
+
+{% block scriptjs %}
+<script type="text/javascript">
+ 	var student_map = [{% for student in student_list %}
+                        { "value" : "{{ student.id }}",
+                        "label":"{{student.first_name}} {{student.last_name}} ({{student.username}})"
+                        //"label" : "{{package.name}}({{package.url}})"
+                        },
+                {% endfor %}];
+
+	var package_map = [{% for package in package_list %}
+			{ "value" : "{{ package.id }}",
+			"label":"<a href=\"{{package.url}}\" target=\"_blank\">{{package.name}}(ID: {{package.id}})</a>"
+			//"label" : "{{package.name}}({{package.url}})"
+			},
+		{% endfor %}];
+	var allclass_map = [{% for allclass in allclass_list %}
+                        { "value" : "{{ allclass.id }}",
+                        "label": "{{allclass.allclass_name}} (ID: {{allclass.id}})"
+                        //"label" : "{{package.name}}({{package.url}})"
+                        },
+                {% endfor %}];
+
+          $(function() { 
+			$('#course_name').puiinputtext();
+			$('#newpackage').puibutton();
+        		$('#course_desc').puiinputtext();
+        		$('#course_category').puiinputtext();
+			$('#course_price').puiinputtext();
+			$('#submit').puibutton();
+			$('#submit2').puibutton();
+
+			$('#selectpackagesfornewcourse').puipicklist({  
+    				effect: 'clip',  
+    				showSourceControls: true,  
+    				showTargetControls: true,  
+    				sourceCaption: 'Available',  
+    				targetCaption: 'Selected',  
+    				filter: true,  
+				filterMatchMode: 'contains',
+    				sourceData:package_map,  
+    				content: function(option) {  
+        				return '<img src="/media/' + "package" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+    				}  
+			});  
+   			$('#selectallclassesfornewcourse').puipicklist({  
+                                effect: 'clip',  
+                                showSourceControls: true,  
+                                showTargetControls: true,  
+                                sourceCaption: 'Available',  
+                                targetCaption: 'Selected',  
+                                filter: true,  
+				filterMatchMode: 'contains',
+                                sourceData:allclass_map,  
+                                content: function(option) {  
+                                        return '<img src="/media/images/' + "class-small" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                }  
+                        });
+
+
+			$('#selectstudentsfornewcourse').puipicklist({  
+                                effect: 'clip',  
+                                showSourceControls: true,  
+                                showTargetControls: true,  
+                                sourceCaption: 'Available',  
+                                targetCaption: 'Selected',  
+                                filter: true,  
+				filterMatchMode: 'contains',
+                                sourceData:student_map,  
+                                content: function(option) {  
+                                        return '<img src="/media/' + "user" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                }  
+                        });
+                }
+          ); 
+</script>
+{% endblock %}
+
+{% block content %}
+
+	{% if statesuccess == 1 %}
+                        <p style="color:green;"><i><img src="/media/images/tick.png" alt="">{{state}}<i></p>
+                {% else %}
+                        <p cass="error" style="color:red;"><i>{{state}}</i></p>
+        {% endif %}
+
+<form id="newcourseform" method="post">{% csrf_token %}
+    <h1>Create a New Course</h1>
+    <div data-role="fieldcontain">
+        <label for="course_name">Course Name:  </label><input type="text" name="course_name" id="course_name" value="" />
+    </div>
+    <div data-role="fieldcontain">
+        <label for="course_desc">Course Desc:  </label><input type="text" name="course_desc" id="course_desc" value="" />
+    </div>
+    <div data-role="fieldcontain">
+        <label for="course_category">Course Category:  </label><input type="text" name="course_category" id="course_category" value="" />
+    </div>
+   <!--<div data-role="fieldcontain">
+        <label for="course_price">Course Price:  </label><input type="number" step="0.01" min="0" name="course_price" id="course_price" value="" />
+    </div>-->
+
+   <h3>Blocks:<a href="/uploadeXe/new"><i>(Upload New)</i></a></h3> 
+<div id="selectpackagesfornewcourse" >  
+    <select multiple="multiple" id="source" name="source">  
+    </select>  
+    <select multiple="multiple" id="target" name="target">  
+    </select>  
+</div>  
+<h3>Classes:</h3>
+<div id="selectallclassesfornewcourse" >
+    <select multiple="multiple" id="source" name="source">
+    </select>
+    <select multiple="multiple" id="target3" name="target3">
+    </select>
+</div>
+<h3>Students:</h3>
+<div id="selectstudentsfornewcourse" >
+    <select multiple="multiple" id="source" name="source">
+    </select>
+    <select multiple="multiple" id="target2" name="target2">
+    </select>
+</div>
+   <br></br>
+
+   <br></br>
+    <button id="submit" type="submit" name="submittotable" value="Create">Save</button>
+    <button id="submit2" type="submit" name="submittonew" value="Create">Save and Create another</button>
+
+</form>
+
+
+{% endblock %}

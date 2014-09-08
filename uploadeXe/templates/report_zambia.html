@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Generate a Report {% endblock %}
+{% block content %}
+
+<p> Hi. the variables you provided were: </p>
+
+<li>Date_since: <i>{{date_since}}</i></li>
+<li>Date_until: <i>{{date_until}}</i></li>
+<p></p>
+<!--<p> The endpoint URL for the query is: <i>{{lrs_endpoint}}</i> </p>-->
+<p></p>
+<p> The statements gotten from the above query is: </p>
+
+
+<script type="text/javascript">
+  $(function() { 
+    $('#tblstatements').puidatatable({
+            caption: 'Activity Report',
+            paginator: {
+                rows:10 
+            },
+            columns: [
+                {field:'date_time', headerText: 'Time', sortable:true},
+                {field:'user_name', headerText: 'User', sortable:true},
+		{field:'activity_type', headerText: 'Activity Verb', sortable:true},
+                {field:'interaction_type', headerText: 'Activity Type', sortable:true},
+		{field:'interaction_name', headerText: 'Question', sortable:true},
+		{field:'result_response', headerText: 'Answered', sortable:true},
+		{field:'result_success', headerText: 'Result', sortable:true},
+		//Time Varuna Answered Activity Choice Question
+            ],
+            datasource: [
+                {% if statements_as_json %}
+                        {% for c in statements_as_json %}
+                        	{% with c.result.response as answerid %}
+                                	{% for d in c.object.definition.choices %}
+                                        	{% if answerid in d.id %}
+                                                	{% with d.description.en_US as answerdesc %}
+									{"date_time":"{{c.timestamp}}","user_name":"{{c.actor.name}}","activity_type":"{{c.verb.display.en_US.strip}}", "interaction_type":"{{c.object.objectType}}({{c.object.definition.interactionType}})","interaction_name":"{{c.object.definition.name.en_US.strip}}", "result_response":"{{answerdesc.strip}}", "result_success":"{{c.result.success}}"},
+                                                	{% endwith %}
+                                        	{% endif %}
+                                	{% endfor %}
+                        	{% endwith %}
+                        {% endfor %}
+                {% endif %}
+                ],
+            selectionMode: 'single',
+            rowSelect: function(event, data) {
+                console.log("Wassup?")
+                $('#messages').puigrowl('show', [{severity:'info', summary: 'Row Selected', detail: (data.username + ' ' + data.pk)}]);
+            },
+            rowUnselect: function(event, data) {
+                //$('#messages').puigrowl('show', [{severity:'info', summary: 'Row Unselected', detail: (data.brand + ' ' + data.vin)}]);
+            }
+   });
+  }
+  ); 
+
+
+</script>
+<div id="tblstatements"> </div>
+
+
+
+{% endblock %}
+

@@ -1,0 +1,59 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" class="ui-state-hover" type="button" style="width:149px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Courses</button></a>
+
+
+<hr>
+<p></p>
+{% endblock %}
+
+{% block title %}Approve User Request{% endblock %}
+{% block content %}
+
+<script>
+	$(function() {  
+            $('#id_website').puiinputtext();  
+	    $('#id_company_name').puiinputtext();
+	    $('#id_job_title').puiinputtext();
+	    $('#id_date_of_birth').puiinputtext();
+	    $('#id_address').puiinputtext();
+	    $('#id_phone_number').puiinputtext();
+            $('#id_gender').puiinputtext();
+  	    $('#submit').puibutton();
+            });  
+
+</script>
+<p cass="error" style="color:red;"><i>{{state}}</i></p>
+Edit user's request:
+<p></p>
+<form method="post">{% csrf_token %}
+
+    <p><label for="username">Username:</label>{{username}}</p>
+    <p><label for="orgnaisation_requested">Organisation Requested:</label>{{organisation_requested}}</p>
+    {{form.as_p}}
+
+<!--
+        <label>Username:</label>
+        {{ form.username }}<i> (You cannot update or change the username)</i><p></p>
+	<label>New Password:</label>
+	{{form.password}}<i> (Leave blank to retain)</i><p></p>
+	<label>Email address:</label>
+	{{form.email}}<p></p>
+	<label>First Name:</label>
+	{{form.first_name}}<p></p>
+	<label>Last Name:</label>
+	{{form.last_name}}<p></p>
+	<label>Is Active</lable>
+	{{form.is_active}}<p></p>
+	<button id="submit" type="submit" name="submit" value="submit-value">Update</button>
+	-->
+	<button id="submit" type="submit" name="submit" value="submit-value">Update</button>
+	
+</form>
+    
+
+{% endblock %}

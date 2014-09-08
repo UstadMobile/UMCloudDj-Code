@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}UstadMobile Roles{% endblock %}
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+                        $('#newrole').puibutton(); 
+                }
+          ); 
+</script>
+{% endblock %}
+{% block content %}
+
+<script type="text/javascript">
+  $(function() { 
+
+    $('#tblroles').puidatatable({
+            caption: 'Roles',
+	    scrollWidth: '75%',
+            paginator: {
+                rows: 10
+            },
+            columns: [
+                {field:'pk', headerText: 'ID', sortable:true},
+                //{field:'model', headerText: 'Django Model', sortable:true},
+                {field:'role_name', headerText: 'Role Name', sortable:true},
+                {field:'role_desc', headerText: 'Role Desc', sortable:true},
+
+            ],
+            datasource: [
+                {% if roles_as_json %}
+                        {% for c in roles_as_json %}
+                        {"pk":"{{c.pk}}","model":"{{c.model}}", "role_name":"{{c.fields.role_name}}","role_desc":"{{c.fields.role_desc}}"}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                {% endif %}
+                ],
+            selectionMode: 'single',
+            rowSelect: function(event, data) {
+                console.log("Wassup?")
+                $('#messages').puigrowl('show', [{severity:'info', summary: 'Row Selected', detail: (data.role_name + ' ' + data.pk)}]);
+                var edit="/roleedit/"+data.pk;
+                window.open(edit, "_self");
+            },
+            rowUnselect: function(event, data) {
+                //$('#messages').puigrowl('show', [{severity:'info', summary: 'Row Unselected', detail: (data.brand + ' ' + data.vin)}]);
+            }
+   });
+  }
+  ); 
+
+
+</script>
+<i>Click a row to edit a Role</i>
+<div id="tblroles"> </div>
+<a href="/rolenew/"><button id="newrole" type="button">New Role</button></a>  
+                                                                             
+
+
+
+{% endblock %}

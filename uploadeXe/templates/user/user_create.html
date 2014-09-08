@@ -1,0 +1,165 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" class="ui-state-hover" type="button" style="width:149px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+
+{% block scriptjs %}
+<script type="text/javascript">
+ 	  var allclass_map = [{% for allclass in allclass_list %}
+                        { "value" : "{{ allclass.id }}",
+                        "label": "{{allclass.allclass_name}} (ID: {{allclass.id}})"
+                        //"label" : "{{package.name}}({{package.url}})"
+                        },
+                {% endfor %}];
+
+          $(function() { 
+			$('#allclasspicklist').puipicklist();
+                        $('#username').puiinputtext();
+                        $('#email').puiinputtext();
+                        $('#password').puiinputtext();
+			$('#passwordagain').puiinputtext();
+                        $('#first_name').puiinputtext();
+                        $('#last_name').puiinputtext();
+                        //$('#website').puiinputtext();
+                        //$('#job_title').puiinputtext();
+                        //$('#company_name').puiinputtext();      
+			$('#dateofbirth').puiinputtext();
+                        $('#address').puiinputtext();
+                        $('#submit').puibutton();
+			$('#submit2').puibutton();
+                        $('#createuser').puipanel();
+			$('#role').puidropdown();
+			$('#organisation').puidropdown();
+			$('#selectallclassesfornewcourse').puipicklist({  
+                                effect: 'clip',  
+                                showSourceControls: false,  
+                                showTargetControls: false,  
+                                sourceCaption: 'Available',  
+                                targetCaption: 'Selected',  
+                                filter: true,  
+				filterMatchMode: 'contains',
+                                sourceData:allclass_map,  
+                                content: function(option) {  
+                                        return '<img src="/media/images/' + "class-small" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                }  
+                        });
+			$('#phonenumber').puiinputtext();
+			$('#gender').puidropdown();
+			$( ".dobdatepicker" ).datepicker({
+        			changeMonth: true,
+        			changeYear: true,
+        			yearRange: "1900:2012",
+        			// You can put more options here.
+			});
+
+
+                }
+          ); 
+</script>
+{% endblock %}
+{% block title %}UstadMobile New User {% endblock %}
+{% block content %}
+	{% if state %}
+		{% if statesuccess == 1 %}
+                	<p style="color:green;"><i><img src="/media/images/tick.png" alt="">{{state}}<i></p>
+		{% else %}
+			<p cass="error" style="color:red;"><i>{{state}}</i></p>
+		{% endif %}
+        {% endif %}
+
+<form id="newuserform" method="post">{% csrf_token %}
+    <!--{{ form.as_p }}-->
+    <div id="createuser" title="Create a New User">
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="username">Username: &nbsp  </label>-->
+        <input type="text" name="username" id="username" placeholder="Username" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="email">Email:  &nbsp&nbsp</label>-->
+        <input type="email" name="email" id="email" placeholder="Email" style="height: 30px; width: 250px;" value="" />
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="password">Password:</label>-->
+        <input type="password" name="password" id="password" placeholder="Password" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="password">Password:</label>-->
+        <input type="password" name="passwordagain" id="passwordagain" placeholder="Enter Password Again" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="first_name">First Name:  </label>-->
+        <input type="text" name="first_name" id="first_name" placeholder="First Name" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="last_name">Last Name:  </label>-->
+        <input type="text" name="last_name" id="last_name" placeholder="Last Name" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+
+
+   <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="company_name">Organisation name:  </label>-->
+        <input type="text" name="dateofbirth" id="dateofbirth" class="dobdatepicker" placeholder="Date of Birth" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="job_title">Job Title:  </label>-->
+        <input type="text" name="address" id="address" placeholder="Address/Location" style="height: 30px; width: 250px;" value="" />
+    </div>
+     <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="job_title">Job Title:  </label>-->
+        <input type="tel" name="phonenumber" id="phonenumber" placeholder="Phone Number" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+    <label>Gender:</label> <select id="gender" form="newuserform" name="gender">
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+    </select>
+    </div>
+
+
+
+    Role: <select id="role" form="newuserform" name="role">
+        {% for role in object_list %}
+		{% if role.role_name == "Student" %}
+			<option selected="Selected" value="{{ role.id }}">{{ role.role_name }}</option>
+		{% else %}
+        		<option value="{{ role.id }}">{{ role.role_name }}</option>
+		{% endif%}
+        {% endfor %}
+   </select>
+<p></p>
+<h3>Class:</h3>
+<div id="selectallclassesfornewcourse" >
+    <select multiple="multiple" id="source" name="source">
+    </select>
+    <select multiple="multiple" id="target" name="target">
+    </select>
+</div>
+<!--   Organisation: <select id="organisation" form="newuserform" name="organisation">
+        {% for organisation in organisation_list %}
+        <option value="{{ organisation.id }}">{{ organisation.organisation_name }}</option>
+        {% endfor %}
+   </select>-->
+   <br></br>
+    <button id="submit" type="submit" name="submittotable" value="Create">Save</button>
+    <button id="submit2" type="submit" name="submittonew" value="Create">Save and Create another</button>
+    </div>
+</form>
+
+
+<!--
+<form method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Submit" />
+</form>
+-->
+
+{% endblock %}

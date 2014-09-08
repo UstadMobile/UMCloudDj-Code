@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+                        $('#organisation_name').puiinputtext();
+                        $('#id_code').puiinputtext();
+                        $('#submit').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+{% block title %}Edit Organisation{% endblock %}
+{% block content %}
+{% if state %}
+        <p cass="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+<form method="post">{% csrf_token %}
+    <label>Organisation:</label>
+    <input type="text" id="organisation_name" name="organisation_name" value="{{organisation}}" readonly="True"/><i>You cannot edit the Organisation name</i>
+	{{organisation}}
+    {{ form.as_p }}
+    <button id="submit" type="submit" name="submit" value="Create">Update</button>
+</form>
+ 
+{% endif %}
+{% endblock %}

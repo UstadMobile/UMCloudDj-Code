@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block navigate %}
+{% endblock %}
+
+{% block title %}UstadMobile App Unit Test Report {% endblock %}
+{% block content %}
+{% if form.errors %}
+    <p class="error"> Sorry, that is not a valid entry</p>
+{% endif %}
+
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+			$('#createuser').puipanel();
+			$('#submitindividual').puibutton();
+			$('#submit').puibutton();
+                	$('#notifytop').puinotify('show', '<h1>{{secure}}</h1>');  
+                }
+          ); 
+</script>
+{% endblock %}
+<p cass="error" style="color:red;"><i>{{state}}</i></p>
+<div id="notifytop"></div>
+<form action="/orgsignup/" id="newuserform" method="post">{% csrf_token %}
+    <div id="createuser" title="Sign up">
+    <p></p>
+    <h2>Enter your Organisation's code</h2>
+
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+	<input type="text" name="organisationalcode" id="organisatinalcode" placeholder="Enter Your Organisation's Code" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+
+    <p></p>
+	<button id="submit" type="submit" name="submit" value="Create">Request my account</button>
+	<a href="/register/individual/"><button id="submitindividual" type="button" name="submitindividual" value="Create">I don't have a code</button></a>
+</form>
+</div>
+<br></br>
+{% endblock %}

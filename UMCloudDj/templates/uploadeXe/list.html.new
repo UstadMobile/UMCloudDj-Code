@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+		<i>List of your uploaded Courses. Click to view online</i>
+		<!-- List of uploaded documents -->
+		{% if documents %}
+			<ul>
+			{% for document in documents %}
+				<li><a href="{{ document.url }}">{{ document.name }}</a></li>
+				<dd>
+					<li>Course ID: {{ document.id }}</li>
+				</dd>
+			{% endfor %}
+			</ul>
+		{% else %}
+			<p>No documents.</p>
+		{% endif %}
+
+		<!-- Upload form. Note enctype attribute! -->
+		<form action="{% url "list" %}" method="post" enctype="multipart/form-data">
+			{% csrf_token %}
+			<p>{{ form.non_field_errors }}</p>
+			<p>{{ form.exefile.label_tag }} {{ form.exefile.help_text }}</p>
+			<p>
+				{{ form.exefile.errors }}
+				{{ form.exefile }}
+			</p>
+			<p><input type="submit" value="Upload" /></p>
+		</form>
+		<i>Enter in the Course ID to download course in the Ustad Mobile Android/Blackberry/Apple iOS/Windows Phone Apps</i>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{pagetitle}}{% endblock %}
+{% block scriptjs %}
+<style>
+</style>
+<script type="text/javascript">
+	function disableall(){
+        	$('input[type=radio]').prop('checked',false);
+		$('input[type=radio]').parents('tr').css('background-color','');
+	}
+
+          $(function() { 
+			$('#rd1').puiradiobutton();
+			$('#uncheckradio').puibutton();
+			$('#submit').puibutton();
+			var newtypeid="{{newtypeid}}";
+                        $('#{{newtypeid}}').puibutton(); 
+			$(function() { 
+        			$('#{{tabletypeid}}').dynatable({
+					features: {
+        					paginate: true,
+        					search: true,
+        					recordCount: true,
+						sorting: true,
+						
+      					},
+        				dataset: {
+        				records:[
+                				{% if data_as_json %}
+                        				{% for c, r, p in user_mapping %}
+								{"radio2":"<input type=\"radio\" id=\"{{c.pk}}_radio\" style=\"width:2.5em;height:2.5em;\" onchange=\"$(this).parents('tr:first').css('background-color','#E55451');\" name=\"{{c.pk}}_radio\" value=\"{{c.pk}}_0\"><br>","radio":"<input type=\"radio\" id=\"{{c.pk}}_radio\" style=\"width:2.5em;height:2.5em;\" onchange=\"$(this).parents('tr:first').css('background-color','lightgreen');\"name=\"{{c.pk}}_radio\" value=\"{{c.pk}}_1\"><br>","approve":"<div class=\"onoffswitch\"><input type=\"checkbox\" name=\"onoffswitch\" class=\"onoffswitch-checkbox\" id=\"{{c.pk}}myonoffswitch\" checked><label class=\"onoffswitch-label\" for=\"{{c.pk}}myonoffswitch\"><span class=\"onoffswitch-inner\"></span><span class=\"onoffswitch-switch\"></span></label></div>","pk":"{{c.pk}}","model":"{{c.model}}", "fields.username":"{{c.username}}","fields.first_name":"{{c.first_name}}", "fields.last_name":"{{c.last_name}}","fields.role_name":"{{r.role_name}}","fields.gender":"{{p.gender}}", "fields.phonenumber":"{{p.phone_number}}","fields.dateofbirth":"{{p.date_of_birth}}"}{% if not forloop.last %},{% endif %}
+
+                        				{% endfor %}
+                				{% endif %}
+                				]
+        				}
+    				});
+  			});
+
+	});
+</script>
+{% endblock %}
+{% block content %}
+{% if state %}
+<p class="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+<form id="approveusersform" method="post">{% csrf_token %}
+<table id="{{tabletypeid}}">
+  <thead>
+    {% for d, f in table_headers_html %}
+	<th data-dynatable-column="{{d}}" >{{f}}</th>
+    {% endfor %}
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+<button id="uncheckradio" type="button" name="uncheckradio" onClick="disableall()" value="Uncheck">Reset</button>
+<button id="submit" type="submit" name="submittotable" value="Create">Submit</button>
+</form>
+{% endif %}
+
+<br></br>
+
+
+
+{% endblock %}

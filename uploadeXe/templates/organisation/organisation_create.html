@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+                        $('#organisation_name').puiinputtext();
+                        $('#organisation_desc').puiinputtext();
+                        $('#umpackage').puidropdown();
+			$('#organisation').puidropdown();
+                        $('#submit').puibutton();
+
+                        $('#username').puiinputtext();
+                        $('#email').puiinputtext();
+                        $('#password').puiinputtext();
+			$('#passwordagain').puiinputtext();
+                        $('#first_name').puiinputtext();
+                        $('#last_name').puiinputtext();
+                        $('#phonenumber').puiinputtext();
+                        $('#gender').puidropdown();
+   			$('#dateofbirth').puiinputtext();
+			$('#address').puiinputtext();
+                        $( ".dobdatepicker" ).datepicker({
+                                changeMonth: true,
+                                changeYear: true,
+                                yearRange: "1900:2012",
+                                // You can put more options here.
+                        });
+
+			
+                }
+          ); 
+</script>
+{% endblock %}
+{% block title %}Add an Organisation {% endblock %}
+{% block content %}
+{% if state == "You do not have permission to see this page." %}
+	<p cass="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+	<p cass="error" style="color:red;"><i>{{state}}</i></p>
+<form id="neworganisationform" method="post">{% csrf_token %}
+    <h1>Create a New Organisation</h1>
+    <br></br>
+    <div data-role="fieldcontain">
+        <label for="organisation_name">Organisation Name:  </label><input type="text" name="organisation_name" id="organisation_name" value="" required/>
+    </div>
+    <div data-role="fieldcontain">
+        <label for="organisation_desc">Organisation Desc:  </label><input type="text" name="organisation_desc" id="organisation_desc" value="" required/>
+    </div>
+   <label>Billing Package:</label> <select id="umpackage" form="neworganisationform" name="umpackageid">
+        {% for umpackage in object_list %}
+        <option value="{{ umpackage.id }}">{{ umpackage.package_name }}</option>
+        {% endfor %}
+   </select>
+   <br></br>
+   <h2>Organisation Admin</h2>
+   <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="username">Username: &nbsp  </label>-->
+        <input type="text" name="username" id="username" placeholder="Username" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="email">Email:  &nbsp&nbsp</label>-->
+        <input type="email" name="email" id="email" placeholder="Email" style="height: 30px; width: 250px;" value="" />
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="password">Password:</label>-->
+        <input type="password" name="password" id="password" placeholder="Password" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="password">Password:</label>-->
+        <input type="password" name="passwordagain" id="passwordagain" placeholder="Enter Password Again" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="first_name">First Name:  </label>-->
+        <input type="text" name="first_name" id="first_name" placeholder="First Name" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="last_name">Last Name:  </label>-->
+        <input type="text" name="last_name" id="last_name" placeholder="Last Name" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+
+   <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="company_name">Organisation name:  </label>-->
+        <input type="text" name="dateofbirth" id="dateofbirth" class="dobdatepicker" placeholder="Date of Birth" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="job_title">Job Title:  </label>-->
+        <input type="text" name="address" id="address" placeholder="Address/Location" style="height: 30px; width: 250px;" value="" />
+    </div>
+     <div data-role="fieldcontain" style="padding-bottom:5px">
+        <!--<label for="job_title">Job Title:  </label>-->
+        <input type="tel" name="phonenumber" id="phonenumber" placeholder="Phone Number" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+    <label>Gender:</label> <select id="gender" form="neworganisationform" name="gender">
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+    </select>
+    <br></br>
+    <button id="submit" type="submit" name="submit" value="Create">Submit</button>
+</form>
+{% endif %}
+
+{% endblock %}

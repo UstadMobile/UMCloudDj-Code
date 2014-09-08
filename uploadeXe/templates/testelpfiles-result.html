@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+                {% if result == 'success' %}
+                        <i><a href="/selectelptest/" >Click here to check the table for the test results</a></i>
+                {% endif %}
+
+		{% if result == 'fail' %}
+                        <i><a href="#" >Tests could not be run.</a></i>
+                {% endif %}
+
+
+{% endblock %}
+
+

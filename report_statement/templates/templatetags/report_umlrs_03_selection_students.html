@@ -1,0 +1,54 @@
+
+<script>
+$(function() { 
+		//$('#brand').puidropdown();
+		//$('#model').puidropdown();
+                }
+          ); 
+
+</script>
+
+<select name="brand" id="brand" required>
+        <option selected disabled value="Z" required>Select Class</option>
+        {% for allclass in allclass_list %}
+            <option value="{{ allclass.id}}">{{ allclass.allclass_name }}</option>
+        {% endfor %}
+    </select>*
+    <select name="model" id="model" disabled="true" multiple required>
+        <option selected disabled value="" >Select students</option>
+    </select>*
+<script>
+        $(document).ready(
+                     function() {
+                         $("select#brand").change(function() {
+                             if ($(this).val() == 'Z') {
+                                 $("select#model").html("<option selected disabled>Select students</option>");
+                                 $("select#model").attr('disabled', true);
+                             }
+                             else {
+                                 var url = "/allclass/" + $(this).val() + "/allclasse_students";
+                                 var brand = $(this).val();
+                                 $.getJSON(url, function(models) {
+                                     var options = '<option selected disabled multiple value="Z">Select students</option>';
+				     if (models.length > 0){
+					options += '<option value="ALL">All students</option>'
+				     }
+                                     for (var i = 0; i < models.length; i++) {
+                                        options += '<option value="' + models[i].id + '">' + models[i].first_name +' ' + models[i].last_name + '</option>';
+                                     }
+                                     $("select#model").html(options);
+                                     $("select#model option:first").attr('selected', 'selected');
+                                     $("select#model").attr('disabled', false);
+                                 });
+                             }
+                         });
+
+
+                         $("select#model").change(function(vent) {
+                             if ($(this).val() == -1) {
+                                 return;
+                             }
+                             myAwesomeFunctionToCallWhenAModelIsSelected();
+                         });
+                     });
+</script>

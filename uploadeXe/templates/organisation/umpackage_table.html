@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+                        $('#newumpackage').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+
+{% block title %}Manage UMCloud Packages {% endblock %}
+{% block content %}
+
+<script type="text/javascript">
+  $(function() { 
+    $('#tblumpackages').puidatatable({
+            caption: 'Cloud Packages',
+            paginator: {
+                rows: 10
+            },
+            columns: [
+                {field:'pk', headerText: 'ID', sortable:true},
+                //{field:'model', headerText: 'Django Model', sortable:true},
+                {field:'package_name', headerText: 'Name', sortable:true},
+                {field:'package_desc', headerText: 'Description', sortable:true},
+                {field:'max_students', headerText: 'Max Students', sortable:true},
+                {field:'max_publishers', headerText: 'Max Publishers', sortable:true},
+		{field:'price_rate_permonth', headerText: 'Rate per month', sortable:true},
+
+            ],
+            datasource: [
+                {% if umpackages_as_json %}
+                        {% for c in umpackages_as_json %}
+                        {"pk":"{{c.pk}}","package_name":"{{c.fields.package_name}}","package_desc":"{{c.fields.package_desc}}", "max_students":"{{c.fields.max_students}}","max_publishers":"{{c.fields.max_publishers}}", "price_rate_permonth":"{{c.fields.price_rate_permonth}}"}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                {% endif %}
+                ],
+            selectionMode: 'single',
+            rowSelect: function(event, data) {
+                console.log("Wassup?")
+                $('#messages').puigrowl('show', [{severity:'info', summary: 'Row Selected', detail: (data.package_name + ' ' + data.pk)}]);
+                var edit="/umpackageedit/"+data.pk;
+                window.open(edit, "_self");
+            },
+            rowUnselect: function(event, data) {
+                //$('#messages').puigrowl('show', [{severity:'info', summary: 'Row Unselected', detail: (data.brand + ' ' + data.vin)}]);
+            }
+   });
+  }
+  ); 
+
+
+</script>
+{% if state %}
+        <p cass="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+<div id="tblumpackages"> </div>
+<a href="/umpackagenew/"><button id="newumpackage" type="button">New Subscription</button></a>  
+{% endif %}
+                                                                             
+{% endblock %}

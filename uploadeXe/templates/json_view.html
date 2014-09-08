@@ -1,0 +1,86 @@
+<script src="http://127.0.0.1:8010/media/jscss/js/jquery-1.9.1.min.js"></script>
+<script src="http://127.0.0.1:8010/media/jscss/js/mrjsontable.js"></script>
+<!--<script src="http://127.0.0.1:8010/media/jscss/js/jquery.dynatable.js"></script>-->
+<script src="http://culmat.github.io/jsTreeTable/release/treeTable.1.0.js"></script>
+
+<link href="http://127.0.0.1:8010/media/jscss/css/mrjsontable.css" rel="stylesheet" />
+<!--<link href="http://127.0.0.1:8010/media/jscss/css/jquery.dynatable.css" rel="stylesheet" />-->
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+
+<p>Hi, so this is the json data gotten from endpoint {{endpoint}}
+</p>
+
+	<!--
+		<p>Statements is: 
+  		{{statements}}
+		</p>
+		<p> Verb is: 
+		{{ statements.verb }}
+		</p>
+		<p> jdata is : {{jdata}} </p>
+		<p>json_dump is: 
+  		{{ json_dump }}</p>
+	-->
+
+{% for jd in json_dump.statements %}
+     <li>JSON.statements.verb.id-{{ forloop.counter }}: {{ jd.verb.id }} </li>
+	
+     {% endfor %}
+
+<script>
+	$(function () {
+		var json_dump = "{{json_dump.statements}}";
+	   	var statements_dump;
+		statements_dump = "{{statements}}";
+		console.log("statements_dump is: " + statements_dump);
+		var st;
+
+		if (json_dump !=null && json_dump !=" "){
+		  	console.log("Getting JSON by variable");
+                        st = JSON.parse(json_dump.replace(/u&#39;/g,"\"").replace(/&#39;/g, "\"").replace(/False/g, "false").replace(/True/g, "true"));
+			console.log("st variable: " + st);
+                 }
+
+		 if (statements_dump.trim() !== null){
+			//console.log("Getting JSON by JSON");
+		    	//st = JSON.parse(statements_dump.replace(/u&#39;/g,"\"").replace(/&#39;/g, "\"").replace(/False/g, "false").replace(/True/g, "true"));
+			//console.log("st JSON: " + st);
+		 }	
+
+		 $("#mydiv").mrjsontable({
+                    pageSize: 9,
+                    columns: [
+                        new $.fn.mrjsontablecolumn({
+                            heading: "ID",
+                            data: "id"
+                        }),
+                        new $.fn.mrjsontablecolumn({
+                            heading: "Verb",
+                            data: "verb",
+                        }),
+                        new $.fn.mrjsontablecolumn({
+                            heading: "timestamp",
+                            data: "timestamp",
+                        }),
+                        new $.fn.mrjsontablecolumn({
+                            heading: "Stored",
+                            data: "stored",
+                        }),
+                        new $.fn.mrjsontablecolumn({
+                            heading: "inProgress",
+                            data: "inProgress",
+                        })
+                    ],
+                    data: st
+			
+               });
+           });
+        
+
+	
+</script>
+
+<div id="mydiv"></div>
+
+

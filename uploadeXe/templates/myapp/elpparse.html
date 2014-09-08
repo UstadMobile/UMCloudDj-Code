@@ -1,0 +1,38 @@
+{% extends "managebase.html" %}
+
+{% block title %}Upload eXe course {% endblock %}
+
+{% block content %}
+		
+		<script type="text/JavaScript">
+		function TestFileType( fileName, fileTypes ) {
+			if (!fileName) return;
+			dots = fileName.split(".")
+			fileType = "." + dots[dots.length-1];
+			console.log("Type: " + fileType);
+			return (fileTypes.join(".").indexOf(fileType) != -1) ?
+			console.log('That file is OK!') : 
+			alert("Please only upload files that end in types: \n\n" + (fileTypes.join(" .")) + "\n\nPlease select a new file and try again.");
+		}
+		</script>	
+
+		<h3>1. Choose your file</h3>
+		<!-- Upload form. Note enctype attribute! -->
+		<form action="{% url "elpparse" %}" method="post" enctype="multipart/form-data">
+			{% csrf_token %}
+			<p>{{ form.non_field_errors }}</p>
+			<p>{{ form.exefile.label_tag }} {{ form.exefile.help_text }}</p>
+			<p>
+				{{ form.exefile.errors }}
+				<!--{{ form.exefile }}-->
+				<input id="id_exefile" name="exefile" type="file" accept=".elp" >
+				
+			</p>
+			
+
+			<h3>2. Click Upload</h3>
+			<button id="submit" type="submit" name="submit" value="upload">Upload</button>
+			<img src="/media/images/address-book-new-3-medium.png" align="right">
+		</form>
+		<p></p>
+{% endblock %}

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>{% block title %}Home{% endblock %} Ustad Mobile Cloud Django</title>
+	<style type="text/css">
+
+	   table { width: 100%; }
+	   table tr { border-bottom:1px solid #e9e9e9; }
+	   table thead td, th {border-left: 1px solid #f2f2f2; border-right: 1px solid #d5d5d5; background: #ddd url("../images/sprites4.png") repeat-x scroll 0 100% ; font-weight: bold; text-align:left;}
+	   table tr td, th { border:1px solid #D5D5D5; padding:15px;}
+	   table tr:hover { background:#fcfcfc;}
+	   table tr ul.actions {margin: 0;}
+	   table tr ul.actions li {display: inline; margin-right: 5px;}
+	   td.last {
+    		width: 1px;
+    		white-space: nowrap;
+	   }
+	   span.tab{
+    		padding: 0 80px; /* Or desired space*/
+	   }
+	   body {
+  		margin: 0;
+  		font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  		font-size: 14px;
+  		line-height: 20px;
+  		color: #333333;
+  		background-color: #ffffff;
+	  }
+	  label { display: inline-block; width: 140px; text-align: left; }
+
+	  body{
+		text-align: left;
+	  }
+	  .spinner {
+    		position: fixed;
+    		top: 50%;
+    		left: 25%;
+    		margin-left: -50px; /* half width of the spinner gif */
+    		margin-top: -20px; /* half height of the spinner gif */
+    		text-align:center;
+    		z-index:1234;
+    		/*overflow: auto;*/
+    		width: 500px; /* width of the spinner gif */
+    		height: 302px; /*hight of the spinner gif +2px to fix IE8 issue */
+	  }
+	  #page {
+		width: 1228px;
+		/*width:100%;*/
+		text-align: left;
+		background-color: grey;
+	  }
+
+	  #sidebar {
+		margin-top:-5px;
+		float: left;
+		width: 203px;
+		border: 0px solid blue;
+		padding: 5px;
+	  }
+
+	  #content {
+		float: left;
+		width: 900px;
+		/*margin-left: 245px;*/
+		/*width: 100%;*/
+		border: 1px solid grey;
+		padding: 5px;
+		border-radius: 5px;
+	  }
+
+	  #header {
+		float: top;
+		border: 2px solid grey;
+		/*width: 1111px;*/
+		width: 100%;
+   		padding: 5px;
+		border-radius: 5px;
+	  }
+	#blocknav {
+        background-image: url(/media/images/package.png);
+        background-repeat: no-repeat;
+        background-position: center left;
+        text-align: center;
+        }
+
+	#coursesnav {
+    	background-image: url(/media/images/course.png);
+    	background-repeat: no-repeat;
+    	background-position: center left;
+    	text-align: center;
+	}
+
+	#usertablenav {
+    	background-image:url(/media/images/users.png);
+    	background-repeat: no-repeat;
+    	background-position: center left;
+    	text-align: center;
+	}
+	#allclasstablenav {
+    	background-image:url(/media/images/class.png);
+    	background-repeat: no-repeat;
+    	background-position: center left;
+    	text-align: center;
+	}
+	#schooltablenav {
+    	background-image:url(/media/images/school.png);
+    	background-repeat: no-repeat;
+    	background-position: center left;
+    	text-align: center;
+	}
+
+
+
+	</style>
+
+	<!-- Favicon goes here-->
+	<link rel="icon" href="/media/favicon.ico" type="image/x-icon">
+	<!--PrimeUI Stuff-->
+		<link rel="stylesheet" href="{{ STATIC_URL }}jscss/jqui/themes/base/jquery-ui.css" />
+                <link rel="stylesheet" href="{{ STATIC_URL }}jscss/primeui/primeui-1.1/themes/aristo/theme.css" />
+                <link rel="stylesheet" href="{{ STATIC_URL }}jscss/primeui/um-primeui-1.1-min.css" />
+                <script type="text/javascript" src="{{ STATIC_URL}}jscss/js/jquery-1.11.0.js" %}"></script>
+                <script type="text/javascript" src="{{ STATIC_URL }}jscss/jqui/ui/jquery-ui.js"></script>
+                <script type="text/javascript" src="{{ STATIC_URL }}jscss/primeui/um-primeui-1.1-min.js"></script>
+	<!--PrimeUI Stuff ends.-->
+	
+	<!-- JSON table: MrJSONTable-->
+	<script src="{{ STATIC_URL }}jscss/js/mrjsontable.js"></script>
+	<link href="{{ STATIC_URL }}jscss/css/mrjsontable.css" rel="stylesheet" />
+	
+	<!--jQuery UI TimePicker-->
+	<script src="{{ STATIC_URL }}jscss/js/jquery-ui-timepicker-addon.js"></script>
+        <link rel="stylesheet" href="{{ STATIC_URL }}jscss/css/jquery-ui-timepicker-addon.css" type="text/css"/>
+	<link rel="stylesheet" href="{{ STATIC_URL }}jscss/jqui/themes/base/jquery.ui.slider.css">
+
+	<!--Bootstrap-->
+<!--<link href="{{ STATIC_URL }}jscss/css/bootstrap.css" rel="stylesheet" type="text/css"/>-->
+
+
+	<script src="{{ STATIC_URL }}jscss/dynatable/jquery.dynatable.js"></script>
+	<link rel="stylesheet" href="{{ STATIC_URL }}jscss/dynatable/jquery.dynatable.css" type="text/css"/>
+
+	<script type="text/javascript">
+          $(function() { 
+                        $('#pm1').puimenu(); 
+			$('#umlrsmb').puimenubar();
+		}
+          ); 
+	</script>
+
+	{% block scriptjs %}{% endblock %}
+	{% block navjs %} {% endblock %}
+</head>
+
+<body>
+	<div id="header">
+		<p></p>
+		<a href="/home/"><img src="/media/images/logoUMlong.png" alt="Ustad_Mobile_UMCloud_logo" align=""/></a><i>    (v0.7.4)</i>
+		{% if current_user %}
+			{{current_user}}
+		{% endif %}
+	</div>
+	<p></p>
+	<div id="page">
+	<div id="sidebar">
+		{% block sidebar %}
+		<ul id="pm1">
+			<li><a data-icon="ui-icon-home" href="/home/">Home</a></li>
+			<li><a data-icon="ui-icon-wrench" href="/management/">Management</a></li>
+			<li><a data-icon="ui-icon-script" href="/umlrs/">LRS</a></li>
+			<!--<li><a data-icon="ui-icon-mail-closed" href="/messages/">Messaging</a></li>-->
+			<li><a data-icon="ui-icon-power" href="/logout/">Logout</a></li>
+		</ul>
+		{% endblock %}
+	</div>	<div id="content">
+        	<div id="navigate">
+		
+        <ul id="umlrsmb" >
+                <li><a href="{% url 'lrs.views.home' %}">UM LRS</a></li>
+                  {% if user.is_authenticated %}
+                      <li><a style="height:25px; width:auto;float:right;" href="{% url 'lrs.views.me' %}">{{user.username}}</a></li>
+                      <li><a style="height:25px; width:auto;" href="{% url 'logout' %}">logout</a></li>
+                  {% else %}<ul>
+                    <form action="{% url 'django.contrib.auth.views.login' %}" method="post" class="navbar-form pull-right">
+                      {% csrf_token %}
+                      <input class="span2" type="text" name="username" placeholder="Username">
+                      <input class="span2" type="password" name="password" placeholder="Password">
+                      <button type="submit" class="btn">Sign in</button>
+                    </form></ul>
+                  {% endif %}
+        </ul>
+        <br></br>
+
+
+			{%block toolbar%}{% endblock %}
+               		{%block navigate%}{% endblock %}
+        	</div>
+
+		{% block content %}{% endblock %}
+	</div>
+	</div>
+</body>
+</html>

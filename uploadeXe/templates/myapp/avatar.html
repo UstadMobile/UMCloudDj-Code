@@ -1,0 +1,71 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" class="ui-state-hover" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+
+
+{% block title %}Upload your picture {% endblock %}
+
+{% block scriptjs %} 
+<style>
+#ajaxSpinnerContainer {height:51px;}
+#ajaxSpinnerImage {display:none;}
+</style>
+<script type="text/javascript">
+	
+	$(document).ready(function(){
+    		$('#submit').click(function() {
+        		$('#ajaxSpinnerImage').show();
+    		});
+	});
+
+          $(function() { 
+                        $('#submit').puibutton(); 
+			$('#submit2').puibutton();
+			$('#ajaxSpinnerImage').puipanel();
+                }
+          ); 
+</script>
+{% endblock %}
+
+{% block content %}
+		<div id="ajaxSpinnerContainer" class="spinner">
+		<div id="ajaxSpinnerImage" title="Uploading your Picture">  
+			<img src="{{MEDIA_URL}}/spinner.gif" title="working...">
+                </div>  
+		</div>
+
+		<script type="text/JavaScript">
+		function TestFileType( fileName, fileTypes ) {
+			if (!fileName) return;
+			dots = fileName.split(".")
+			fileType = "." + dots[dots.length-1];
+			console.log("Type: " + fileType);
+			return (fileTypes.join(".").indexOf(fileType) != -1) ?
+			console.log('That file is OK!') : 
+			alert("Please only upload files that end in types: \n\n" + (fileTypes.join(" .")) + "\n\nPlease select a new file and try again.");
+		}
+		</script>	
+
+		<h3>Upload your picture</h3>
+		<form action="/upload_avatar/" method="post" enctype="multipart/form-data">
+			{% csrf_token %}
+			<p>{{ form.non_field_errors }}</p>
+			<p>{{ form.exefile.label_tag }} {{ form.exefile.help_text }}</p>
+			<p>
+				{{ form.exefile.errors }}
+				<input id="id_avatar" name="avatar" type="file" >
+				
+			</p>
+			
+			<button id="submit" type="submit" name="submittotable" value="upload">Upload</button>
+		</form>
+		<p></p>
+{% endblock %}

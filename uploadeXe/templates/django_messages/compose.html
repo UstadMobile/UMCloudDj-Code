@@ -1,0 +1,117 @@
+{% extends "django_messages/base.html" %} 
+{% load i18n %} 
+{% block scriptjs %}
+<script>
+   var countries2 = [{% for user in users%}
+                        "{{user.username}}",
+                {% endfor %}];
+		
+   var countries = [{% for user in users %}
+                        { "key" : "{{ user.id }}",
+                        "value": "{{user.username}}"
+                        },
+                {% endfor %}];
+
+
+   	$(function() {
+		function split( val ) {
+			return val.split( /,\s*/ );
+		}
+		function extractLast( term ) {
+			return split( term ).pop();
+		}
+
+		$( "#project-name" ).autocomplete({
+      minLength: 0,
+      source: countries,
+      focus: function( event, ui ) {
+        $( "#project-name" ).val( ui.item.value );
+        return false;
+      },
+	multiple: true,
+      select: function( event, ui ) {
+        $( "#project-name" ).val( ui.item.value );
+        $( "#project-id" ).val( ui.item.key );
+ 
+        return false;
+      } 
+	  });
+ 
+
+		$( "#id_to" )
+			// don't navigate away from the field on tab when selecting an item
+			.bind( "keydown", function( event ) {
+				if ( event.keyCode === $.ui.keyCode.TAB &&
+						$( this ).autocomplete( "instance" ).menu.active ) {
+					event.preventDefault();
+				}
+			})
+			.autocomplete({
+				minLength: 0,
+				source: function( request, response ) {
+					// delegate back to autocomplete, but extract the last term
+					response( $.ui.autocomplete.filter(
+						countries2, extractLast( request.term ) ) );
+				},
+				multiple: true,
+				focus: function() {
+					// prevent value inserted on focus
+					return false;
+				},
+				select: function( event, ui ) {
+					var terms = split( this.value );
+					// remove the current input
+					terms.pop();
+					// add the selected item
+					terms.push( ui.item.value );
+					// add placeholder to get the comma-and-space at the end
+					terms.push( "" );
+					this.value = terms.join( ", " );
+					return false;
+				}
+			});
+	});
+
+
+$(function() { 
+   $('#sendmessage').puibutton();  
+   $('#mb1').puimenubar(); 
+   $('#default').puipanel();
+   $('#id_recipient').puiinputtext(); 
+   $('#id_subject').puiinputtext();
+   $('#id_body').puiinputtextarea();
+   $('#id_recipient2').puiinputtext();
+   $('#to_recipient').puiautocomplete({  
+            completeSource: countries2,  
+            multiple: true,  
+            select: function(event, item) {  
+                $('#growl').puigrowl('show', [{severity: 'info', summary: 'User Selected', detail: item.data('label')}]);  
+            },  
+            unselect: function(event, item) {  
+                $('#growl').puigrowl('show', [{severity: 'info', summary: 'User Unselected', detail: item.data('label')}]);  
+            }  
+        });  
+  }); 
+
+</script>
+{% endblock %}
+{% block content %} 
+
+<div id="growl"></div>
+<h1>{% trans "Compose Message"%}</h1>
+
+<form id="composeform" name="composeform" action="" method="post">{% csrf_token %} 
+<table>
+<!--
+<div class="ui-widget">
+        <tr><th><label for="tags">To: </label></th><td><input id="id_to" name="to" style="height:30px;" size="50"></td></tr>
+</div>
+<tr><th><label for="id_subject">Subject:</label></th><td><input id="id_subject" maxlength="120" name="subject" type="text" required/></td></tr>
+<tr><th><label for="id_body">Body:</label></th><td><textarea cols="55" id="id_body" name="body" rows="12" required></textarea></td></tr>
+-->
+{{form.as_table}}
+</table>
+<button id="sendmessage" style="width:85px;background-image: url(/media/images/send.png); background-repeat: no-repeat; background-position: center left; text-align:right;" type="submit" name="sendmessage" value="Send">Send</button>
+</form>
+
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" class="ui-state-hover" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+                var all_packages = [{% for package in all_packages %}
+                        { "value" : "{{ package.id }}",
+			"label":"<a href=\"{{package.url}}\" target=\"_blank\">{{package.name}} (ID: {{package.id}})</a>"
+                        },
+                {% endfor %}];  
+                var assigned_packages = [{% for package in assigned_packages %}
+                        { "value" : "{{package.id }}",
+			"label":"<a href=\"{{package.url}}\" target=\"_blank\">{{package.name}}(ID: {{package.id}})</a>"
+                        },
+                {% endfor %}];
+
+		var all_students = [{% for student in all_students %}
+                        { "value" : "{{ student.id }}",
+			"label":"{{student.first_name}} {{student.last_name}} ({{student.username}})"
+                        },
+                {% endfor %}];  
+                var assigned_students = [{% for student in assigned_students %}
+                        { "value" : "{{student.id }}",
+                        "label":"{{student.first_name}} (ID: {{student.id}}, {{student.username}})"
+                        },
+                {% endfor %}];
+		
+		 var all_allclasses = [{% for allclass in all_allclasses %}
+                        { "value" : "{{ allclass.id }}",
+                        "label" : "{{allclass.allclass_name}}(ID: {{allclass.id}})"
+                        },
+                {% endfor %}];  
+                var assigned_allclasses = [{% for allclass in assigned_allclasses %}
+                        { "value" : "{{ allclass.id }}",
+                        "label" : "{{allclass.allclass_name}} (ID: {{allclass.id}})"
+                        },
+                {% endfor %}];
+
+
+                        $('#assignedallclasses').puipicklist({
+                                effect: 'clip',  
+                                showSourceControls: true,  
+                                showTargetControls: true,  
+                                sourceCaption: 'Available',  
+                                targetCaption: 'Selected',  
+                                filter: true,  	
+				filterMatchMode: 'contains',
+                                sourceData:all_allclasses,  
+                                targetData:assigned_allclasses,
+                                content: function(option) {  
+                                        return '<img src="/media/images/' + "class-small" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                         }  
+                        }); 
+
+
+
+			$('#assignedpackages').puipicklist({
+                                effect: 'clip',  
+                                showSourceControls: true,  
+                                showTargetControls: true,  
+                                sourceCaption: 'Available',  
+                                targetCaption: 'Selected',  
+                                filter: true,  
+				filterMatchMode: 'contains',
+                                sourceData:all_packages,  
+				transfer: function(event, ui) {  
+					console.log("0");
+					console.log(ui.from);
+
+            				//ui.from: Old list.  
+            				//ui.to: New list.  
+            				//ui.type: Type of transfer e.g. "dragdrop","button" and "command"  
+    				},
+                                targetData:assigned_packages,
+                                content: function(option) {  
+                                        return '<img src="/media/' + "package" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                         }  
+                        }); 
+
+			$('#assignedstudents').puipicklist({
+                                effect: 'clip',  
+                                showSourceControls: true,  
+                                showTargetControls: true,  
+                                sourceCaption: 'Available',  
+                                targetCaption: 'Selected',  
+                                filter: true,  
+				filterMatchMode: 'contains',
+                                sourceData:all_students,  
+                                targetData:assigned_students,
+                                content: function(option) {  
+                                        return '<img src="/media/' + "user" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                         }  
+                        }); 
+
+                        $('#id_name').puiinputtext();
+                        $('#id_description').puiinputtext();
+                        $('#id_category').puiinputtext();
+		        $('#id_price').puiinputtext();
+			
+                        $('#submit').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+{% block title %}Edit Course{% endblock %}
+{% block content %}
+
+<form method="post">{% csrf_token %}
+    <!--{{ form.as_p }}-->
+
+    <label>Course Name</label>
+	{{form.name}}
+    <p></p>
+    <label>Course Description</label>
+	{{form.description}}
+	<p></p>
+    <label>Course Category</label>
+	{{form.category}}
+	<p></p>
+    <!--<label>Course Price</label>
+	{{form.price}}
+	<p></p>-->
+    <p></p>
+
+    <h3>Assigned Blocks <a href="/uploadeXe/new"><i>(Upload New)</i></a></h3>
+        <div id="assignedpackages" >
+                <select multiple="multiple" id="source" name="source">
+                </select>
+                <select multiple="multiple" id="target" name="target">
+                </select>
+        </div>
+
+    <h3>Assigned Classes</h3>
+        <div id="assignedallclasses" >
+                <select multiple="multiple" id="source" name="source">
+                </select>
+                <select multiple="multiple" id="target3" name="target3">
+                </select>
+        </div>
+    <h3>Assigned Individual Students</h3>
+        <div id="assignedstudents" >
+                <select multiple="multiple" id="source" name="source">
+                </select>
+                <select multiple="multiple" id="target2" name="target2">
+                </select>
+        </div>
+
+    <p></p>
+    <button id="submit" type="submit" name="submit" value="Create">Submit</button>
+</form>
+
+{% endblock %}

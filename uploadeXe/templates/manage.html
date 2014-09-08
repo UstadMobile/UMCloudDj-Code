@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block scriptjs %}
+<style>
+#blocks {
+    background-image: url(/media/images/package.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: center;
+}
+
+#courses {
+    background-image: url(/media/images/course.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: center;
+}
+
+#usertable {
+    background-image:url(/media/images/users.png);
+    background-repeat: no-repeat;
+    background-position: center left; 
+    text-align: center;
+}
+#allclasstable {
+    background-image:url(/media/images/class.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: center;
+}
+#schooltable {
+    background-image:url(/media/images/school.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: center;
+}
+#orgtable {
+background-image:url(/media/system-settings.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: center;
+}
+#myorg {
+background-image:url(/media/system-settings.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: center;
+}
+
+
+</style>
+<script type="text/javascript">
+          $(function() { 
+                        $('#roletable').puibutton(); 
+			$('#usertable').puibutton(); 
+			$('#orgtable').puibutton(); 
+			$('#umpackagetable').puibutton(); 
+			$('#schooltable').puibutton(); 
+			$('#allclasstable').puibutton(); 
+			$('#dynatableroles').puibutton();
+			$('#courses').puibutton();
+			$('#myorg').puibutton();
+			$('#blocks').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+
+{% block content %}
+<h2>Management</h2> <!--<img src="/media/images/user-home.png" align="right">-->
+     <div id="toolbarbottom" class="toolbar" >
+	<ul>
+		<!--<a href="/rolestable/"><button id="roletable" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;" >Manage Roles</button></a>-->
+		<a href="/userstable/"><button id="usertable" type="button" style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Users</button></a>
+		{% if superadmin_role == True %}
+			<a href="/organisationstable/"><button id="orgtable" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Organisations</button></a>
+        	{% endif %}
+
+		<!--<a href="/umpackagestable/"><button id="umpackagetable" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Manage Subscription</button></a>-->
+		<a href="/schoolstable/"><button id="schooltable" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Schools</button></a>
+		<a href="/allclassestable/"><button id="allclasstable" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Classes</button></a>
+		<a href="/uploadeXe/manage/"><button id="blocks" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+		<a href="/uploadeXe/managecourses/"><button id="courses" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Courses</button></a>
+		{% if orgadmin_role == True %}
+                        <a href="/myorganisation/"><button id="myorg" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">My Organisation</button></a>
+                {% endif %}
+		
+
+	</ul>
+    </div>
+
+{% endblock %}

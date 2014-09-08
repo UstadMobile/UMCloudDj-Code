@@ -1,0 +1,60 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" class="ui-state-hover" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+
+
+{% block title %}Block List {% endblock %}
+
+{% block scriptjs %} 
+<script type="text/javascript">
+          $(function() { 
+                        $('#newelp').puibutton(); 
+			$('#manageelp').puibutton();
+			$('#managecourses').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+
+{% block content %}
+		
+		<script type="text/JavaScript">
+		function TestFileType( fileName, fileTypes ) {
+			if (!fileName) return;
+			dots = fileName.split(".")
+			fileType = "." + dots[dots.length-1];
+			console.log("Type: " + fileType);
+			return (fileTypes.join(".").indexOf(fileType) != -1) ?
+			console.log('That file is OK!') : 
+			alert("Please only upload files that end in types: \n\n" + (fileTypes.join(" .")) + "\n\nPlease select a new file and try again.");
+		}
+		</script>	
+
+		<i>List of your uploaded Blocks. Click to view online</i>
+		<!-- List of uploaded documents -->
+		{% if documents %}
+			<ul>
+			{% for document in documents %}
+				<li style="list-style-type: none;"><img src="{{ MEDIA_URL}}images/education-edutainment-2.png"/><a href="{{ document.url }}" target="_blank">&nbsp;{{ document.name }}</a></li>
+				<dd>
+					<li>Bloack ID: {{ document.id }}</li>
+				</dd>
+			{% endfor %}
+			</ul>
+		{% else %}
+			<p>No Blocks uploaded. Click on Upload New to upload a new eXe block.</p>
+		{% endif %}
+
+		<p></p>
+		<a href="/uploadeXe/new"><button id="newelp" type="button">Upload New</button></a>
+		<a href="/manageeXe/"><button id="manageelp" type="button">Manage Above</button></a>
+		<a href="/managecourses/"><button id="managecourses" type="button">Manage Courses</button></a>
+{% endblock %}

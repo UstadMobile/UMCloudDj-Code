@@ -1,0 +1,61 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" class="ui-state-hover"  type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+                        $('#school_name').puiinputtext();
+                        $('#school_desc').puiinputtext();
+                        $('#organisation').puidropdown();
+                        $('#submit').puibutton();
+			$('#submit2').puibutton();
+
+			$('#notifyme').puigrowl();                  
+        			addMessage = function(msg) {  
+            				$('#notifyme').puigrowl('show', msg);  
+        			}  
+        		}); 
+	function codeAddress() {
+		var state="{{state}}"
+		addMessage([{severity: 'info', summary: state, detail: ''}]);
+        }
+	var state="{{state}}";
+	if(state){
+		window.onload = codeAddress;
+	}
+</script>
+{% endblock %}
+
+{% block title %}Add a School {% endblock %}
+{% block content %}
+
+<div id="notifyme"></div>
+
+<form id="newschoolform" method="post">{% csrf_token %}
+    <h1>Create a New School</h1>
+    <div data-role="fieldcontain">
+        <label for="school_name">School Name:  </label><input type="text" name="school_name" id="school_name" value="" />
+    </div>
+    <div data-role="fieldcontain">
+        <label for="school_desc">School Desc:  </label><input type="text" name="school_desc" id="school_desc" value="" />
+    </div>
+   <!--<label>Organisation:</label> <select id="organisation" form="newschoolform" name="organisationid">
+        {% for organisation in object_list %}
+        <option value="{{ organisation.id }}">{{ organisation.organisation_name }}</option>
+        {% endfor %}
+   </select>-->
+   <br></br>
+    <button id="submit" type="submit" name="submittotable" value="Create">Save</button>
+    <button id="submit2" type="submit" name="submittonew" value="Create">Save and Create another</button>
+</form>
+
+
+{% endblock %}

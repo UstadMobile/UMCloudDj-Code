@@ -1,0 +1,72 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" class="ui-state-hover" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+
+{% block title %}Manage Blocks{% endblock %}
+{% block content %}
+<style>
+#newelp {
+    background-image: url(/media/images/plus.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: right;
+    padding-left: 10px;
+}
+
+</style>
+
+<script type="text/javascript">
+  $(function() { 
+    $('#newelp').puibutton();
+    $('#viewelp').puibutton();
+    $('#tblelps').puidatatable({
+            caption: 'Blocks',
+            paginator: {
+                rows: 10
+            },
+            columns: [
+                {field:'name', headerText: 'Name', sortable:true},
+		{field:'pub_date', headerText: 'Published', sortable:true},
+		//{field:'url', headerText: 'URL', sortable:true},
+ 		{field:'publisher',headerText: 'Publisher', sorttable:true},
+
+
+            ],
+            datasource: [
+                {% if courses_as_json %}
+                        {% for c in courses_as_json %}
+                        {"pk":"{{c.pk}}", "exefile":"{{c.fields.exefile}}","name":"{{c.pk}}: {{c.fields.name}}", "pub_date":"{{c.fields.pub_date}}","url":"{{c.fields.url}}","publisher":"{{c.fields.publisher}}","success":"{{c.fields.success}}"}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                {% endif %}
+                ],
+            selectionMode: 'single',
+            rowSelect: function(event, data) {
+                $('#messages').puigrowl('show', [{severity:'info', summary: 'Row Selected', detail: (data.school_name + ' ' + data.pk)}]);
+                var edit="/uploadeXe/edit/"+data.pk;
+                window.open(edit, "_self");
+            },
+            rowUnselect: function(event, data) {
+                //$('#messages').puigrowl('show', [{severity:'info', summary: 'Row Unselected', detail: (data.brand + ' ' + data.vin)}]);
+            }
+   });
+  }
+  ); 
+
+
+</script>
+<a href="/uploadeXe/new"><button id="newelp" type="button">Upload New</button></a>
+<a href='/uploadeXe/'><button id="viewelp" type="button">View Blocks</button></a>
+<p></p>
+<i>Click an entry to edit the block</i>
+<div id="tblelps"> </div>
+<p></p>
+                                                                             
+{% endblock %}

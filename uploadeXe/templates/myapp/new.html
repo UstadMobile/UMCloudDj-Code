@@ -1,0 +1,133 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" class="ui-state-hover" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+
+
+{% block title %}Upload eXe course Block {% endblock %}
+
+{% block scriptjs %} 
+<style>
+#ajaxSpinnerContainer {height:51px;}
+#ajaxSpinnerImage {display:none;}
+</style>
+<script type="text/javascript">
+	
+	$(document).ready(function(){
+    		$('#submit').click(function() {
+        		$('#ajaxSpinnerImage').show();
+    		});
+	});
+
+          $(function() { 
+			var students_map = [{% for student in student_list %}
+                        { "value" : "{{ student.id }}",
+                        "label" : "{{student.first_name}}({{student.username}})"
+                        },
+                {% endfor %}];
+			var all_courses = [{% for course in all_courses %}
+                        {"value": "{{course.id}}",
+                        "label": "<a href=\"/uploadeXe/courseedit/{{course.id}} \" target=\"_blank\">{{course.name}} (ID: {{course.id}})</a>"
+                        },
+                        {% endfor %}
+                        ];
+          $(function() { 
+			$('#assignedcourses').puipicklist({
+                                effect: 'clip',  
+                                showSourceControls: true,  
+                                showTargetControls: true,  
+                                sourceCaption: 'Available',  
+                                targetCaption: 'Selected',  
+                                filter: true,  
+				filterMatchMode: 'contains',
+                                sourceData:all_courses,  
+                                content: function(option) {  
+                                        return '<img src="/media/images/' + "course-small" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                         }  
+                        }); 
+                        $('#selectstudentsfornewallclass').puipicklist({  
+                                		effect: 'clip',  
+                                		showSourceControls: true,  
+                                		showTargetControls: true,  
+                                		sourceCaption: 'Available',  
+                                		targetCaption: 'Selected',  
+                                		filter: true,  
+						filterMatchMode: 'contains',
+                                		sourceData:students_map,  
+                                		content: function(option) {  
+                                        		return '<img src="/media/' + "user" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                		}  
+                        		});  
+				
+                		}
+          	); 
+                        $('#submit').puibutton(); 
+			$('#submit2').puibutton();
+			$('#ajaxSpinnerImage').puipanel();
+                }
+          ); 
+</script>
+{% endblock %}
+
+{% block content %}
+
+		<div id="ajaxSpinnerContainer" class="spinner">
+		<div id="ajaxSpinnerImage" title="Uploading your Block">  
+			<img src="{{MEDIA_URL}}/spinner.gif" title="working...">
+                </div>  
+		</div>
+
+		<script type="text/JavaScript">
+		function TestFileType( fileName, fileTypes ) {
+			if (!fileName) return;
+			dots = fileName.split(".")
+			fileType = "." + dots[dots.length-1];
+			console.log("Type: " + fileType);
+			return (fileTypes.join(".").indexOf(fileType) != -1) ?
+			console.log('That file is OK!') : 
+			alert("Please only upload files that end in types: \n\n" + (fileTypes.join(" .")) + "\n\nPlease select a new file and try again.");
+		}
+		</script>	
+
+		<h3>1. Choose your file</h3>
+		<!-- Upload form. Note enctype attribute! -->
+		<form action="{% url "list" %}" method="post" enctype="multipart/form-data">
+			{% csrf_token %}
+			<p>{{ form.non_field_errors }}</p>
+			<p>{{ form.exefile.label_tag }} {{ form.exefile.help_text }}</p>
+			<p>
+				{{ form.exefile.errors }}
+				<!--{{ form.exefile }}-->
+				<input id="id_exefile" name="exefile" type="file" accept=".elp" >
+				
+			</p>
+			
+		        <!--<h3>2. Select Students Picklist</h3>
+			<div id="selectstudentsfornewallclass" >
+    				<select multiple="multiple" id="source" name="source">
+    				</select>
+    				<select multiple="multiple" id="target" name="target">
+    				</select>
+			</div>-->
+		        <h3>2. Add Block to Course:</h3>
+        		<div id="assignedcourses" >
+                		<select multiple="multiple" id="source" name="source">
+                		</select>
+                		<select multiple="multiple" id="target2" name="target2">
+                		</select>
+        		</div>
+			<p></p>
+			<h3>3. Click Upload</h3>
+			<button id="submit" type="submit" name="submittotable" value="upload">Upload</button>
+    			<button id="submit2" type="submit" name="submittonew" value="Create">Upload and Create another</button>
+			<img src="/media/images/address-book-new-3-medium.png" align="right">
+		</form>
+		<p></p>
+{% endblock %}

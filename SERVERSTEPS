@@ -1,0 +1,40 @@
+Get UMCloudDj:
+
+#Dependencies
+sudo apt-get install apache2
+sudo apt-get install python
+sudo-apt get install python-pip
+sudo pip install Django
+sudo pip install requests
+sudo apt-get install tree
+sudo apt-get install git
+sudo apt-get -f install
+sudo apt-get install sqlite3
+sudo apt-get install build-essential
+sudo apt-get update
+
+
+cd /srv/ (for example)
+git clone ssh://varunasingh@git.code.sf.net/p/ustadmobil/code-umclouddjango UMCloudDjango
+cd UMCloudDjango
+python manage.py syncdb (You will have to create a super user)
+python manage.py runserver ip:800
+
+To get eXe:
+cd /opt/ (for example)
+git clone https://forja.cenatic.es/anonscm/git/iteexe/iteexe.git -b toughramobile
+cd /opt/iteexe/installs/debian/ubuntu
+sudo apt-get these things:
+Build-Depends-Indep: debhelper (>= 5.0.38), python-support (>=0.5.3), python-all-dev (>= 2.6), python-setuptools, python-git
+Depends: ${python:Depends}, python-setuptools, python-zopeinterface (>=3.0.0-6) | python-zope.interface, python-imaging, python-chardet, python-lxml, www-browser
+
+sudo pip install coverage
+
+(from file: /opt/iteexe/debian/control)
+
+easy_install gitpython
+
+then check:
+which exe_do
+
+

@@ -1,0 +1,28 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" class="ui-state-hover"  type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+{% block title %}Manage Schools{% endblock %}
+{% block content %}
+
+<h1>Schools</h1>
+<ul>
+    {% for school in object_list %}
+    <li>{{ school.id }}  :  
+    <a href="{% url "school_edit" school.id %}">{{ school.school_name }} </a> ({{school.school_desc}})
+    of Organisation: {{ school.organisation.organisation_name }}
+    <a href="{% url "school_delete" school.id %}">  (Delete)</a>
+    </li>
+    {% endfor %}
+</ul>
+
+<a href="{% url "school_new" %}">New</a>
+
+{% endblock %}

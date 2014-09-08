@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Generate a Statement Report {% endblock %}
+{% block content %}
+{% if form.errors %}
+    <p class="error"> Sorry, that is not a valid selection</p>
+{% endif %}
+
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+			$('#since_1').puiinputtext();
+			$('#until_1').puiinputtext();
+			$('#submit').puibutton();
+			
+                }
+          ); 
+        </script>
+{% endblock %}
+
+<p></p>
+<i>Select the filters below to generate a report</i>
+<p></p>
+{% load templatetags %}
+
+<form action="/reports/chartjstest/" method="POST"> {% csrf_token %}
+
+    <div style="padding-bottom:10px;">
+        <!--Since:-->
+	<input type="text" name="since_1" id="since_1" style="height: 30px; width: 250px;" placeholder="Since" value="" required/>*
+    </div>
+
+    <div style="display: none;">
+    <input type="text" name="since_1_alt" id="since_1_alt" value="" style="cursor: pointer;">
+    </div>
+
+    <div style="padding-bottom:10px;">
+        <!--Until:&nbsp;&nbsp;-->
+	<input type="text" name="until_1" id="until_1" style="height: 30px; width: 250px;" placeholder="Until"  value="" required/>*
+    </div>
+
+    <div style="display: none;">
+        <input type="text" name="until_1_alt" id="until_1_alt" value="" style="cursor: pointer;">
+    </div>
+    <!--<div data-role="fieldcontain">
+        <label for="activity">Activity:</label><input type="text" name="activity" id="activity" value="" />
+    </div>-->
+
+	{% all_students_select %}
+
+
+    <p></p>
+    <button id="submit" type="submit" name="submit" value="submit-value">Submit</button>
+</form>
+
+<script>
+
+	$('#since_1').datetimepicker({
+		altField: "#since_1_alt",
+		altFieldTimeOnly: false,
+		altFormat: "yy-mm-dd",
+		altTimeFormat: "h:m",
+		altSeparator: "T"
+	});
+	$('#until_1').datetimepicker({
+                altField: "#until_1_alt",
+                altFieldTimeOnly: false,
+                altFormat: "yy-mm-dd",
+                altTimeFormat: "h:m",
+                altSeparator: "T",
+		maxDate: "2",
+
+	});
+</script>
+
+{% endblock %}

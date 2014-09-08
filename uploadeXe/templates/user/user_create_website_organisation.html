@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block navigate %}
+{% endblock %}
+
+{% block title %}UstadMobile App Unit Test Report {% endblock %}
+{% block content %}
+{% if form.errors %}
+    <p class="error"> Sorry, that is not a valid entry</p>
+{% endif %}
+
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+			$('#username').puiinputtext();
+			$('#email').puiinputtext();
+			$('#password').puiinputtext();
+			$('#passwordagain').puiinputtext();
+			$('#first_name').puiinputtext();
+			$('#address').puiinputtext();
+			$('#last_name').puiinputtext();
+			$('#website').puiinputtext();
+			$('#phonenumber').puiinputtext();
+			$('#job_title').puiinputtext();
+			$('#company_name').puiinputtext();	
+			$('#submit').puibutton();
+			$('#createuser').puipanel();
+			$('#gender').puidropdown();
+			$('#dateofbirth').puiinputtext();
+			$( ".dobdatepicker" ).datepicker({
+      				changeMonth: true,
+      				changeYear: true,
+      				yearRange: "1900:2012",
+      				// You can put more options here.
+    			});
+			$('#organisationrequest').puiinputtext();
+                	$('#notifytop').puinotify('show', '<h1>{{secure}}</h1>');  
+                }
+          ); 
+
+  $(function() {
+    $( ".datepicker" ).datepicker({
+      changeMonth: true,
+      changeYear: true,
+      yearRange: "1900:2012",
+    });
+  });
+</script>
+{% endblock %}
+{% if state == "Valid code" %}
+<p style="color:green;"><i>Code: {{organisationalcode}} ({{organisation_name}})</i></p>
+{% else %}
+<p class="error" style="color:red;"><i>{{state}}</i></p>
+{% endif %}
+
+<div id="notifytop"></div>
+<form action="/signup/" id="newuserform" method="post">{% csrf_token %}
+    <div id="createuser" title="Create a New {{organisation_name}} User">
+    <p></p>
+
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+	<input type="text" name="username" id="username" placeholder="Username" style="height: 30px; width: 250px;" value="" required/>*
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+	<input type="email" name="email" id="email" placeholder="Email" style="height: 30px; width: 250px;" value="" />
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+	<input type="password" name="password" id="password" placeholder="Password" style="height: 30px; width: 250px;" value="" required/>*
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <input type="password" name="passwordagain" id="passwordagain" placeholder="Enter Password Again" style="height: 30px; width: 250px;" value="" required/>*
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+	<input type="text" name="first_name" id="first_name" placeholder="First Name" style="height: 30px; width: 250px;" value="" required/>*
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+	<input type="text" name="last_name" id="last_name" placeholder="Last Name" style="height: 30px; width: 250px;" value="" required/>*
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+	<input type="text" name="website" id="website" placeholder="Website" style="height: 30px; width: 250px;" value="" />
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+	<input type="text" name="job_title" id="job_title" placeholder="Job Title" style="height: 30px; width: 250px;" value="" />
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+	<input type="text" name="company_name" id="company_name" placeholder="Company Name" style="height: 30px; width: 250px;" value="" />
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <input type="text" name="dateofbirth" id="dateofbirth" class="dobdatepicker" placeholder="Date of Birth" style="height: 30px; width: 250px;" value="" required/>*
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+        <input type="text" name="address" id="address" placeholder="Address/Location" style="height: 30px; width: 250px;" value="" />
+    </div>
+     <div data-role="fieldcontain" style="padding-bottom:5px">
+        <input type="tel" name="phonenumber" id="phonenumber" placeholder="Phone Number" style="height: 30px; width: 250px;" value="" />*
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+    <input type="hidden" placeholder="Organisation Code" style="height: 30px; width: 250px;" id="organisationrequest" name="organisationrequest" value={{organisationalcode}} readonly/> <i></i>
+    </div>
+    <div data-role="fieldcontain" style="padding-bottom:5px">
+    <label>Gender:</label> <select id="gender" form="newuserform" name="gender">
+                <option value="M">Male</option>
+                <option value="F">Female</option>
+    </select>*
+    </div>
+
+    <p></p>
+	 <button id="submit" type="submit" name="submit" value="Create">Request my account</button>
+    </div>
+</form>
+
+
+<!--
+<form method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Submit" />
+</form>
+-->
+
+{% endblock %}

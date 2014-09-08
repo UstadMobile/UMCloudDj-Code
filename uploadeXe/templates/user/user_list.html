@@ -1,0 +1,36 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" class="ui-state-hover" type="button" style="width:149px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+
+{% block title %}UstadMobile App Unit Test Report {% endblock %}
+{% block content %}
+
+<h1>Users</h1>
+Format:
+<ul>
+<li>ID: EMAIL (ROLE) Organisation (Delete option)</li>
+</ul>
+<ul>
+	{% for user, role, organisation in object_list %}
+	   <li>{{ user.id }}  :
+		<a href="{% url "user_edit" user.id %}">{{ user.username }}</a>
+    		<a>({{ role.role_name}} )</a>
+		<a> {{ organisation.organisation_name }}</a>
+    		<a href="{% url "user_delete" user.id %}">  (Delete)</a>
+    	   </li>
+
+	{% endfor %}
+
+</ul>
+
+<a href="{% url "user_new" %}">New</a>
+
+{% endblock %}

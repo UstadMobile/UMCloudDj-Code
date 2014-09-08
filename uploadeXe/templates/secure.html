@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block scriptjs %}
+<style>
+#management {
+    background-image: url(/media/system-settings.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: right;
+}
+
+#reports {
+    background-image:url(/media/office-chart-area-stacked.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: right;
+}
+#messaging{
+background-image:url(/media/images/messaging.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: right;
+}
+
+</style>
+<script type="text/javascript">
+          $(function() { 
+                        $('#courses').puibutton(); 
+			$('#management').puibutton();
+			$('#reports').puibutton();
+			$('#messaging').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+
+{% block content %}
+<h2>Welcome to Ustad Mobile Cloud</h2> <!--<img src="/media/images/user-home.png" align="right">-->
+<p><i>You are logged in. Here is what you can do</i></p> 
+     <div id="toolbarbottom" class="toolbar" >
+	<ul>
+                <!--<a href="/upload/"><button id="courses" type="button"style="width:200px;height:100px">Courses</button></a>-->
+		<a href="/management/"><button id="management" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Management</button></a>
+		<a href="/reports/"><button id="reports" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Get reports</button></a>
+		<!--<a href="/messages/"><button id="messaging" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Messaging</button></a>-->
+		<br></br>
+
+	</ul>
+    </div>
+
+{% endblock %}

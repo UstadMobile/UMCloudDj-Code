@@ -1,0 +1,132 @@
+{% extends "managebase.html" %}
+{% block title %}Add a Class {% endblock %}
+
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" class="ui-state-hover" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+
+
+{% block scriptjs %}
+<script type="text/javascript">
+	var map_students = [{% for student in student_list %}"{{student.id}}|{{ student|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+	var students_map = [{% for student in student_list %}
+			{ "value" : "{{ student.id }}",
+			"label" : "{{student.first_name}} {{student.last_name}} ({{student.username}})"
+			},
+		{% endfor %}];
+          $(function() { 
+			$('#class_name').puiinputtext();
+        		$('#class_desc').puiinputtext();
+        		$('#class_location').puiinputtext();
+			$('#school').puidropdown();
+			$('#teacher').puidropdown();
+			$('#submit').puibutton();
+			$('#submit2').puibutton();
+
+			$('#selectstudentsfornewallclass').puipicklist({  
+    				effect: 'clip',  
+    				showSourceControls: true,  
+    				showTargetControls: true,  
+    				sourceCaption: 'Available',  
+    				targetCaption: 'Selected',  
+				filterMatchMode: 'contains',
+    				filter: true,  
+    				sourceData:students_map,  
+    				content: function(option) {  
+        				return '<img src="/media/' + "user" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+    				}  
+			});  
+                }
+          ); 
+	var course_map = [	
+			{% for course in course_list %}
+				{
+				"value":"{{course.id}}",
+				"label":"{{course.name}} (ID: {{course.id}})"
+				},
+			{% endfor %}
+			];
+	$(function() { 
+                        $('#selectcoursesfornewallclass').puipicklist({  
+                                effect: 'clip',  
+                                showSourceControls: true,  
+                                showTargetControls: true,  
+                                sourceCaption: 'Available',  
+                                targetCaption: 'Selected',  
+                                filter: true,  
+				filterMatchMode: 'contains',
+                                sourceData:course_map,  
+                                content: function(option) {  
+                                        return '<img src="/media/images/' + "course-small" + '.png" alt="" /><span style="">' + option.label.replace(/^\s+|\s+$/g, '') + '</span>';  
+                                }  
+                        });  
+                }
+          ); 
+
+</script>
+{% endblock %}
+
+{% block content %}
+{% if state %}
+                {% if statesuccess == 1 %}
+                        <p style="color:green;"><i><img src="/media/images/tick.png" alt="">{{state}}<i></p>
+                {% else %}
+                        <p cass="error" style="color:red;"><i>{{state}}</i></p>
+                {% endif %}
+        {% endif %}
+
+<form id="newclassform" method="post">{% csrf_token %}
+    <h1>Create a New Class</h1>
+    <div data-role="fieldcontain">
+        <label for="class_name">Class Name:  </label><input type="text" name="class_name" id="class_name" value="" />
+    </div>
+    <div data-role="fieldcontain">
+        <label for="class_desc">Class Desc:  </label><input type="text" name="class_desc" id="class_desc" value="" />
+    </div>
+    <div data-role="fieldcontain">
+        <label for="class_location">Class Location:  </label><input type="text" name="class_location" id="class_location" value="" />
+    </div>
+   <label>School:</label> <select id="school" form="newclassform" name="schoolid">
+        {% for school in object_list %}
+        <option value="{{ school.id }}">{{ school.school_name }}</option>
+        {% endfor %}
+   </select><!--<a href="/schoolnew/">Create an associative school first</a> </i>-->
+   <p></p>
+   <label>Teacher:</label> <select id="teacher" form="newclassform" name="teacherid">
+        	{% for teacher in teacher_list %}
+        	<option value="{{ teacher.id }}">{{ teacher.first_name }} {{teacher.last_name}} </option>
+        	{% endfor %} 
+   </select>
+   <!--<i><a href="/usernew/"> Click here to create a new user</a> </i>-->
+	
+   <p></p>
+   <h3>Students:</h3>  
+<div id="selectstudentsfornewallclass" >  
+    <select multiple="multiple" id="source" name="source">  
+    </select>  
+    <select multiple="multiple" id="target" name="target">  
+    </select>  
+</div>  
+   <p></p>
+   <h3>Courses:</h3>         
+<div id="selectcoursesfornewallclass" >
+    <select multiple="multiple" id="source" name="source">
+    </select>
+    <select multiple="multiple" id="target2" name="target2">
+    </select>
+</div>
+
+   <br></br>
+    <button id="submit" type="submit" name="submittotable" value="Create">Save</button>
+    <button id="submit2" type="submit" name="submittonew" value="Create">Save and Create another</button>
+</form>
+
+
+{% endblock %}

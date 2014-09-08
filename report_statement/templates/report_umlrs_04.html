@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{pagetitle}}{% endblock %}
+{% block scriptjs %}
+<style>
+</style>
+<script type="text/javascript">
+
+          $(function() { 
+			$('#rd1').puiradiobutton();
+			$('#uncheckradio').puibutton();
+			$('#submit').puibutton();
+			var newtypeid="{{newtypeid}}";
+                        $('#{{newtypeid}}').puibutton(); 
+			$(function() { 
+        			$('#{{tabletypeid}}').dynatable({
+					features: {
+        					paginate: true,
+        					search: true,
+        					recordCount: true,
+						sorting: true,
+						
+      					},
+        				dataset: {
+        				records:[
+                				{% if object_list %}
+                        				{% for c in object_list %}
+								{"user":"{{c.user.first_name}} {{c.user.last_name}}","activity_verb":"{{c.verb.get_display}}","activity_type":"{{c.object_activity.get_a_name}}","timestamp":"{{c.timestamp}}","duration":"{{c.get_r_duration}}"}{% if not forloop.last %},{% endif %}
+                        				{% endfor %}
+                				{% endif %}
+                				]
+        				}
+    				});
+  			});
+
+	});
+</script>
+{% endblock %}
+{% block content %}
+{% if state %}
+<p class="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+<h3><i>My statements</i></h3>
+<p></p>
+<table id="{{tabletypeid}}">
+  <thead>
+    {% for d, f in table_headers_html %}
+	<th data-dynatable-column="{{d}}" >{{f}}</th>
+    {% endfor %}
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+{% endif %}
+
+<br></br>
+
+
+
+{% endblock %}

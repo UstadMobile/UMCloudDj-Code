@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<i>You are logged in. Here is what you can do</i>
+	<ul>
+		<img src="/media/images/user-home.png" align="right">
+		<li><a href="/myapp/">Upload eXe elp files</a></li>
+		<li><a href="/logout/">Logout</a></li>
+	</ul>
+
+{% endblock %}

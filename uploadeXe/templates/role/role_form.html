@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}UstadMobile App Unit Test Report {% endblock %}
+
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+                        $('#id_role_name').puiinputtext(); 
+			$('#id_role_desc').puiinputtext();
+			$('#submit').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+
+{% block content %}
+
+<form method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <button id="submit" type="submit" name="submit" value="submit-value">Submit</button>
+</form>
+
+{% endblock %}

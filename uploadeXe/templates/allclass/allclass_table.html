@@ -1,0 +1,77 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" class="ui-state-hover" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+<hr>
+<p></p>
+{% endblock %}
+{% block scriptjs %}
+<style>
+#newallclass {
+    background-image: url(/media/images/plus.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: right;
+    padding-left: 10px;
+}
+
+</style>
+
+<script type="text/javascript">
+          $(function() { 
+                        $('#newallclass').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+{% block title %}Manage Classes{% endblock %}
+{% block content %}
+
+    <script type="text/javascript">
+  $(function() { 
+    $('#tblallclasses').puidatatable({
+            caption: 'Classes',
+            paginator: {
+                rows: 10 
+            },
+            columns: [
+                //{field:'pk', headerText: 'ID', sortable:true},
+                //{field:'model', headerText: 'Django Model', sortable:true},
+                {field:'allclass_name', headerText: 'Class Name', sortable:true},
+                {field:'allclass_desc', headerText: 'Description', sortable:true},
+                {field:'allclass_location', headerText: 'Location', sortable:true},
+		{field:'school', headerText: 'School', sortable:true},
+
+            ],
+            datasource: [
+                {% if allclasses_as_json %}
+                        {% for c in allclasses_as_json %}
+                        {"pk":"{{c.pk}}","allclass_name":"{{c.pk}}: {{c.fields.allclass_name}}","allclass_desc":"{{c.fields.allclass_desc}}", "allclass_location":"{{c.fields.allclass_location}}","school":"{{c.fields.school}}"}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                {% endif %}
+                ],
+            selectionMode: 'single',
+            rowSelect: function(event, data) {
+                console.log("Wassup?")
+                $('#messages').puigrowl('show', [{severity:'info', summary: 'Row Selected', detail: (data.allclass_name + ' ' + data.pk)}]);
+                var edit="/allclassedit/"+data.pk;
+                window.open(edit, "_self");
+            },
+            rowUnselect: function(event, data) {
+                //$('#messages').puigrowl('show', [{severity:'info', summary: 'Row Unselected', detail: (data.brand + ' ' + data.vin)}]);
+            }
+   });
+  }
+  ); 
+
+
+</script>
+<a href="/allclassnew/"><button id="newallclass" type="button">New Class</button></a>
+<!--<i>Click a row to edit the Class</i>-->
+<p></p>
+<div id="tblallclasses"> </div>
+                                                                             
+{% endblock %}
