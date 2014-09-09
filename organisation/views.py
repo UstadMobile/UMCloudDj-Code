@@ -254,6 +254,12 @@ def organisation_delete(request, pk, template_name='organisation/organisation_co
     if (request.user.is_staff==True):
 	organisation = get_object_or_404(Organisation, pk=pk)
     	if request.method=='POST':
+		users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
+		print("Marking organisation's users inactive.")
+		for user in users:
+			user.is_active = False
+			user.save()
+		print("Deleting organisation..")
         	organisation.delete()
         	return redirect('organisation_table')
     	return render(request, template_name, {'object':organisation})

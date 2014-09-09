@@ -1,3 +1,8 @@
+v0.8.5
+- Fixed bug in deleting organisation makes organisation users suspended with no organisations. changed code to mark deleted organisatin's users as inactive. 
+- Added super user view of user table: Now a the superuser/staff of the project can see all users in the database. 
+- Code clean up (print statements)
+
 v0.8.4
 - Updated production server and migrated to postgres.
 - Tested prod server okay.
