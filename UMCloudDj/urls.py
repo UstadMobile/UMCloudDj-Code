@@ -42,6 +42,8 @@ urlpatterns = patterns('',
 	url(r'^reports/chartjstest_selection/$','report_statement.views.chartjs_test_selection'),
 	url(r'^reports/chartjstest/$','report_statement.views.chartjs_test'),
 	url(r'^allclass/(?P<allclassid>[-\w]+)/allclasse_students/$', 'report_statement.views.allclasse_students'),
+	url(r'^reports/usagereport_selection/$', 'report_statement.views.usagereport_selection', name='usage_report_selection'),
+	url(r'^reports/usagereport/$', 'report_statement.views.usage_report'),
 
 	#url(r'^testelpfiles/$', 'UMCloudDj.views.testelpfiles_view', name='testelpfiles'),
 	#url(r'^selectelptest/$', 'UMCloudDj.views.elptestresults_selection_view', name='showelptestresults_selection'),

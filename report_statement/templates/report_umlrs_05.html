@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{{pagetitle}}{% endblock %}
+{% block scriptjs %}
+<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart.js" %}"></script>
+<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart-config.js" %}"></script>
+<script type="text/javascript">
+          $(function() { 
+                        var newtypeid="{{newtypeid}}";
+                        $('#{{newtypeid}}').puibutton(); 
+                        $(function() { 
+                                $('#{{tabletypeid}}').dynatable({
+                                        features: {
+                                                paginate: true,
+                                                search: true,
+                                                recordCount: true,
+                                                sorting: true,
+                                                
+                                        },
+                                        dataset: {
+                                        records:[
+                                                {% if yaxis %}
+                                                        {% for l,u,d in yaxis  %}
+                                                                {"user":"{{l}}","duration":"{{d}}"}{% if not forloop.last %},{% endif %}
+                                                        {% endfor %}
+                                                {% endif %}
+                                                ]
+                                        }
+                                });
+                        });
+
+        });
+
+
+
+var prevcolor="";
+function getRandomColor() {
+    var letters = '0123456789ABCDEF'.split('');
+    var color = '#';
+    for (var i = 0; i < 6; i++ ) {
+        color += letters[Math.floor(Math.random() * 16)];
+    } 
+    prevcolor=color;
+    return color;
+}
+$(function() {
+	// Get the context of the canvas element we want to select
+	var ctx = document.getElementById("myChart").getContext("2d");
+	var data = {
+		labels: [
+			{% for l in xaxis %}
+				"{{l}}"{% if not forloop.last %},{% endif %}
+			{% endfor %}
+		],
+    		//labels: ["January", "February", "March", "April", "May", "June", "July"],
+    		datasets: [
+		    {% for l, u, d in yaxis%}
+		    	
+        	    {
+            		label: "{{l}} - Total Duration: {{d}}",
+			duration: "{{d}}",
+            		fillColor: "rgba(220,220,220,0.2)",
+            		//strokeColor: "rgba(220,220,220,1)",
+			strokeColor: getRandomColor(),
+            		//pointColor: "rgba(220,220,220,1)",
+			pointColor: prevcolor,
+            		pointStrokeColor: "#fff",
+            		pointHighlightFill: "#fff",
+            		pointHighlightStroke: "rgba(220,220,220,1)",
+			yAxisLabel : "Seconds",
+			xAxisLabel: "",
+			data: [
+			{% for d in u %}
+				{{d}}{% if not forloop.last %},{% endif %}
+			{% endfor %}
+			]
+            		//data: [65, 59, 80, 81, 56, 55, 40]
+        	    },
+		    {% endfor %}
+    		]
+	};
+	var options = {
+  legendTemplate : '<ul>'
+                  +'<% for (var i=0; i<datasets.length; i++) { %>'
+                    +'<li>'
+                    +'<span style=\"background-color:<%=datasets[i].strokeColor %>\">&nbsp;&nbsp;&nbsp; </span>&nbsp;&nbsp;'
+                    +'<% if (datasets[i].label) { %><%= datasets[i].label %><% } %>'
+                  +'</li>'
+                +'<% } %>'
+              +'</ul>',
+  }
+	var myLineChart = new Chart(ctx).Line(data,options);
+	var legend = myLineChart.generateLegend();
+	$('#blah').append(legend);
+});
+</script>
+{% endblock %}
+{% block content %}
+{% if state %}
+<p class="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+
+<table id="{{tabletypeid}}">
+  <thead>
+    {% for d, f in table_headers_html %}
+        <th data-dynatable-column="{{d}}" >{{f}}</th>
+    {% endfor %}
+  </thead>
+  <tbody>
+  </tbody>
+  <tfoot></tfoot>
+</table>
+<br></br>
+<!-- HTML goes here -->
+<h3><i><center>Time vs Usage Report between {{date_since|date:"d M Y"}} and {{date_until|date:"d M Y"}}</center></i></h3>
+
+<p></p>
+<canvas id="myChart" width="800" height="400"></canvas>
+
+<div name="blah" id="blah">
+</div>
+
+{% endif %}
+
+{% endblock %}
