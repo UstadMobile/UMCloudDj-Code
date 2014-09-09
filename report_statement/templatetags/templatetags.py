@@ -54,3 +54,39 @@ def all_students_select(context):
 
     return {'allclass_list' : allclass_list}
 
+@register.inclusion_tag("templatetags/report_umlrs_05.html", takes_context=True)
+def all_statements_table_notused(context):
+    print("In statement request")
+    print("REQUEST IS:")
+    requestuser=context['user']
+    user=context['forthisuser']
+    date_since = context['since_1_alt']
+    date_until = context['until_1_alt']
+
+    all_statements=models.Statement.objects.filter(user=user)
+    print(all_statements)
+    data={}
+    pagetitle="UstadMobile User Statements"
+    tabletypeid="userstatementasrequesteddyna"
+    table_headers_html=[]
+    table_headers_name=[]
+
+    table_headers_html.append("user")
+    table_headers_name.append("User")
+    table_headers_html.append("activity_verb")
+    table_headers_name.append("Activity Verb")
+    table_headers_html.append("activity_type")
+    table_headers_name.append("Activity Type")
+    table_headers_html.append("duration")
+    table_headers_name.append("Duration")
+    table_headers_html.append("timestamp")
+    table_headers_name.append("Time")
+
+    table_headers_html = zip(table_headers_html, table_headers_name)
+    logicpopulation = "{\"user\":\"{{c.user.first_name}} {{c.user.last_name}}\",\"activity_verb\":\"{{c.verb.get_display}}\",\"activity_type\":\"{{c.object_activity.get_a_name}}\",\"timestamp\":\"{{c.timestamp}}\"},\"duration\":\"{{c.result_duration}}\""
+
+    return {'object_list':all_statements, 'table_headers_html':table_headers_html, 'pagetitle':pagetitle, 'tabletypeid':tabletypeid, 'logicpopulation':logicpopulation}
+
+
+
+   

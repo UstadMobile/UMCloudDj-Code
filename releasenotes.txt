@@ -1,3 +1,6 @@
+v0.8.6
+- New report usage in development
+
 v0.8.5
 - Fixed bug in deleting organisation makes organisation users suspended with no organisations. changed code to mark deleted organisatin's users as inactive. 
 - Added super user view of user table: Now a the superuser/staff of the project can see all users in the database. 

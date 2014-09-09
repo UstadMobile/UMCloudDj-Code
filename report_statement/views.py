@@ -46,6 +46,7 @@ logger = logging.getLogger(__name__)
 
 @login_required(login_url="/login/")    #added by Varuna
 def show_statements_from_db(request,template_name='report_umlrs_01.html'):
+    print("blah")
     all_statements=models.Statement.objects.all()
     print(all_statements)
     data={}
@@ -103,6 +104,38 @@ def my_statements_db_dynatable(request,template_name='report_umlrs_04.html'):
     table_headers_html = zip(table_headers_html, table_headers_name)
     logicpopulation = "{\"user\":\"{{c.user.first_name}} {{c.user.last_name}}\",\"activity_verb\":\"{{c.verb.get_display}}\",\"activity_type\":\"{{c.object_activity.get_a_name}}\",\"timestamp\":\"{{c.timestamp}}\"},\"duration\":\"{{c.result_duration}}\""
 
+    return render(request, template_name,{'object_list':all_statements, 'table_headers_html':table_headers_html, 'pagetitle':pagetitle, 'tabletypeid':tabletypeid, 'logicpopulation':logicpopulation} )
+
+@login_required(login_url="/login/")
+def all_statements_table(request, userid, template_name='report_umlrs_04.html'):
+    template_name="report_umlrs_04.html"
+    #, date_since, date_until):
+    print("In statement request")
+    print("REQUEST IS:")
+    requestuser=request.user
+    user=User.objects.get(id=userid)
+
+    all_statements=models.Statement.objects.filter(user=user)
+    print(all_statements)
+    data={}
+    pagetitle="UstadMobile User Statements"
+    tabletypeid="userstatementasrequesteddyna"
+    table_headers_html=[]
+    table_headers_name=[]
+
+    table_headers_html.append("user")
+    table_headers_name.append("User")
+    table_headers_html.append("activity_verb")
+    table_headers_name.append("Activity Verb")
+    table_headers_html.append("activity_type")
+    table_headers_name.append("Activity Type")
+    table_headers_html.append("duration")
+    table_headers_name.append("Duration")
+    table_headers_html.append("timestamp")
+    table_headers_name.append("Time")
+
+    table_headers_html = zip(table_headers_html, table_headers_name)
+    logicpopulation = "{\"user\":\"{{c.user.first_name}} {{c.user.last_name}}\",\"activity_verb\":\"{{c.verb.get_display}}\",\"activity_type\":\"{{c.object_activity.get_a_name}}\",\"timestamp\":\"{{c.timestamp}}\"},\"duration\":\"{{c.result_duration}}\""
     return render(request, template_name,{'object_list':all_statements, 'table_headers_html':table_headers_html, 'pagetitle':pagetitle, 'tabletypeid':tabletypeid, 'logicpopulation':logicpopulation} )
 
 
@@ -216,7 +249,7 @@ def usage_report(request, template_name='report_umlrs_05.html'):
         print(num_zeroes)
         yaxis=[li[num_zeroes:] for li in yaxis]
         xaxis=xaxis[num_zeroes:]
-        yaxis=zip(label_legend, yaxis, user_by_duration)
+        yaxis=zip(label_legend, yaxis, user_by_duration, users_with_statements)
         data={}
         data['xaxis']=xaxis;
         data['yaxis']=yaxis
