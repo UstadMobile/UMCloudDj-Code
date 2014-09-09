@@ -154,7 +154,6 @@ class UserForm(ModelForm):
     	}
 
     def save(self, commit=True):
-	print("Trying this ..")
     	user = super(UserForm, self).save(commit=False)
 	oldpassword = user.password
 	newpassword = self.cleaned_data["password"]
@@ -219,7 +218,7 @@ def upload_avatar(request, template_name='myapp/avatar.html'):
 	current_user_profile=UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist, e:
 	current_user_profile=None
-        print("User profile does NOT exist")
+        print("User profile does NOT exist. Creating it..")
         current_user_profile=UserProfile(user=request.user, organisation_requested=organisation)
 	current_user_profile.admin_approved=True
         current_user_profile.save()
@@ -247,54 +246,35 @@ def upload_avatar(request, template_name='myapp/avatar.html'):
         context_instance=RequestContext(request)
     )
 
-"""
-@login_required(login_url='/login/')
-def user_list(request, template_name='user/user_list.html'):
-    users = User.objects.all()
-    user_roles = []
-    user_organisations = []
-    for user in users:
-	role = User_Roles.objects.get(user_userid=user).role_roleid
- 	print (role)
-	organisation = User_Organisations.objects.get(user_userid=user).organisation_organisationid
-	print("For " + user.email + "Role: " + role.role_name + " of Organisation: " + organisation.organisation_name)
-	user_roles.append(role)
-	user_organisations.append(organisation)
-
-    data = {}
-    data['object_list'] = zip(users,user_roles, user_organisations)
-    data['role_list'] = user_roles
-    data['organisation_list'] = user_organisations
-    
-    return render(request, template_name, data)
-"""
-
 @login_required(login_url='/login/')
 def user_table(request, template_name='user/user_table.html', created=None):
     organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
-    users = User.objects.all()
-    users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
     #Syntax to ignore un aproved users.
     users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True)).exclude(pk__in=UserProfile.objects.filter(admin_approved=False).values_list('user', flat=True)).filter(is_active=True)
+
+    if request.user.is_staff == True:
+	users = User.objects.filter(is_active=True)
 
     user_role = User_Roles.objects.get(user_userid=request.user).role_roleid;
     organisational_admin_role = Role.objects.get(pk=2)
 
     current_user_role = user_role.role_name;
     current_user = "Hi, " + request.user.first_name + ". You are a " + current_user_role + " in " + organisation.organisation_name + " organisation."
+    if request.user.is_staff == True:
+	current_user = "SUPER ADMIN: Hi, " + request.user.first_name + ". You are a " + current_user_role + " in " + organisation.organisation_name + " organisation and all organisations."
     data={}
     if created:
 	try:
 		usercreated=User.objects.get(id=created)
 		if usercreated in users:
 			data['state']="Username : " + usercreated.username + " created successfully"
-			print("A success redirect")
+			#print("A success redirect")
 		else:
 			data['state']=""
-			print("Not a success redirect")
+			#print("Not a success redirect")
 	except User.DoesNotExist, e:
 		data['state']=""
-		print("Not a success redirect")
+		#print("Not a success redirect")
     else:
 	print("Not a success redirect")
     	data['state']=""
@@ -350,8 +330,6 @@ def admin_approve_request(request, template_name='user/admin_approve_request_tab
 	
 	if request.method == 'POST':
         	post = request.POST;
-		print("POST request values are:")
-		print(post)
 		for key in request.POST:
 			if "_radio" in key:
 				value=request.POST[key]
@@ -373,16 +351,6 @@ def admin_approve_request(request, template_name='user/admin_approve_request_tab
 					usertoreject.save()
 					
 		
-		"""
-		userstoapprove = request.POST.getlist('target');
-		for everyusertoapprove in userstoapprove:
-			usertoapprove=User.objects.get(pk=everyusertoapprove)
-			userprofile = UserProfile.objects.get(user=usertoapprove)
-			userprofile.admin_approved=True
-			userprofile.save()
-			print("user: " + usertoapprove.username + " approved.")
-		print("Users approved")
-		"""
 		return redirect ('user_table')
 	user_roles = []
         user_profiles = []
@@ -428,8 +396,6 @@ def admin_approve_request(request, template_name='user/admin_approve_request_tab
 
         table_headers_html = zip(table_headers_html, table_headers_name)
         logicpopulation = '{"pk":"{{c.pk}}","model":"{{c.model}}", "username":"{{c.fields.username}}","first_name":"{{c.fields.first_name}}"}{% if not forloop.last %},{% endif %}'
-	print("Users")
-	print(users)
 	if not users:
 		state="No new user requests"
 		return render(request, template_name, {'data_as_json':data_as_json, 'table_headers_html':table_headers_html, 'pagetitle':pagetitle, 'tabletypeid':tabletypeid,'user_mapping':user_mapping,'state':state}, context_instance=RequestContext(request))
@@ -437,7 +403,6 @@ def admin_approve_request(request, template_name='user/admin_approve_request_tab
         	return render(request, template_name, {'data_as_json':data_as_json, 'table_headers_html':table_headers_html, 'pagetitle':pagetitle, 'tabletypeid':tabletypeid,'user_mapping':user_mapping}, context_instance=RequestContext(request))
 
     else:
-	print("Not an organisational admin.")
 	state="You do not have permission to see this page."
 	return render(request, template_name, {'state':state})
 
@@ -465,13 +430,11 @@ def user_create(request, template_name='user/user_create.html'):
 	passwordagain=post['passwordagain']
 	if password != passwordagain:
 		password=None
-		print("Passwords dont match")
 		state="The two passwords you gave do not match. Please try again."
                 data['state']=state
                 return render(request, template_name, data)
 
 	if not user_exists(post['username']):
-		print("Creating the user..")
 		
         	user = create_user_more(username=post['username'], email=post['email'], password=post['password'], first_name=post['first_name'], last_name=post['last_name'], roleid=post['role'], organisationid=organisation.id, date_of_birth=post['dateofbirth'], address=post['address'], gender=post['gender'], phone_number=post['phonenumber'], organisation_request=organisation)
 		if user:
@@ -522,6 +485,11 @@ def user_create(request, template_name='user/user_create.html'):
 def user_update(request, pk, template_name='user/user_update.html'):
     user = get_object_or_404(User, pk=pk)
     organisation=User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
+    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
+    users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
+    if request.user.is_staff == False:
+    	if user not in users:
+	    return redirect('user_table')
     form = UserForm(request.POST or None, instance=user)
     form.fields['username'].widget.attrs['readonly']=True
     try:
@@ -533,47 +501,12 @@ def user_update(request, pk, template_name='user/user_update.html'):
     upform=UserProfileForm(request.POST or None, instance=userprofile)
     upform.fields['date_of_birth'].widget.attrs = {'class':'dobdatepicker'}
 
-    if upform.is_valid():
-	print("e")
-	if form.is_valid():
-		print("f")
-		
-
     if form.is_valid():
-	print("a")
 	if upform.is_valid():
-		print("d")
 		upform.save()
         form.save()
 	return redirect('user_table')
     return render(request, template_name, {'form':form,'upform':upform})
-
-"""
-@login_required(login_url='/login/')
-def user_approve_request(request, pk, template_name='user/user_approve_request.html'):
-    role = User_Roles.objects.get(user_userid=request.user).role_roleid;
-    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
-    organisational_admin_role = Role.objects.get(pk=2)
-
-    if role == organisational_admin_role:
-    	user = get_object_or_404(User, pk=pk)
-	userprofile = UserProfile.objects.get(user=user)
-	print("UserProfile's Gender:")
-	print(userprofile.gender)
-	form = UserProfileForm(request.POST or None, instance=userprofile)
-	username=user.username;
-	organisation_requested = userprofile.organisation_requested.organisation_name
-    	if form.is_valid():
-        	form.save()
-        	return redirect('users_approve')
-   	return render(request, template_name, {'username':username,'organisation_requested':organisation_requested,'form':form})
-
-    else:
-	print("Not an organisational admin.")
-        state="You do not have permission to see this page."
-        return render(request, template_name, {'state':state})
-
-"""
 
 @login_required(login_url='/login/')
 def user_delete(request, pk, template_name='user/user_confirm_delete.html'):
@@ -585,10 +518,9 @@ def user_delete(request, pk, template_name='user/user_confirm_delete.html'):
 
 ####################################
 
-
+"""
 @login_required(login_url='/login/')
 def get_report_statements(request, onfail='/statementsreports'):
-	print("Getting variables..")
         date_since = request.POST['since_1_alt']
         date_until = request.POST['until_1_alt']
         #activity = request.POST['activity']
@@ -620,11 +552,9 @@ def get_report_statements(request, onfail='/statementsreports'):
         statements_as_json = data['statements']
 
         return render_to_response("report_statements.html", {'date_since':date_since , 'date_until':date_until , 'data':data , 'lrs_endpoint':lrs_endpoint ,'statements_as_json':statements_as_json }, context_instance=RequestContext(request))
+"""
 
-
-
-
-
+"""
 @login_required(login_url='/login/')
 def get_report_zambia(request, onfail='/mcqreports'):
     	print("Getting variables..")
@@ -660,6 +590,7 @@ def get_report_zambia(request, onfail='/mcqreports'):
 	##play with the data now.
 
     	return render_to_response("report_zambia.html", {'date_since':date_since , 'date_until':date_until , 'data':data , 'lrs_endpoint':lrs_endpoint ,'statements_as_json':statements_as_json }, context_instance=RequestContext(request))
+"""
 
 @login_required(login_url='/login/')
 def report_selection_view(request):
@@ -708,7 +639,6 @@ def sendtestlog_view(request):
 	
 		for i, phrase in enumerate(unittestlogs.split('new|')):
 			if phrase != '':
-   				print('phrase #%d: %s' % (i+1,phrase))
 				utestfields = phrase.split('|')
 				
 				
@@ -722,7 +652,7 @@ def sendtestlog_view(request):
 				setattr (newunittestresult, 'ustad_version', utestfields[5])
 				newunittestresult.save()
 			else:
-				print('one log is empty: no info. Proceeding.')
+				pass
 	
 		context_instance=RequestContext(request)
         	response = render_to_response("sendtestlog.html", {'appunittestoutput': unittestlogs}, context_instance=RequestContext(request))
@@ -735,10 +665,8 @@ def sendtestlog_view(request):
 	
 @csrf_exempt
 def checklogin_view(request):
-        print("Checking log in details..")
 
         if request.method == 'POST':
-                print 'POST request recieved.'
                 print 'Login request coming from outside (eXe)'
                 username = request.POST.get('username');
                 password = request.POST.get('password');
@@ -759,16 +687,11 @@ def checklogin_view(request):
 
 @csrf_exempt
 def getassignedcourseids_view(request):
-        print("Checking log in details..")
 
         if request.method == 'POST':
-                print 'POST request recieved.'
                 print 'Login request coming from outside (eXe)'
                 username = request.POST.get('username',False);
                 password = request.POST.get('password', False);
-                print "The username is"
-                print username
-
                 #Code for Authenticating the user
                 user = authenticate(username=request.POST['username'], password=request.POST['password'])
                 if user is not None:
@@ -778,7 +701,6 @@ def getassignedcourseids_view(request):
 			#Check and get list of courses..
 			
 			#we first get all courses from the user's organisation
-			print("checking the organisation..")
 			allorgcourses = Course.objects.filter(organisation=organisation)
 			alluserclasses = Allclass.objects.filter(students__in=[user])
 			matchedcourses=Course.objects.filter(Q(organisation=organisation, students__in=[user]) | Q(organisation=organisation, allclasses__in=alluserclasses))
@@ -814,24 +736,10 @@ def getassignedcourseids_view(request):
 
 					xmlreturn+="</packages>"
 				xmlreturn+="</getassignedcourseids>"
-				print("////////////////////////////////////////////////////////////")
 				for everypackage in assigned_course_packages:	
 					everypackageid = everypackage.id
 					assigned_course_packageids.append(everypackageid)
 	
-				print("Matched Courses for user:")
-				print(matchedcourses)
-				print("ASSIGNED COURSE ID'S:")
-				print(assigned_course_ids)
-				print("ASSIGNED PACKAGES ARE:")
-				print(assigned_course_packages)
-				print("ASSIGNED PACKAGE IDS ARE:")
-				print(assigned_course_packageids)
-
-				print (xmlreturn)
-				print("////////////////////////////////////////////////////////////")
-				
-
                         	authresponse = HttpResponse(status=200)
 				#authresponse.write("Courses found for user: " + username)
 				authresponse.write(xmlreturn)
@@ -858,7 +766,6 @@ def sendelpfile_view(request):
 	print("Receiving the elp file..")
 
 	if request.method == 'POST':
-		print 'POST request recieved.'
 		print 'Login request coming from outside (eXe)'
 		username = request.POST.get('username');
 		password = request.POST.get('password');
@@ -868,7 +775,6 @@ def sendelpfile_view(request):
 		print request.FILES
 
 		#Code for Authenticating the user
-
 		user = authenticate(username=request.POST['username'], password=request.POST['password'])
     		if user is not None:
 			print("Login a success!..")
@@ -878,8 +784,6 @@ def sendelpfile_view(request):
 			#Try to save the file
 			newdoc = Document(exefile = request.FILES['exeuploadelp'])
 		        uid = str(getattr(newdoc, 'exefile'))
-            		print("File name to upload:")
-            		print(uid)
             		appLocation = (os.path.dirname(os.path.realpath(__file__)))
             		#Get the file and run eXe command
             		#Get url / path
@@ -1196,17 +1100,6 @@ def register_selection_view(request, ):
         return render(request, 'user/user_create_website_selection.html')
 
 
-"""
-def my_view(request):
-        current_user = request.user.username
-        print("Logged in username: " + current_user)
-        return render_to_response(
-                '/base.html',
-                {'current_user': current_user, 'form': form},
-                context_instance=RequestContext(request)
-        )
-"""
-
 def loginview(request):
 	c = {}
 	c.update(csrf(request))
@@ -1220,7 +1113,6 @@ def auth_and_login(request, onsuccess='/', onfail='/login'):
 	try:
 		print("Trying..")
 		user_role = User_Roles.objects.get(user_userid=user).role_roleid;
-		print(user_role)
 		if user_role.id > 4:
 			state="Sorry, students and teachers cannot login at the moment."
 			return render_to_response('login.html', {'state':state},context_instance=RequestContext(request))
@@ -1306,12 +1198,10 @@ def create_user_website(username, email, password, first_name, last_name, websit
     		return user, reason
 	except Organisation_Code.DoesNotExist:
 		reason = "Something went wrong in checking organisation code"
-		print(reason)
 		return None, reason
     #except:
     else:
 	reason = "Username exists"
-	print(reason)
 	return None, reason
 
 
