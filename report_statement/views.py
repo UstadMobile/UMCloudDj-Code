@@ -48,16 +48,25 @@ logger = logging.getLogger(__name__)
 def show_statements_from_db(request,template_name='report_umlrs_01.html'):
     print("blah")
     all_statements=models.Statement.objects.all()
-    print(all_statements)
+    #print(all_statements)
     data={}
     return render(request, template_name,{'all_statements':all_statements} )
 
 @login_required(login_url="/login/")    #Added by varuna
 def statements_db_dynatable(request,template_name='report_umlrs_02.html'):
-    all_statements=models.Statement.objects.all()
-    print(all_statements)
+    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
+    all_org_users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
+    all_statements = models.Statement.objects.filter(user__in=all_org_users)
+    pks = [613, 614, 631, 642, 653, 469, 664, 673, 615, 632, 643, 654, 665, 470, 674, 682, 616, 633, 644, 655, 666, 471, 675, 683, 617, 634, 645, 656, 667, 472, 676, 684, 618, 635, 646, 657, 462, 473, 668, 677, 619, 620, 621, 622, 463, 636, 647, 658, 623, 624, 625, 626, 464, 637, 648, 659, 627, 638, 649, 660, 465, 669, 678, 685, 628, 639, 650, 661, 466, 670, 679, 686, 629, 640, 651, 662, 467, 671, 680, 687, 630, 641, 652, 663, 672, 468, 681, 688, 689, 690, 691, 692, 693, 694, 695, 696, 697, 698, 699, 700, 701, 702, 703, 704, 705, 706, 707, 708, 709, 710, 711, 712, 713, 714, 715, 716, 717, 718, 719, 720, 721, 722, 723, 724, 725, 726, 727, 728, 729, 730, 731, 732, 733, 734, 735, 736, 737, 738, 739, 740, 741, 742, 743, 744, 745]
+    for pk in pks:
+	print("Going to try: " + str(pk))
+	try:
+		statement=models.Statement.objects.get(pk=pk)
+	except:
+		print("Problem with id: " + str(pk))
+		pass
     data={}
-    pagetitle="UstadMobile Statements from DB Test 02 Dynatable"
+    pagetitle="All statements from my organisation"
     tabletypeid="dbstatementsdynatable"
     table_headers_html=[]
     table_headers_name=[]
@@ -244,7 +253,7 @@ def usage_report(request, template_name='report_umlrs_05.html'):
         #http://stackoverflow.com/questions/25656550/remove-occuring-elements-from-multiple-lists-shorten-multiple-lists-by-value/25656674#25656674
         print("USER_BY_DURATION")
         print(user_by_duration)
-        num_zeroes = len(list(takewhile(lambda p: p == 0, max(yaxis))))
+        num_zeroes = len(list(takewhile(lambda p: p == 0, max(yaxis))))-1
         print("NUM OF ZEROS")
         print(num_zeroes)
         yaxis=[li[num_zeroes:] for li in yaxis]

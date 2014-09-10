@@ -1,5 +1,6 @@
 v0.8.6
 - New report usage in development
+- Updated usage report according to data migration from adl to umcdj
 
 v0.8.5
 - Fixed bug in deleting organisation makes organisation users suspended with no organisations. changed code to mark deleted organisatin's users as inactive. 
