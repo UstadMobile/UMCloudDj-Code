@@ -317,33 +317,36 @@ def chartjs_test(request,template_name='report_umlrs_03.html'):
 	else:
 		users_with_statements = user_selected #Just assuming so. Should re work naming convention
 	print("--------------------------------------")
-
-
+	
 	for i in range(delta.days +1):
-		current_date=date_since + td(days=i)
-		xaxis.append(str(current_date.strftime('%b %d, %Y')))
-	for user_id_with_statement in users_with_statements:
-		user_with_statement=User.objects.get(id=user_id_with_statement)
-		print("Generating report for user: " + user_with_statement.username)
-		label_legend.append(user_with_statement.first_name + " " + user_with_statement.last_name)
-		useryaxis=[]
-		for i in range(delta.days +1):
-			current_date=date_since + td(days=i)
-			all_statements_current_date = models.Statement.objects.filter(user=user_with_statement, timestamp__year=current_date.year, timestamp__month=current_date.month, timestamp__day=current_date.day)
-			current_duration=0
-			for every_statement_current_date in all_statements_current_date:
-				current_duration=current_duration + int(every_statement_current_date.get_r_duration().seconds)
-			if current_duration == 0 :
-				current_duration=0
-			useryaxis.append(current_duration)
-			user_duration=user_duration+current_duration
-		user_by_duration.append(td(seconds=user_duration))
-		yaxis.append(useryaxis)
+                current_date=date_since + td(days=i)
+                xaxis.append(str(current_date.strftime('%b %d, %Y')))
+        for user_id_with_statement in users_with_statements:
+                user_duration=0
+                user_with_statement=User.objects.get(id=user_id_with_statement)
+                print("Generating report for user: " + user_with_statement.username)
+                label_legend.append(user_with_statement.first_name + " " + user_with_statement.last_name)
+                useryaxis=[]
+                for i in range(delta.days +1):
+                        current_date=date_since + td(days=i)
+                        all_statements_current_date = models.Statement.objects.filter(user=user_with_statement, timestamp__year=current_date.year, timestamp__month=current_date.month, timestamp__day=current_date.day)
+                        current_duration=0
+                        for every_statement_current_date in all_statements_current_date:
+                                current_duration=current_duration + int(every_statement_current_date.get_r_duration().seconds)
+                                print(current_duration)
+                        if current_duration == 0 :
+                                current_duration=0
+                        useryaxis.append(current_duration)
+                        user_duration=user_duration+current_duration
+                print("For user: " + str(user_id_with_statement) + " duration: " + str(user_duration))
+                user_by_duration.append(td(seconds=user_duration))
+                yaxis.append(useryaxis)
+
 	#Reduction by help of a fellow stack overflow use: 
 	#http://stackoverflow.com/questions/25656550/remove-occuring-elements-from-multiple-lists-shorten-multiple-lists-by-value/25656674#25656674
 	print("USER_BY_DURATION")
 	print(user_by_duration)
-	num_zeroes = len(list(takewhile(lambda p: p == 0, max(yaxis))))
+	num_zeroes = len(list(takewhile(lambda p: p == 0, max(yaxis))))-1
 	print("NUM OF ZEROS")
 	print(num_zeroes)
 	yaxis=[li[num_zeroes:] for li in yaxis]
