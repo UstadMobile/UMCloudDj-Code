@@ -2,6 +2,8 @@ v0.8.6
 - New report usage in development
 - Updated usage report according to data migration from adl to umcdj
 - Reduced to two reports one for all statements in organisation, one for usage (user vs time) report
+- Fixed activity type to title in usage report, added labels to usage_report, show activity id in usage_report as well.
+- Added last activity done by user.
 
 v0.8.5
 - Fixed bug in deleting organisation makes organisation users suspended with no organisations. changed code to mark deleted organisatin's users as inactive. 

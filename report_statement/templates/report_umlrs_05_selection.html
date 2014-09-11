@@ -26,14 +26,16 @@
 
     <div style="padding-bottom:10px;">
         <!--Since:-->
+  	<label>Start date</label>
 	<input type="text" name="since_1" id="since_1" style="height: 30px; width: 250px;" placeholder="Since" value="" required/>*
     </div>
 
     <div style="display: none;">
-    <input type="text" name="since_1_alt" id="since_1_alt" value="" style="cursor: pointer;">
+    	<input type="text" name="since_1_alt" id="since_1_alt" value="" style="cursor: pointer;">
     </div>
 
     <div style="padding-bottom:10px;">
+	<label>End date></label>
         <!--Until:&nbsp;&nbsp;-->
 	<input type="text" name="until_1" id="until_1" style="height: 30px; width: 250px;" placeholder="Until"  value="" required/>*
     </div>
@@ -44,7 +46,7 @@
     <!--<div data-role="fieldcontain">
         <label for="activity">Activity:</label><input type="text" name="activity" id="activity" value="" />
     </div>-->
-
+	<label>Classes and Students</label>
 	{% all_students_select %}
 
 

@@ -19,8 +19,8 @@
                                         dataset: {
                                         records:[
                                                 {% if yaxis %}
-                                                        {% for l,u,d,id in yaxis  %}
-                                                                {"user":"<a href=\"getstatements/{{id}}/\" >{{l}}</a>","duration":"{{d}}"}{% if not forloop.last %},{% endif %}
+                                                        {% for l,u,d,id,latest in yaxis  %}
+                                                                {"user":"<a href=\"getstatements/{{id}}/\" >{{l}}</a>","duration":"{{d}}","last_activity":"{{latest}}"}{% if not forloop.last %},{% endif %}
                                                         {% endfor %}
                                                 {% endif %}
                                                 ]

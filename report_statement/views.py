@@ -73,8 +73,10 @@ def statements_db_dynatable(request,template_name='report_umlrs_02.html'):
     table_headers_name.append("User")
     table_headers_html.append("activity_verb")
     table_headers_name.append("Activity Verb")
+    #table_headers_html.append('activity_id')
+    #table_headers_name.append('Activity ID')
     table_headers_html.append("activity_type")
-    table_headers_name.append("Activity Type")
+    table_headers_name.append("Activity Title")
     table_headers_html.append("duration")
     table_headers_name.append("Duration")
     table_headers_html.append("timestamp")
@@ -100,8 +102,10 @@ def my_statements_db_dynatable(request,template_name='report_umlrs_04.html'):
     table_headers_name.append("User")
     table_headers_html.append("activity_verb")
     table_headers_name.append("Activity Verb")
+    #table_headers_html.append('activity_id')
+    #table_headers_name.append('Activity ID')
     table_headers_html.append("activity_type")
-    table_headers_name.append("Activity Type")
+    table_headers_name.append("Activity Title")
     table_headers_html.append("duration")
     table_headers_name.append("Duration")
     table_headers_html.append("timestamp")
@@ -130,8 +134,10 @@ def all_statements_table(request, userid, template_name='report_umlrs_04.html'):
     table_headers_name.append("User")
     table_headers_html.append("activity_verb")
     table_headers_name.append("Activity Verb")
+    table_headers_html.append('activity_id')
+    table_headers_name.append('Activity ID')
     table_headers_html.append("activity_type")
-    table_headers_name.append("Activity Type")
+    table_headers_name.append("Activity Title")
     table_headers_html.append("duration")
     table_headers_name.append("Duration")
     table_headers_html.append("timestamp")
@@ -211,7 +217,7 @@ def usage_report(request, template_name='report_umlrs_05.html'):
                 users_with_statements = user_selected #Just assuming so. Should re work naming convention
         print("--------------------------------------")
 
-
+	last_activity=[]
         for i in range(delta.days +1):
                 current_date=date_since + td(days=i)
                 xaxis.append(str(current_date.strftime('%b %d, %Y')))
@@ -225,7 +231,10 @@ def usage_report(request, template_name='report_umlrs_05.html'):
                         all_statements_current_date = models.Statement.objects.filter(user=user_with_statement, timestamp__year=current_date.year, timestamp__month=current_date.month, timestamp__day=current_date.day)
                         current_duration=0
                         for every_statement_current_date in all_statements_current_date:
-                                current_duration=current_duration + int(every_statement_current_date.get_r_duration().seconds)
+				try:
+                                	current_duration=current_duration + int(every_statement_current_date.get_r_duration().seconds)
+				except:
+					current_duration=current_duration + 0
                         if current_duration == 0 :
                                 current_duration=0
                         useryaxis.append(current_duration)
@@ -233,12 +242,19 @@ def usage_report(request, template_name='report_umlrs_05.html'):
 		print("For user: " + str(user_id_with_statement) + " duration: " + str(user_duration))
                 user_by_duration.append(td(seconds=user_duration))
                 yaxis.append(useryaxis)
+		try:
+			a=models.Statement.objects.filter(user=user_with_statement, object_activity__activity_definition_type__icontains="activities/module").latest("timestamp")
+			b=a.object_activity.get_a_id() + " - " + a.object_activity.get_a_name() + " : " + str(a.timestamp.strftime('%b %d, %Y'))
+		except:
+			b="-"
+		print(b)
+		last_activity.append(b)
         #Reduction by help of a fellow stack overflow use: 
         #http://stackoverflow.com/questions/25656550/remove-occuring-elements-from-multiple-lists-shorten-multiple-lists-by-value/25656674#25656674
         num_zeroes = len(list(takewhile(lambda p: p == 0, max(yaxis))))-1
         yaxis=[li[num_zeroes:] for li in yaxis]
         xaxis=xaxis[num_zeroes:]
-        yaxis=zip(label_legend, yaxis, user_by_duration, users_with_statements)
+        yaxis=zip(label_legend, yaxis, user_by_duration, users_with_statements, last_activity)
         data={}
         data['xaxis']=xaxis;
         data['yaxis']=yaxis
@@ -255,6 +271,8 @@ def usage_report(request, template_name='report_umlrs_05.html'):
     	table_headers_name.append("User")
     	table_headers_html.append("duration")
    	table_headers_name.append("Duration")
+ 	table_headers_html.append("last_activity")
+	table_headers_name.append("Last activity")
 
     	table_headers_html = zip(table_headers_html, table_headers_name)
 	data['table_headers_html']=table_headers_html
