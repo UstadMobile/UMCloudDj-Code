@@ -46,7 +46,6 @@ logger = logging.getLogger(__name__)
 
 @login_required(login_url="/login/")    #added by Varuna
 def show_statements_from_db(request,template_name='report_umlrs_01.html'):
-    print("blah")
     all_statements=models.Statement.objects.all()
     #print(all_statements)
     data={}
@@ -59,7 +58,6 @@ def statements_db_dynatable(request,template_name='report_umlrs_02.html'):
     all_statements = models.Statement.objects.filter(user__in=all_org_users)
     pks = [613, 614, 631, 642, 653, 469, 664, 673, 615, 632, 643, 654, 665, 470, 674, 682, 616, 633, 644, 655, 666, 471, 675, 683, 617, 634, 645, 656, 667, 472, 676, 684, 618, 635, 646, 657, 462, 473, 668, 677, 619, 620, 621, 622, 463, 636, 647, 658, 623, 624, 625, 626, 464, 637, 648, 659, 627, 638, 649, 660, 465, 669, 678, 685, 628, 639, 650, 661, 466, 670, 679, 686, 629, 640, 651, 662, 467, 671, 680, 687, 630, 641, 652, 663, 672, 468, 681, 688, 689, 690, 691, 692, 693, 694, 695, 696, 697, 698, 699, 700, 701, 702, 703, 704, 705, 706, 707, 708, 709, 710, 711, 712, 713, 714, 715, 716, 717, 718, 719, 720, 721, 722, 723, 724, 725, 726, 727, 728, 729, 730, 731, 732, 733, 734, 735, 736, 737, 738, 739, 740, 741, 742, 743, 744, 745]
     for pk in pks:
-	print("Going to try: " + str(pk))
 	try:
 		statement=models.Statement.objects.get(pk=pk)
 	except:
@@ -92,7 +90,6 @@ def statements_db_dynatable(request,template_name='report_umlrs_02.html'):
 def my_statements_db_dynatable(request,template_name='report_umlrs_04.html'):
     user=request.user
     all_statements=models.Statement.objects.filter(user=user)
-    print(all_statements)
     data={}
     pagetitle="UstadMobile Statements from DB Test 02 Dynatable"
     tabletypeid="dbstatementsdynatable"
@@ -119,13 +116,10 @@ def my_statements_db_dynatable(request,template_name='report_umlrs_04.html'):
 def all_statements_table(request, userid, template_name='report_umlrs_04.html'):
     template_name="report_umlrs_04.html"
     #, date_since, date_until):
-    print("In statement request")
-    print("REQUEST IS:")
     requestuser=request.user
     user=User.objects.get(id=userid)
 
     all_statements=models.Statement.objects.filter(user=user)
-    print(all_statements)
     data={}
     pagetitle="UstadMobile User Statements"
     tabletypeid="userstatementasrequesteddyna"
@@ -150,13 +144,12 @@ def all_statements_table(request, userid, template_name='report_umlrs_04.html'):
 
 @login_required(login_url="/login/")
 def allclasse_students(request, allclassid):
-    print("user: " + request.user.username + " requested all students of class: " + Allclass.objects.get(id=allclassid).allclass_name)
+    #print("user: " + request.user.username + " requested all students of class: " + Allclass.objects.get(id=allclassid).allclass_name)
     organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid
     allclasses=Allclass.objects.filter(school__in=School.objects.filter(organisation=organisation));
     allclass_class = Allclass.objects.get(id=allclassid)
     if allclass_class in allclasses:
         student_list =allclass_class.students.all()
-        print(student_list)
         #json_students = serializers.serialize("json", student_list)
 	#Not sending complete user object to avoid someone hacking and getting user information like encrypted password, roles and all other information. This only returns id and first and last name which is checked by request.user's logged in account anyway.
 	json_students = simplejson.dumps( [{'id': o.id,
@@ -194,19 +187,14 @@ def usage_report(request, template_name='report_umlrs_05.html'):
     if request.method != 'POST':
 	return redirect('usage_report_selection')
 
-    print("Getting variables..")
     date_since = request.POST['since_1_alt']
     date_until = request.POST['until_1_alt']
     user_selected = request.POST.getlist('model')
 
-    print("Got unicode variables. They are: ")
-    print(date_since)
-    print(date_until)
-    print(user_selected)
     if True:
         date_since = datetime.strptime(date_since[:10], '%Y-%m-%d')
         date_until = datetime.strptime(date_until[:10], '%Y-%m-%d')
-        print("new datetime dates converted from unicode to datetime")
+        #print("new datetime dates converted from unicode to datetime")
         print(str(date_since) + "-->" + str(date_until))
         delta=(date_until - date_since)
         xaxis=[]
@@ -217,8 +205,6 @@ def usage_report(request, template_name='report_umlrs_05.html'):
         if "ALL" in user_selected:
                 allclassid=request.POST['brand']
                 allclassid=int(allclassid)
-                print("ALL CLASS ID")
-                print(allclassid)
                 allclass_class = Allclass.objects.get(id=allclassid)
                 users_with_statements = allclass_class.students.all().values_list('id', flat=True)
         else:
@@ -232,7 +218,6 @@ def usage_report(request, template_name='report_umlrs_05.html'):
         for user_id_with_statement in users_with_statements:
 		user_duration=0
                 user_with_statement=User.objects.get(id=user_id_with_statement)
-                print("Generating report for user: " + user_with_statement.username)
                 label_legend.append(user_with_statement.first_name + " " + user_with_statement.last_name)
                 useryaxis=[]
                 for i in range(delta.days +1):
@@ -241,7 +226,6 @@ def usage_report(request, template_name='report_umlrs_05.html'):
                         current_duration=0
                         for every_statement_current_date in all_statements_current_date:
                                 current_duration=current_duration + int(every_statement_current_date.get_r_duration().seconds)
-				print(current_duration)
                         if current_duration == 0 :
                                 current_duration=0
                         useryaxis.append(current_duration)
@@ -251,11 +235,7 @@ def usage_report(request, template_name='report_umlrs_05.html'):
                 yaxis.append(useryaxis)
         #Reduction by help of a fellow stack overflow use: 
         #http://stackoverflow.com/questions/25656550/remove-occuring-elements-from-multiple-lists-shorten-multiple-lists-by-value/25656674#25656674
-        print("USER_BY_DURATION")
-        print(user_by_duration)
         num_zeroes = len(list(takewhile(lambda p: p == 0, max(yaxis))))-1
-        print("NUM OF ZEROS")
-        print(num_zeroes)
         yaxis=[li[num_zeroes:] for li in yaxis]
         xaxis=xaxis[num_zeroes:]
         yaxis=zip(label_legend, yaxis, user_by_duration, users_with_statements)
@@ -287,19 +267,14 @@ def usage_report(request, template_name='report_umlrs_05.html'):
 
 @login_required(login_url="/login/")    #added by Varuna
 def chartjs_test(request,template_name='report_umlrs_03.html'):
-    print("Getting variables..")
     date_since = request.POST['since_1_alt']
     date_until = request.POST['until_1_alt']
     user_selected = request.POST.getlist('model')
 
-    print("Got unicode variables. They are: ")
-    print(date_since)
-    print(date_until)
-    print(user_selected)
     if True:
 	date_since = datetime.strptime(date_since[:10], '%Y-%m-%d')
 	date_until = datetime.strptime(date_until[:10], '%Y-%m-%d')
-	print("new datetime dates converted from unicode to datetime")
+	#print("new datetime dates converted from unicode to datetime")
 	print(str(date_since) + "-->" + str(date_until))
 	delta=(date_until - date_since)
 	xaxis=[]
@@ -310,8 +285,6 @@ def chartjs_test(request,template_name='report_umlrs_03.html'):
 	if "ALL" in user_selected:
 		allclassid=request.POST['brand']
 		allclassid=int(allclassid)
-		print("ALL CLASS ID")
-		print(allclassid)
     		allclass_class = Allclass.objects.get(id=allclassid)
 		users_with_statements = allclass_class.students.all().values_list('id', flat=True)
 	else:
@@ -324,7 +297,6 @@ def chartjs_test(request,template_name='report_umlrs_03.html'):
         for user_id_with_statement in users_with_statements:
                 user_duration=0
                 user_with_statement=User.objects.get(id=user_id_with_statement)
-                print("Generating report for user: " + user_with_statement.username)
                 label_legend.append(user_with_statement.first_name + " " + user_with_statement.last_name)
                 useryaxis=[]
                 for i in range(delta.days +1):
@@ -333,22 +305,16 @@ def chartjs_test(request,template_name='report_umlrs_03.html'):
                         current_duration=0
                         for every_statement_current_date in all_statements_current_date:
                                 current_duration=current_duration + int(every_statement_current_date.get_r_duration().seconds)
-                                print(current_duration)
                         if current_duration == 0 :
                                 current_duration=0
                         useryaxis.append(current_duration)
                         user_duration=user_duration+current_duration
-                print("For user: " + str(user_id_with_statement) + " duration: " + str(user_duration))
                 user_by_duration.append(td(seconds=user_duration))
                 yaxis.append(useryaxis)
 
 	#Reduction by help of a fellow stack overflow use: 
 	#http://stackoverflow.com/questions/25656550/remove-occuring-elements-from-multiple-lists-shorten-multiple-lists-by-value/25656674#25656674
-	print("USER_BY_DURATION")
-	print(user_by_duration)
 	num_zeroes = len(list(takewhile(lambda p: p == 0, max(yaxis))))-1
-	print("NUM OF ZEROS")
-	print(num_zeroes)
 	yaxis=[li[num_zeroes:] for li in yaxis]
 	xaxis=xaxis[num_zeroes:]
 	yaxis=zip(label_legend, yaxis, user_by_duration)
