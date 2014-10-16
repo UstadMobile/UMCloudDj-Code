@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{pagetitle}}{% endblock %}
+{% block scriptjs %}
+<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart.js" %}"></script>
+<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart-config.js" %}"></script>
+<script type="text/javascript">
+   $(function() { 
+        $('#breakdowntreetable').puitreetable({  
+        columns: [  
+            {field:'name', headerText: 'Name'},  
+            {field:'duration', headerText: 'Duration'},  
+            {field:'type', headerText: 'Type'}  
+        ],  
+        nodes: [  
+		{% for s,d,c in school_details  %}
+		   {
+                    data: {"name":"{{s.school_name}}","duration":"{{d}}","type":"School"},
+		    		children:[
+				{% for cl,cld in c %}
+				    {
+					data:{"name": "{{cl.allclass_name}}","duration": "{{cld}}", "type": "Class"}{% if not forloop.last %},{% endif %}
+				    }{% if not forloop.last %},{% endif %}
+				{% endfor %}
+				],
+		   }{% if not forloop.last %},{% endif %}
+		   
+                {% endfor %}]
+    	});  
+      $('#remoteinfinite').puitreetable({  
+        lazy: true,  
+         columns: [  
+            {field:'name', headerText: 'Name'},  
+            {field:'size', headerText: 'Size'},  
+            {field:'type', headerText: 'Type'}  
+        ],  
+        header: 'Infinite',  
+        nodes: function(ui, response) {    
+            $.ajax({  
+                type: "GET",  
+                url: '/fetch/superawesomeajax/',  
+                dataType: "json",  
+                context: this,  
+                success: function(data) {  
+                    response.call(this, data, ui.node);  
+                }  
+            });  
+        }  
+      });  
+    });
+</script>
+{% endblock %}
+{% block content %}
+{% if state %}
+<p class="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+<div id="breakdowntreetable"></div>
+<br></br>
+<div id="remoteinfinite"></div>
+{% endif %}
+
+{% endblock %}

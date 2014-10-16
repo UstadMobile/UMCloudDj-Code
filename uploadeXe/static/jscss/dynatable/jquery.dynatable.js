@@ -1,6 +1,6 @@
 /*
  * jQuery Dynatable plugin 0.3.1
- *
+ * Test
  * Copyright (c) 2014 Steve Schwartz (JangoSteve)
  *
  * Dual licensed under the AGPL and Proprietary licenses:

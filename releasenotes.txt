@@ -1,3 +1,28 @@
+v0.9.0
+- Fixed /umlrs/statements on login giving error. (using string conversion as dict was being returned)
+- Updated ADL_LRS fix for /statemetns/ 
+- Updated development set up script to account for ADL_LRS cachced databases.
+- Fixed exe_do export bug when elp file name isdiff from name in contentv3.xml. We get the name from the content xml.
+- Fixed calculate_statement() bug of duplication.
+- Fixed jQuery bug and div mismatch in base.html and reporting htmls
+- Fixed bug in block upload (syntax error in prefix check for tincan)
+- Fixed bug that gives elp xml name in the export as url.
+- Updated new block page and backend to accept multiple elp files uploaded in one form.
+- Added lrs and internal checks for Afghan literacy course
+- Bunch of bug fixes.
+- Fixed bug in putting connections to wordpress xmlrpc in a try except cage.
+- Modified sendelpfile to update a file with the same elpid 
+- Modified elp upload to update
+- Modified sendelpfile for individual uploads to be converted to courses and publishers auto assigned
+- Bug fixes
+- /auth/ will redirect to login if it isn't a POST request
+- set up invitation api and checking invitation views.
+- Removed sendtestlogs
+
+v0.8.7
+- Organisation create for super admins creates default teacher and school. It also assigns it to the organsiation and sets admin password to default teacher.
+- 
+
 v0.8.6
 - New report usage in development
 - Updated usage report according to data migration from adl to umcdj

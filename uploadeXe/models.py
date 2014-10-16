@@ -32,6 +32,9 @@ class Package(models.Model):
    success = models.CharField(max_length=10)
    publisher = models.ForeignKey(User, related_name='packagepublisher')
    students = models.ManyToManyField(User, related_name='packagestudents')
+   active = models.BooleanField(default = True)
+   elphash = models.CharField(max_length=80)
+   tincanid = models.CharField(max_length=200)
 
    def __unicode__(self):
         return u'%s' % (self.name)
@@ -51,9 +54,22 @@ class Course(models.Model):
    success = models.CharField(max_length=10)
    students = models.ManyToManyField(User, related_name='coursestudents')
    allclasses = models.ManyToManyField(Allclass, related_name='coursesallclasses')
+   tincanid = models.CharField(max_length=200, default="http://www.ustadmobile.com/um-tincan/activities")
 
    def __unicode__(self):
         return u'%s' % (self.name)
+
+class Invitation(models.Model):
+    invitation_id = models.CharField(max_length=100, unique=True, default=uuid.uuid4)
+    organisation = models.ForeignKey(Organisation, related_name='invitationorganisation')
+    email = models.CharField(max_length=100)
+    invitee = models.ForeignKey(User, related_name='invitee')
+    block = models.ForeignKey(Package, related_name='invitationblock')
+    done = models.BooleanField(default=False)
+
+    #blocks = models.ManyToManyField(Package, related_name='invitationblocks')
+    #courses = models.ManyToManyField(Course, related_name='invitationcourses')
+
 
 class Ustadmobiletest(models.Model):
    name = models.CharField(max_length=300)

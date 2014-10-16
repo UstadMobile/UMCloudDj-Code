@@ -60,7 +60,7 @@
 
 	  #content {
 		float: left;
-		width: 1200px;
+		width: 1000px;
 		/*margin-left: 245px;*/
 		/*width: 100%;*/
 		border: 1px solid grey;
@@ -116,12 +116,13 @@
 	<!-- Favicon goes here-->
 	<link rel="icon" href="/media/favicon.ico" type="image/x-icon">
 	<!--PrimeUI Stuff-->
-		<link rel="stylesheet" href="{{ STATIC_URL }}jscss/jqui/themes/base/jquery-ui.css" />
-                <link rel="stylesheet" href="{{ STATIC_URL }}jscss/primeui/primeui-1.1/themes/aristo/theme.css" />
-                <link rel="stylesheet" href="{{ STATIC_URL }}jscss/primeui/um-primeui-1.1-min.css" />
-                <script type="text/javascript" src="{{ STATIC_URL}}jscss/js/jquery-1.11.0.js" %}"></script>
-                <script type="text/javascript" src="{{ STATIC_URL }}jscss/jqui/ui/jquery-ui.js"></script>
-                <script type="text/javascript" src="{{ STATIC_URL }}jscss/primeui/um-primeui-1.1-min.js"></script>
+	<link rel="stylesheet" href="{{ STATIC_URL }}jscss/jqui/themes/base/jquery-ui.css" />
+        <link rel="stylesheet" href="{{ STATIC_URL }}jscss/primeui/primeui-1.1/themes/aristo/theme.css" />
+        <link rel="stylesheet" href="{{ STATIC_URL }}jscss/primeui/um-primeui-1.1-min.css" />
+        <script type="text/javascript" src="{{ STATIC_URL}}jscss/js/jquery-1.11.0.js"></script>
+        <script type="text/javascript" src="{{ STATIC_URL }}jscss/jqui/ui/jquery-ui.js"></script>
+        <!--<script type="text/javascript" src="{{ STATIC_URL }}jscss/primeui/um-primeui-1.1-min.js"></script>-->
+        <script type="text/javascript" src="{{ STATIC_URL }}jscss/primeui/primeui-1.1/development/primeui-1.1.js"></script>
 	<!--PrimeUI Stuff ends.-->
 	
 	<!-- JSON table: MrJSONTable-->
@@ -148,21 +149,23 @@
           ); 
 	</script>
 
-	{% block scriptjs %}{% endblock %}
+	{% block scriptjs %} {% endblock %}
 	{% block navjs %} {% endblock %}
 </head>
 
 <body>
 	<div id="header">
 		<p></p>
-		<a href="/home/"><img src="/media/images/logoUMlong.png" alt="Ustad_Mobile_UMCloud_logo" align=""/></a><i>    (v0.8.6)</i>
+		<a href="/home/"><img src="/media/images/logoUMlong.png" alt="Ustad_Mobile_UMCloud_logo" align=""/></a><i>    (v0.9.0)</i>
 		{% if current_user %}
 			{{current_user}}
 		{% endif %}
 	</div>
+
 	<p></p>
+
 	<div id="page">
-	<div id="sidebar">
+	  <div id="sidebar">
 		{% block sidebar %}
 		<ul id="pm1">
 			<li><a data-icon="ui-icon-home" href="/home/">Home</a></li>
@@ -173,15 +176,16 @@
 			<li><a data-icon="ui-icon-power" href="/logout/">Logout</a></li>
 		</ul>
 		{% endblock %}
-	</div>	<div id="content">
+	  </div>	
+	  <div id="content">
         	<div id="navigate">
 
 			{%block toolbar%}{% endblock %}
                		{%block navigate%}{% endblock %}
         	</div>
 
-		{% block content %}{% endblock %}
-	</div>
-	</div>
+       	    {% block content %}{% endblock %}
+	  </div>
+	 </div>
 </body>
 </html>

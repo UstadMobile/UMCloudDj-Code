@@ -345,7 +345,7 @@ class UMCloudDjViewTestCase(TestCase):
         self.assertEquals(response.status_code, 301) #301 is permanant redirect
 	self.assertEqual(response.get('location'),'http://testserver/register/start/')
 
-
+    """
     def test_sendtestlog_view(self):
 	view_url="/sendtestlog/"
 	password = ""
@@ -361,6 +361,7 @@ class UMCloudDjViewTestCase(TestCase):
 	self.assertEquals(response.status_code, 200)
 	ustadmobile_test = Ustadmobiletest.objects.get(name='umclouddjunittestname')
 	self.assertEquals(ustadmobile_test.ustad_version, 'umclouddjtestversion')
+    """
 	
     
     def test_report_statements_view(self):
@@ -371,11 +372,11 @@ class UMCloudDjViewTestCase(TestCase):
         """
         Not logged in user will redirect to login page
         """
-        view_url="/statementsreports/"
+        view_url="/reports/allstatements/"
         self.c = Client();
         response = self.c.get(view_url)
         self.assertEquals(response.status_code, 302)
-        self.assertRedirects(response, '/login/?next=/statementsreports/')
+        self.assertRedirects(response, '/login/?next=/reports/allstatements/')
 
         """
         Logged in user will be able to see the upload page
@@ -387,7 +388,7 @@ class UMCloudDjViewTestCase(TestCase):
 
         response = self.c.get(view_url)
         self.assertEquals(response.status_code, 200)
-        self.assertContains(response, "Select the filters below", status_code=200)
+        self.assertContains(response, "All statements from your organisation", status_code=200)
 
     def test_report_selection_view(self):
 	"""
@@ -397,11 +398,11 @@ class UMCloudDjViewTestCase(TestCase):
         """
         Not logged in user will redirect to login page
         """
-        view_url="/mcqreports/"
+        view_url="/reports/durationreport_selection/"
         self.c = Client();
         response = self.c.get(view_url)
         self.assertEquals(response.status_code, 302)
-        self.assertRedirects(response, '/login/?next=/mcqreports/')
+        self.assertRedirects(response, '/login/?next=/reports/durationreport_selection/')
 
         """
         Logged in user will be able to see the upload page
@@ -458,8 +459,10 @@ class UMCloudDjViewTestCase(TestCase):
     def test_sign_up_in(self):
 	view_url="/signup/"
 	post_data={'username':'testrequest', 'email':'testrequest@testing.com','password':'12345','passwordagain':'12345','first_name':'Test','last_name':'Request','website':'http://www.testing.com/','job_title':'Tester','company_name':'TestCorp','dateofbirth':'02/02/1989','address':'TestLand','phonenumber':'+1234567890','gender':'M','organisationrequest':''}
+	
 	response=self.client.post(view_url,post_data)
 	self.assertEquals(response.status_code, 200)
+	print(User.objects.all())
 	testrequest=User.objects.get(username="testrequest")
 	self.assertEquals('testrequest', testrequest.username)
 	self.assertEquals(False, UserProfile.objects.get(user=testrequest).admin_approved)

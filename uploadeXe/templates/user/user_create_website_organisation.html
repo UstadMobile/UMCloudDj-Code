@@ -47,7 +47,11 @@
 </script>
 {% endblock %}
 {% if state == "Valid code" %}
-<p style="color:green;"><i>Code: {{organisationalcode}} ({{organisation_name}})</i></p>
+ {% if invitationemail %}
+   <p style="color:green"><i>Hi {{invitationemail}} , please fill in the form below to continue to {{invitationblock.name}} course</i></p>
+ {% else %}
+   <p style="color:green;"><i>Code: {{organisationalcode}} ({{organisation_name}})</i></p>
+ {% endif %}
 {% else %}
 <p class="error" style="color:red;"><i>{{state}}</i></p>
 {% endif %}
@@ -60,9 +64,19 @@
     <div data-role="fieldcontain" style="padding-bottom:5px">
 	<input type="text" name="username" id="username" placeholder="Username" style="height: 30px; width: 250px;" value="" required/>*
     </div>
-    <div data-role="fieldcontain" style="padding-bottom:5px">
-	<input type="email" name="email" id="email" placeholder="Email" style="height: 30px; width: 250px;" value="" />
-    </div>
+
+    {% if invitationemail %}
+        <div data-role="fieldcontain" style="padding-bottom:5px">
+            <input type="email" name="email" id="email" placeholder="Email" style="height: 30px; width: 250px;" value="{{invitationemail}}" readonly/>
+        </div>
+
+    {% else %}
+        <div data-role="fieldcontain" style="padding-bottom:5px">
+            <input type="email" name="email" id="email" placeholder="Email" style="height: 30px; width: 250px;" value="" />
+        </div>
+    {% endif %}
+
+
     <div data-role="fieldcontain" style="padding-bottom:5px">
 	<input type="password" name="password" id="password" placeholder="Password" style="height: 30px; width: 250px;" value="" required/>*
     </div>
@@ -93,6 +107,17 @@
      <div data-role="fieldcontain" style="padding-bottom:5px">
         <input type="tel" name="phonenumber" id="phonenumber" placeholder="Phone Number" style="height: 30px; width: 250px;" value="" />*
     </div>
+    {% if invitationemail %}
+     <div data-role="fieldcontain" style="padding-bottom:5px">
+      <input type="text" placeholder="Block Id" style="height: 30px; width: 250px;" id="blockid" name="blockid" value="{{invitationblock.id}}" hidden/>
+     </div>
+
+     <div data-role="fieldcontain" style="padding-bottom:5px">
+     <input type="text" placeholder="Invitation Id" style="height: 30px; width: 250px;" id="invitationid" name="invitationid" value="{{invitationid}}" hidden/>
+     </div>
+
+    {% endif %}
+
     <div data-role="fieldcontain" style="padding-bottom:5px">
     <input type="hidden" placeholder="Organisation Code" style="height: 30px; width: 250px;" id="organisationrequest" name="organisationrequest" value={{organisationalcode}} readonly/> <i></i>
     </div>
@@ -104,7 +129,12 @@
     </div>
 
     <p></p>
-	 <button id="submit" type="submit" name="submit" value="Create">Request my account</button>
+    {% if invitationemail %}
+        <button id="submit" type="submit" name="submit" value="Create">Complete Registration</button>
+    {% else %}
+        <button id="submit" type="submit" name="submit" value="Create">Request my account</button>
+    {% endif %}
+
     </div>
 </form>
 

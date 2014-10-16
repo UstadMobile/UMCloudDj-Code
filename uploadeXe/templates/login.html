@@ -21,7 +21,8 @@
     		<p class="error"> Sorry, that is not a valid username/password</p>
 	{% endif %}
 	{% if statesuccess == 1 %}
-		<img src="/media/images/tick.png" alt=""><p style="color:green;"><i>{{state}}<i></p>
+		<img src="/media/images/tick.png" alt=""><a style="color:green;"><i>{{state}}<i></a>
+		<p></p>
 	{% else %}
 		<p style="color:red;" class="error"><i>{{state}}<i></p>
 	{% endif %}
@@ -29,7 +30,11 @@
 	<form action="/auth/" method="POST"> {% csrf_token %}
 		<div id="loginpanel" title="Log in to Ustad Mobile Cloud">  
 		<div data-role="fieldcontain">
+		{% if invitation %}
+		 <label for="username">Username: &nbsp;</label><input type="text" name="username" id="username" value="" />
+		{% else %}
                 <label for="username">Username: &nbsp;</label><input type="text" name="username" id="username" value="" />
+		{% endif %}
                 </div>
                 <div data-role="fieldcontain">
                 <label for="password">Password:&nbsp;&nbsp;&nbsp;</label><input type="password" name="password" id="password" value="" />

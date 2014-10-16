@@ -40,12 +40,13 @@ class MyCustomBackend:
 	    #Check user credentials
 
 	    s = xmlrpc.ServerProxy('http://www.ustadmobile.com/xmlrpc.php')	#Getting the xmlrpc link for ustadmobile.com wordpress
-	    if s.wpse39662.login(username,password):				#Returns true if user is successfully authenticated, False if not
-	    	print("Username and Password check success for new user.")
-		print("Checking new user in Django..")
-		#Create user.
-		user_count = User.objects.filter(username=username).count()
-        	if user_count == 0:
+	    try:
+	        if s.wpse39662.login(username,password):				#Returns true if user is successfully authenticated, False if not
+	    	    print("Username and Password check success for new user.")
+		    print("Checking new user in Django..")
+		    #Create user.
+		    user_count = User.objects.filter(username=username).count()
+        	    if user_count == 0:
 			print ("User doesn't exist, creating user..")
 			user = User(username=username, email=username)
     			user.set_password(password)
@@ -65,13 +66,15 @@ class MyCustomBackend:
 
         		#return auth_and_login(request)
 			return user;
-    		else:
+    		    else:
         		#Show message that the username/email address already exists in our database.
 			print("Error in creating user. User already exists!")
         		return redirect("/login/")
-
-	    else:
-		print("Username and Password check unsuccessfull for new user. Not creating new user.")
+	        else:
+		    print("Username and Password check unsuccessfull for new user. Not creating new user.")
+		    return None
+	    except:
+		print("!!Unable to establish a connection with ustadmobile.com's xmlrpcr!!")
 		return None
 
             #return None

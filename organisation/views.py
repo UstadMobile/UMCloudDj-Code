@@ -11,6 +11,7 @@ from django.template import RequestContext
 
 #Testing..
 from django.forms import ModelForm
+from school.models import School
 from organisation.models import Organisation
 from organisation.models import UMCloud_Package
 from organisation.models import User_Organisations
@@ -202,9 +203,23 @@ def organisation_create(request, template_name='organisation/organisation_create
 					print("User created..")
                     			current_user_role = User_Roles.objects.get(user_userid=user.id).role_roleid;
                     			student_role = Role.objects.get(pk=6)
+					teacher_role = Role.objects.get(pk=5)
+
+                    			state="The user " + user.username + " and organisation " + organisation.organisation_name + " has been created."
+					print("Creating the default teacher and school")
+					
+					org_school = School(school_name=organisation.organisation_name + "_school", school_desc="This is the default school for Organisation: "+ organisation.organisation_name,organisation_id=organisation.id)
+        				org_school.save()
+					
+					org_teacher = User.objects.create(username=organisation.organisation_name+"_teacher", password=post['password'], first_name="Default", last_name="Teacher")
+					org_teacher.save()
+					org_teacher_role = User_Roles(name="org_create", user_userid=org_teacher, role_roleid=teacher_role)
+					org_teacher_role.save()
+					org_teacher_organisation = User_Organisations(user_userid=org_teacher, organisation_organisationid=organisation)
+					org_teacher_organisation.save()
+					print("Mapping done.")
 
 		
-                    			state="The user " + user.username + " and organisation " + organisation.organisation_name + " has been created."
 					return redirect('organisation_table')
                 		else:
 					print("Something went wrong when creating the user.. ")

@@ -96,7 +96,7 @@
 		}
 		</script>	
 
-		<h3>1. Choose your file</h3>
+		<h3>1. Choose your files</h3>
 		<!-- Upload form. Note enctype attribute! -->
 		<form action="{% url "list" %}" method="post" enctype="multipart/form-data">
 			{% csrf_token %}
@@ -105,10 +105,11 @@
 			<p>
 				{{ form.exefile.errors }}
 				<!--{{ form.exefile }}-->
-				<input id="id_exefile" name="exefile" type="file" accept=".elp" >
+				<input id="id_exefile" name="exefile" type="file" accept=".elp" multiple>
 				
 			</p>
-			
+			<p><INPUT TYPE=CHECKBOX NAME="forceNew" ID="forceNew">Treat as a new upload<P>
+			<i>If you check this, the block you are about to upload will be treated as a new block and not an update</i>
 		        <!--<h3>2. Select Students Picklist</h3>
 			<div id="selectstudentsfornewallclass" >
     				<select multiple="multiple" id="source" name="source">

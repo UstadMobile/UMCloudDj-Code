@@ -49,6 +49,11 @@ class RoleViewTestCase(TestCase):
         Users cannot be created without logging in
 	UMCloudDj.views.role_create
         """
+
+	response = self.client.post('/rolenew/')
+	self.assertEqual(response.status_code, 302)
+	#self.assertContains(response, "http://testserver/login/?next=/rolenew/")
+
 	post_data={'role_name':'test_create','role_desc':'This is created by the test procedure'}
         response = self.client.post('/rolenew/', post_data)
         self.assertEqual(response.status_code, 302)
@@ -70,6 +75,13 @@ class RoleViewTestCase(TestCase):
         login = self.c.login(username='testuser', password='hello')
 
         requesturl = reverse(view_name)
+
+	"""
+	Just checking a new form when no post data is given
+	"""
+	response = self.c.post(requesturl)
+	self.assertContains(response, "id_role_name")
+	
         response = self.c.post(requesturl, post_data)
         test_create_role = Role.objects.get(role_name="Tester")
         self.assertEqual('Tester',Role.objects.get(role_name='Tester').role_name)
@@ -133,6 +145,13 @@ class RoleViewTestCase(TestCase):
         self.user.save()
         self.user = authenticate(username='testuser', password='hello') 
         login = self.c.login(username='testuser', password='hello') 
+	
+	"""
+        Just checking a new form when no post data is given
+        """
+	requesturl = reverse(view_name, kwargs={'pk':testerroleid})
+        response = self.c.post(requesturl)
+        self.assertContains(response, "id_role_name")
 
 	testerrole = Role.objects.get(role_name='Tester')
 	testerroleid = testerrole.id;
@@ -163,6 +182,7 @@ class RoleViewTestCase(TestCase):
         requesturl = reverse(view_name, kwargs={'pk':testerroleid})
         response = self.c.get(requesturl)
         self.assertEquals(response.status_code,200)
+
 
 	"""
 	Logged in user deleting unknown user: 4040

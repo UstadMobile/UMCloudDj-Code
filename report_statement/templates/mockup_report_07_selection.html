@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% block title %}Generate a Usage Report {% endblock %}
+{% block content %}
+{% if form.errors %}
+    <p class="error"> Sorry, that is not a valid selection</p>
+{% endif %}
+
+{% block scriptjs %}
+<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart.js" %}"></script>
+<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart-config.js" %}"></script>
+<link rel="stylesheet" href="{{ STATIC_URL }}jscss/jstree/dist/themes/default/style.min.css" />
+<script src="{{ STATIC_URL }}jscss/jstree/dist/jstree.min.js"></script>
+<style>
+#ajaxSpinnerContainer {height:51px;}
+#ajaxSpinnerImage {display:none;}
+</style>
+
+
+<script type="text/javascript">
+	 $(document).ready(function(){
+		$('#radio1').click(function() {
+                        $('#ajaxSpinnerImage').show();
+                        myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
+                });
+		$('#radio2').click(function() {
+                        $('#ajaxSpinnerImage').show();
+                        myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
+                });
+		$('#radio3').click(function() {
+			$('#ajaxSpinnerImage').show();
+                        myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
+		});
+                $('#submit').click(function() {
+                        $('#ajaxSpinnerImage').show();
+			myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
+                });
+
+        });
+	function hideAjaxSpinnerImage()
+	{
+		$('#ajaxSpinnerImage').hide();
+	}
+	 $(function() { 
+                        $(function() { 
+                                $('#usagereporttable').dynatable({
+                                        features: {
+                                                paginate: true,
+                                                search: true,
+                                                recordCount: true,
+                                                sorting: true,
+                                                
+                                        },
+                                        dataset: {
+                                        records:[
+						{'school':'Sharjah School', 'duration':65},
+						{'school':'Aalo Tribe - Literacy School', 'duration':59},
+						{'school':'School 3', 'duration':80}
+                                                ]
+                                        }
+                                });
+                        });
+
+        });
+
+          $(function() { 
+			$( "#radio" ).buttonset();
+			$('#default').puitabview();
+			$('#ajaxSpinnerImage').puipanel();
+			$('#container').jstree(/* optional config object here */);
+			$('#usersjstree').jstree({
+  				"plugins" : [ "wholerow", "checkbox" ]
+			});
+			$('#coursesjstree').jstree({
+  				"plugins" : [ "wholerow", "checkbox" ]
+			});
+			$('#since_1').puiinputtext();
+			$('#until_1').puiinputtext();
+			$('#brand').puidropdown();
+			$('#submit').puibutton();
+			
+                }
+          ); 
+	var prevcolor="";
+	function getRandomColor() {
+    		var letters = '0123456789ABCDEF'.split('');
+    		var color = '#';
+    		for (var i = 0; i < 6; i++ ) {
+        		color += letters[Math.floor(Math.random() * 16)];
+    		} 
+    		prevcolor=color;
+    		return color;
+	}
+	$(function() {
+         // Get the context of the canvas element we want to select
+         var ctx = document.getElementById("usagereport").getContext("2d");
+         var data = {
+                labels: [ "Sharjah School","Aalo Tribe school","School 3"],
+                //labels: ["January", "February", "March", "April", "May", "June", "July"],
+                datasets: [
+		   	{
+            		label: "My First dataset",
+            		fillColor: "rgba(220,220,220,0.5)",
+            		strokeColor: "rgba(220,220,220,0.8)",
+			//fillColor: getRandomColor(),
+            		highlightFill: "rgba(220,220,220,0.75)",
+            		highlightStroke: "rgba(220,220,220,1)",
+            		data: [65, 59, 80 ]
+                    },
+                ]
+         };
+         var options = {
+  		legendTemplate : '<ul>'
+                  +'<% for (var i=0; i<datasets.length; i++) { %>'
+                    +'<li>'
+                    +'<span style=\"background-color:<%=datasets[i].strokeColor %>\">&nbsp;&nbsp;&nbsp; </span>&nbsp;&nbsp;'
+                    +'<% if (datasets[i].label) { %><%= datasets[i].label %><% } %>'
+                  +'</li>'
+                +'<% } %>'
+              +'</ul>',
+  	 }
+         var myLineChart = new Chart(ctx).Bar(data,options);
+	});
+
+        </script>
+{% endblock %}
+
+<p></p>
+
+<form name="usagereportform" action="" method="POST"> {% csrf_token %}
+    <i><center></a>Usage Report Mockups</center></i><p></p>
+
+    <div style="float:left" id="selection" name="selection">
+     <div style="padding-bottom:10px;">
+        <!--Since:-->
+  	<b>Start date </b>
+	<input type="text" name="since_1" id="since_1" style="height: 30px; width: 130px;" placeholder="Since" value="" required/>*
+	&nbsp;End date <input type="text" name="until_1" id="until_1" style="height: 30px; width: 130px;" placeholder="Until"  value="" required/>*
+     </div>
+
+     <div style="display: none;">
+    	<input type="text" name="since_1_alt" id="since_1_alt" value="" style="cursor: pointer;">
+     </div>
+
+
+     <p</p>
+     <div id="coursesdiv" name="coursesdiv">
+      <b>Courses</b><p></p>
+      <i>Search</i> <input type="text" style="width:200px;"name="searchcourses">
+       <div style="overflow:scroll;" id="coursesjstree">
+        <ul>
+         <li id="allcoursesjstree" name="allcoursesjstree" data-jstree='{ "opened" : true }'>All courses
+          <ul>
+           <li id="child_node">Planets and Astronomy
+	    <ul>
+	     <li>The Solar System</li>
+	     <li>Mars and the quet for alien life</li>
+	    </ul>
+	   </li>
+	   <li>Farming 101
+	    <ul>
+	     <li>Crops - Getting started</li>
+ 	     <li>Heat and Moisture</li>
+	     <li>Social media in farming - Poke your farmers</li>
+	    </ul>
+          </ul>
+         </li>
+        </ul>
+       </div>
+      </div>
+ 
+    <p></p>
+    <div id="usersdiv" name="usersdiv" >
+    <b>Users</b><p></p>
+    <i>Search</i> <input type="text" style="width:200px;"  name="searchusers">
+    <div style="overflow:scroll" id="usersjstree">
+     <ul>
+      <li data-jstree='{ "opened" : true }'>All users
+       <ul>
+        <li id="child_node">Sharjah School
+         <ul>
+          <li>Class 12-A
+	   <ul>
+	    <li>Zayeed Al-Nasr</li>
+	   </ul>
+	  </li>
+          <li>Class Maloof-B
+	   <ul>
+	    <li>Varuna Singh</li>
+	    <li>Mike Dawson</li>
+	    <li>Bruce Lee</li>
+	    <li>Tony Abott</li>
+	   <ul>
+	  </li>
+         </ul>
+ 	</li>
+	</ul>
+	</ul>
+        <li>Aalo Tribe - Literacy School
+         <ul>
+          <li>Beginner Class
+	   <ul>
+	    <li>Thomas Edison</li>
+	    <li>Nikola Tesla</li>
+	   </ul>
+	  </li>
+          <li>Communication Class
+	   <ul>
+	    <li>Steven Jobs</li>
+	    <li>John Legere</li>
+	    <li>Alan Mulally</li>
+	   </ul>
+	  </li>
+          <li>Writing and editing Class	
+	   <ul>
+	    <li>Richard Linklator</li>
+	   </ul>
+	  </li>
+         </ul>
+        </li>
+       </ul>
+      </li>
+     </ul>
+    </div>
+   </div>
+
+    <!--<label>Select Schools</label>
+    <select name="brand" id="brand" required>
+        <option selected disabled value="Z" required>Select Class</option>
+	<option value="Z" > Sharjah School</option>
+	<option> RAK</option>
+	<option>ADB School </option>
+    </select>*<p></p>-->
+    <p></p>
+    <div id="indicatorsdiv" name="indicatorsdiv">
+	<b>Indicators</b><p></p>
+	<INPUT TYPE=CHECKBOX NAME="totalduration">Total Duration</><p></p>
+	<INPUT TYPE=CHECKBOX NAME="avgduration">Average duration per user</><p></p>
+	<INPUT TYPE=CHECKBOX NAME="avgscore">Average score</><p></p>
+    </div>
+
+    <div style="display: none;">
+        <input type="text" name="until_1_alt" id="until_1_alt" value="" style="cursor: pointer;">
+    </div>
+    <!--<div data-role="fieldcontain">
+        <label for="activity">Activity:</label><input type="text" name="activity" id="activity" value="" />
+    </div>-->
+
+    <p></p>
+    <button id="submit" type="submit" name="submit" <value="submit-value">Submit</button>
+    <p></p>
+
+    </div>  <!--selection div -->
+
+     <div id="report-chart" name="report-chart" style="float:right">
+	 <div id="radio">
+	    Group by: <input type="radio" id="radio1" name="radio" checked="checked" ><label for="radio1">School</label>
+	    <input type="radio" id="radio2" name="radio" ><label for="radio2">Class</label>
+	    <input type="radio" id="radio3" name="radio"><label for="radio3">User</label>
+	</div>
+      <canvas style="margin-right:150px;" id="usagereport" width="600" height="400"></canvas>
+     </div>
+    <p></p>
+    <br></br>
+    <br></br>
+     <div style="float:right; margin-right:340px;" id=usagereportdiv" name="usagereportdiv">  
+	<div id="blah" name="blah"></div>
+     	 <table id="usagereporttable">
+  		<thead>
+         	 <th data-dynatable-column="school" >School</th>
+	 	 <th data-dynatable-column="duration">Duration</th>
+  		</thead>
+  		<tbody></tbody>
+  		<tfoot></tfoot>
+    	       </table>
+     </div>
+
+</form>
+
+
+<div id="ajaxSpinnerContainer" class="spinner">
+                <div id="ajaxSpinnerImage" title="Loading..">
+                        <img src="{{MEDIA_URL}}/spinner.gif" title="working...">
+</div>
+
+<script>
+
+	$('#since_1').datetimepicker({
+		altField: "#since_1_alt",
+		altFieldTimeOnly: false,
+		altFormat: "yy-mm-dd",
+		altTimeFormat: "h:m",
+		altSeparator: "T",
+	});
+	$('#until_1').datetimepicker({
+		defaultValue: '09/21/2014',
+                altField: "#until_1_alt",
+                altFieldTimeOnly: false,
+                altFormat: "yy-mm-dd",
+                altTimeFormat: "h:m",
+                altSeparator: "T",
+		maxDate: "2",
+		setDate: "1",
+
+	});
+</script>
+
+{% endblock %}

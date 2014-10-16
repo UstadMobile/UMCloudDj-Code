@@ -11,6 +11,7 @@ from django.template import RequestContext
 from uploadeXe.models import Package as Document
 from uploadeXe.models import Course
 from uploadeXe.models import Ustadmobiletest
+from uploadeXe.models import Invitation
 
 #Testing..
 from uploadeXe.models import Role
@@ -40,9 +41,17 @@ import glob #For file ^VS 130420141454
 #from UMCloudDj.models import Ustadmobiletest
 from uploadeXe.models import Ustadmobiletest
 #from django.utils import simplejson
+import simplejson
 from django.conf import settings
 from django.db.models import Q
 import random
+import commands #Added for getting current location 24092014
+from xml.dom import minidom
+from lxml import etree
+import xml.etree.ElementTree as ET
+import hashlib
+import zipfile
+from django.core.mail import send_mail
 
 #UMCloudDj.uploadeXe
 
@@ -615,7 +624,7 @@ def apptestresults_selection_view(request):
 	c.update(csrf(request))
 	return render(request, "apptestresults_selection.html")
 """
-
+"""
 @csrf_exempt
 def sendtestlog_view(request):
 	print("Receiving the test logs..")
@@ -663,6 +672,8 @@ def sendtestlog_view(request):
 		print("The username and password is incorrect. Sorry bro..")
 		return render_to_response("invalid.html", {'invalid': invalid}, context_instance=RequestContext(request))
 	
+"""
+
 @csrf_exempt
 def checklogin_view(request):
 
@@ -686,13 +697,191 @@ def checklogin_view(request):
 			return authresponse
 
 @csrf_exempt
-def getassignedcourseids_view(request):
+def getassignedecourses_json(request):
+	if request.method == "POST":
+	    print("Course list request coming from \
+			outside (UstadMobile?)")
+	    username = request.POST.get('username', False)
+	    password = request.POST.get('password', False)
+            print("For user: " + username)
+	    #Authenticate the user
+	    user = authenticate(username=\
+			request.POST['username'],\
+		 password=request.POST['password'])
+	    if user is not None:
+		organisation = User_Organisations.objects.get(\
+				user_userid=user)\
+				.organisation_organisationid;
+		allorgcourses = Course.objects.filter(organisation=organisation)
+		alluserclasses = Allclass.objects.filter(students__in=[user])
+		matched_courses=Course.objects.filter(Q(organisation=\
+			organisation, students__in=[user]) | \
+			    Q(organisation=organisation, \
+			        allclasses__in=alluserclasses))
+		json_courses = simplejson.dumps([
+			{o.id:{
+			    'title':o.name,
+			    'last-modified':str(o.upd_date)
+			    }
+			}for o in matched_courses])	
+		"""
+		json_courses_old = simplejson.dumps( [{'id': o.id,
+                           'title': o.name,
+                            'last-modified':str(o.upd_date)} for o in matched_courses] )
+		"""
+        	return HttpResponse(json_courses, mimetype="application/json")
 
+	else:
+	    authresponse = HttpResponse(status=500)
+            authresponse.write("Not a POST request. Assigned Course IDs retrival failed.")
+            return authresponse
+@csrf_exempt
+def get_course_blocks(request):
+	if request.method == "POST":
+            print("Course list request coming from \
+                        outside (UstadMobile?)")
+            username = request.POST.get('username', False)
+            password = request.POST.get('password', False)
+	    courseid = request.POST.get('courseid', False)
+            print("For user: " + username)
+            #Authenticate the user
+            user = authenticate(username=\
+                        request.POST['username'],\
+                 password=request.POST['password'])
+            if user is not None:
+                organisation = User_Organisations.objects.get(\
+                                user_userid=user)\
+                                .organisation_organisationid;
+                allorgcourses = Course.objects.filter(organisation=organisation)
+                alluserclasses = Allclass.objects.filter(students__in=[user])
+                matched_courses=Course.objects.filter(Q(organisation=\
+                        organisation, students__in=[user]) | \
+                            Q(organisation=organisation, \
+                                allclasses__in=alluserclasses))
+		try:
+		    course=Course.objects.get(id=courseid, organisation=organisation)
+		except:
+		    authresponse=HttpResponse(status=500)
+		    authresponse.write("Course does not exist or does not belong to your organisation")
+		    return authresponse
+		else:
+		    all_blocks_in_course=course.packages.all()
+		    json_blocks = simplejson.dumps([
+			{o.id:{
+			    'title':o.name
+			      }
+		        }for o in all_blocks_in_course])
+               	    return HttpResponse(json_blocks, mimetype="application/json")
+
+        else:
+            authresponse = HttpResponse(status=500)
+            authresponse.write("Not a POST request. Assigned Block retrival for course failed.")
+            return authresponse
+
+@csrf_exempt
+def invite_to_course(request):
+	if request.method == "POST":
+            print("Invitation request coming from outside (eXe?)")
+            username = request.POST.get('username', False)
+            password = request.POST.get('password', False)
+	    blockid  = request.POST.get('blockid', False)
+	    emailids = request.POST.get('emailids', False)
+	    mode     = request.POST.get('mode', False)
+	    emailidsjson = json.loads(emailids)
+	    emails=[]
+	    for item in emailidsjson:
+		emails.append(item)
+	    print(username)
+	    print(blockid)
+	    print(mode)
+	    print(emails)
+	    mode     = request.POST.get('mode', False)
+            #Authenticate the user
+            user = authenticate(username=\
+                        request.POST['username'],\
+                 password=request.POST['password'])
+            if user is not None:
+		individual_organisation = Organisation.objects.get(\
+			organisation_name="IndividualOrganisation")
+                organisation = User_Organisations.objects.get(\
+                                user_userid=user)\
+                                .organisation_organisationid;
+		print(organisation)
+		try:
+		    #Check if the block youa re about to give permissions to, is
+		    #in your organisation and exists..
+		    block = Document.objects.get(id=blockid, success="YES", active=True, \
+			publisher__in=User.objects.filter(pk__in=\
+			    User_Organisations.objects.filter(\
+				organisation_organisationid=organisation).values_list(\
+					'user_userid', flat=True)))
+		except:
+		    authresponse=HttpResponse(status=500)
+		    authresponse.write("Block requested does not exist or is in your organisation")
+		    return authresponse
+		else:
+		    print("Going through emails..")
+		    for current_email in emails:
+			print("Current email:")
+			print(current_email)
+			try:
+		            if mode == "organisation":
+		    	    	invitation=Invitation(organisation=organisation, invitee=user, email=current_email, block=block)
+			    elif mode == "individual":
+			    	invitation = Invitation(organisation=individual_organisation, invitee=user, email=current_email, block=block)
+			    else:
+			    	authresponse=HttpResponse(status=500)
+                    	    	authresponse.write("Unable to figure the mode out..")
+                    	    	return authresponse
+			    invitation.save()
+			    print("All good, time to send emails..")
+			    try:
+			    	send_mail('You are invited to join ' + block.name, 'Hi,\
+					I am inviting you to access a course I made using eXe course creation software.\
+				Please click the link to acess the course. (Do not share this link. It is private to you).',\
+				 'hello@ustadmobile.com', [current_email], fail_silently=False)
+			    except:
+				authresponse = HttpResponse(status=500)
+				authresponse.write("Failed to send emails. Check if you have set it up and the settings are correct.")
+				return authresponse
+			    #@@@@@@@@@@@@@@@@@@@@@@@@@
+		  	    #@@@@@@@@@@@@@@@@@@@@@@@@@
+			    #Email this invitation code.
+			    #@@@@@@@@@@@@@@@@@@@@@@@@@
+			    #@@@@@@@@@@@@@@@@@@@@@@@@@
+			except:
+                            authresponse = HttpResponse(status=500)
+                            authresponse.write("Unable to create invitation object.")
+                            return authresponse
+		    authresponse = HttpResponse(status=200)
+		    authresponse.write("Invitation objects created. Emails left to be sent")
+		    return authresponse
+
+
+
+                allorgcourses = Course.objects.filter(organisation=organisation)
+                alluserclasses = Allclass.objects.filter(students__in=[user])
+                matched_courses=Course.objects.filter(Q(organisation=\
+                        organisation, students__in=[user]) | \
+                            Q(organisation=organisation, \
+                                allclasses__in=alluserclasses))
+
+        else:
+            authresponse = HttpResponse(status=500)
+            authresponse.write("Not a POST request. Invitation set up failed.")
+            return authresponse
+
+
+
+@csrf_exempt
+def getassignedcourseids_view(request):
         if request.method == 'POST':
                 print 'Login request coming from outside (eXe)'
                 username = request.POST.get('username',False);
                 password = request.POST.get('password', False);
                 #Code for Authenticating the user
+		print("Username;")
+		print(username)
                 user = authenticate(username=request.POST['username'], password=request.POST['password'])
                 if user is not None:
 			xmlreturn="<?xml version=\"1.0\" ?>"
@@ -769,6 +958,8 @@ def sendelpfile_view(request):
 		print 'Login request coming from outside (eXe)'
 		username = request.POST.get('username');
 		password = request.POST.get('password');
+		forceNew = request.POST.get('forceNew');
+		noAutoassign = request.POST.get('noAutoassign');
 		print "The username is" 
 		print username 
 		print "The file: " 
@@ -781,6 +972,7 @@ def sendelpfile_view(request):
         		#We Sign the user..
 			login(request, user)
 
+			organisation = User_Organisations.objects.get(user_userid=user).organisation_organisationid;
 			#Try to save the file
 			newdoc = Document(exefile = request.FILES['exeuploadelp'])
 		        uid = str(getattr(newdoc, 'exefile'))
@@ -788,53 +980,111 @@ def sendelpfile_view(request):
             		#Get the file and run eXe command
             		#Get url / path
             		setattr (newdoc, 'url', 'bull')
-			setattr (newdoc, 'publisher', request.user)
+			setattr (newdoc, 'publisher', user)
+			setattr (newdoc, 'elphash','-')
+            		setattr (newdoc, 'tincanid', '-')
             		newdoc.save()
             		os.system("echo Current location:")
             		os.system("pwd")
+			status, serverlocation = commands.getstatusoutput("pwd")
             		uid = str(getattr(newdoc, 'exefile'))
             		print("File saved as: ")
             		print(uid)
+			mainappstring = "/UMCloudDj/"
+			elphash = hashlib.md5(open(serverlocation + mainappstring \
+                        	+ settings.MEDIA_URL + uid).read()).hexdigest()
+			setattr(newdoc, 'elphash', elphash)
             		unid = uid.split('.um.')[-2]
             		unid = unid.split('/')[-1]  #Unique id here.
             		print("Unique id:")
             		print (unid)
-
+			
 			#Code for elp to ustadmobile export
 
 			setattr(newdoc, 'uid', unid)
-			
-			"""
+
+
 			elpfile=appLocation + '/../UMCloudDj/media/' + uid
-			elpfilehandle = open(elpfile, 'rb')
+
+
+            		elpfilehandle = open(elpfile, 'rb')
             		elpzipfile = zipfile.ZipFile(elpfilehandle)
             		for name in elpzipfile.namelist():
-                		if name.find('contentv3.xml') != -1:
-                    			elpxmlfile=elpzipfile.open(name)
-                    			elpxmlfilecontents=elpxmlfile.read()
-                    			elpxml=minidom.parseString(elpxmlfilecontents)
-                    			dictionarylist=elpxml.getElementsByTagName('dictionary')
-                    			stringlist=elpxml.getElementsByTagName('string')
-                    			print("/////////////////////////////////////////////////")
-                    			elpid="replacemewithxmldata"
-                    			setattr(newdoc, 'elpid', elpid)
-                    			#print(dictionarylist[0].attributes['string'].value)
-			"""
+                	    if name.find('contentv3.xml') != -1:
+                    		elpxmlfile=elpzipfile.open(name)
+                    		elpxmlfilecontents=elpxmlfile.read()
+                    		#Using minidom
+                    		elpxml=minidom.parseString(elpxmlfilecontents)
+		
+                    		#using ET
+                    		root = ET.fromstring(elpxmlfilecontents)
+                    		for child in root:
+                        	    foundFlag=False
+                        	    for chi in child:
+                            		if foundFlag == True:
+                                	    tincanprefix=chi.attrib['value']
+                            		if "}string" in chi.tag:
+                                	    if "xapi_prefix" in chi.attrib['value']:
+                                    		foundFlag=True
+			 	try:
+                    		    if not tincanprefix:
+                        	    	tincanprefix="-"
+				except:
+				    tincanprefix=""
+                    		setattr(newdoc, 'tincanid', tincanprefix)
+                    		try:
+                        	    dictionarylist=elpxml.getElementsByTagName('dictionary')
+                        	    stringlist=elpxml.getElementsByTagName('instance')
+                        	    lomemtry=None
+                        	    for x in stringlist:
+                            		if x.getAttribute('class') == "exe.engine.lom.lomsubs.entrySub":
+                                	    lomentry=x
+                                	    break
+                        	    elplomidobject=lomentry.getElementsByTagName('string')
+                        	    elplomid=None
+                        	    for e in elplomidobject:
+                            		elplomid=e.getAttribute('value')
+                        	    print("ELP LOM ID:")
+                        	    print(elplomid)
+                        	    setattr(newdoc, 'elpid', elplomid)
+                    		except:
+                        	    setattr(newdoc, 'elpid', '-')
+                        	    elpid="replacemewithxmldata"
+                        	    setattr(newdoc, 'elpid', elpid)
+
+			
 
 			uidwe = uid.split('.um.')[-1]
             		uidwe = uidwe.split('.elp')[-2]
             		uidwe=uidwe.replace(" ", "_")
 			print("Going to export..")
-			rete=ustadmobile_export(uid, unid, uidwe)
-            		if rete:
-                		courseURL = '/media/eXeExport' + '/' + unid + '/' + uidwe + '/' + 'deviceframe.html'
+
+			root = ET.fromstring(elpxmlfilecontents)
+                    	for child in root:
+                            elpfoundFlag=False
+                            for chi in child:
+                            	if elpfoundFlag == True:
+                                    elpiname=chi.attrib['value']
+                                    break
+                            	if "}string" in chi.tag:
+                                    if "_name" in chi.attrib['value']:
+                                    	elpfoundFlag=True
+                        if not elpiname:
+                            elpiname="-"
+
+			if not noAutoassign:
+				newdoc.students.add(user)
+			  	#newdoc.save()
+			#rete=ustadmobile_export(uid, unid, uidwe)
+			rete = ustadmobile_export(uid, unid, elpiname, elplomid, forceNew)
+            		if rete=="newsuccess":
+                		courseURL = '/media/eXeExport' + '/' + unid + '/' + elpiname + '/' + 'deviceframe.html'
                 		setattr(newdoc, 'url', "cow")
                 		newdoc.save()
                 		setattr(newdoc, 'success', "YES")
                 		setattr(newdoc, 'url', courseURL)
                 		setattr(newdoc, 'name', uidwe)
-                		setattr(newdoc, 'publisher', request.user)
-                		newdoc.save()
+                		setattr(newdoc, 'publisher', user)
 				"""
                 		retg = grunt_course(unid, uidwe)
 
@@ -848,20 +1098,72 @@ def sendelpfile_view(request):
 				"""
 
                 		newdoc.save()
+				print("Going to create the course...")
+				#Update  14th October 2014: We want blocks coming from eXe to be created as single courses.
+				blockcourse = Course(name=newdoc.name, category="-",\
+					 description="Block course for "+newdoc.name,\
+						 publisher=user, organisation=organisation)
+				blockcourse.save()
+				print("assigning students to course..")
+				try:
+				    for every_user in newdoc.students.all():
+				    	print("in loop:")
+				    	print(every_user.username)
+				    	blockcourse.students.add(every_user)
+					blockcourse.save()
+				    print("Assigning block to course..")	
+				    blockcourse.packages.add(newdoc);
+				    setattr(blockcourse, 'success', "YES")
+				    blockcourse.save()
+				    print("Block course: " + blockcourse.name + " saved successfully!")
+				except:
+				    print("Could not create course..")
+				    newdoc.students.remove(all);
+				    newdoc.delete()
+			    	    blockcourse.delete()
+
+	
                 		#form is valid (upload file form)
                 		# Redirect to the document list after POST
 				uploadresponse = HttpResponse(status=200)
-                        	print "Course ID: "
+                        	print "Block ID: "
                         	print getattr(newdoc, 'id')
-                        	uploadresponse['courseid'] = getattr(newdoc, 'id')
-                        	uploadresponse['coursename'] = getattr(newdoc, 'name')
+                        	uploadresponse['courseid'] = getattr(blockcourse, 'id')
+                        	uploadresponse['coursename'] = getattr(blockcourse, 'name')
                         	return uploadresponse
 
+			elif rete=="newfail":
+				uploadresponse=HttpResponse(status=500)
+				uploadresponse.write("Failed to create and export")
+				uploadresponse['error'] = "Exe failed to export"
+				return uploadresponse
 
-            		else:
+			elif rete=="newfailcopy":
+				uploadresponse=HttpResponse(status=500)
+                                uploadresponse.write("Exported, did not complete.")
+                                uploadresponse['error'] = "Exported but failed to complete"
+                                return uploadresponse
+
+            		elif rete=="updatesuccess":
                 		setattr(newdoc, 'success', "NO")
+				setattr(newdoc, 'active', False)
                 		newdoc.save()
+				newdoc.delete()
+	
+				"""
+				uploadresponse = HttpResponse(status=200)
+                                print "Block ID: "
+                                print getattr(newdoc, 'id')
+                                uploadresponse['courseid'] = getattr(newdoc, 'id')
+                                uploadresponse['coursename'] = getattr(newdoc, 'name')
+                                return uploadresponse
+				"""
                 		# Redirect to the document list after POST
+				uploadresponse = HttpResponse(status=200)
+				uploadresponse.write("Course's block updated.")
+				return uploadresponse
+
+			elif rete=="updatefail":
                                 uploadresponse = HttpResponse(status=500)
                                 uploadresponse.write("Exe Export faild but uploaded")
                                 uploadresponse['error'] = "Exe export failed to start"
@@ -1032,6 +1334,66 @@ def showelptestresults_view(request):
 		return render_to_response("elptestresults.html", {'data': ''}, context_instance=RequestContext(request))
 """
 		
+#@csrf_exempt
+def check_invitation_view(request):
+	invitationid = request.GET.get('id')
+	print("Invitation id is:" + str(invitationid) )
+	try:
+	    invitation = Invitation.objects.get(invitation_id=invitationid, done=False)
+	    print("Starting registration process for : " + invitation.email)
+
+	except:	
+	    try:
+		invitation=Invitation.objects.get(invitation_id=invitationid)
+		if invitation:
+		    return render_to_response('login.html', {'statesuccess':1,'state':'Your account is created. Log in to see your course', 'invitation':invitation}, context_instance=RequestContext(request))
+	    except:
+	        print("invitation id does not exists")
+	        authresponse = HttpResponse(status=403)
+	        authresponse.write("Invalid invitation id.")
+	        if invitationid:
+	            return authresponse
+		else:
+	            return redirect('register_selection')
+	else:
+	    try:
+		alreadyauser=User.objects.get(email=invitation.email)
+		if alreadyauser:
+			invitation.block.students.add(alreadyauser)
+		 	invitation.block.save()
+			invitation.done = True
+			invitation.save()
+			c = {}
+        		c.update(csrf(request))
+        		return render_to_response('login.html', {'invitation':invitation}, context_instance=RequestContext(request))
+			#redirect('login')
+	    except:
+		print("A fresh new user is to be created..")
+	    individual_organisation = Organisation.objects.get(organisation_name="IndividualOrganisation")
+	    if invitation.organisation  == individual_organisation:
+		print("This invitation is for individual organisation")
+		c = {}
+        	c.update(csrf(request))
+        	return render(request, 'user/user_create_website_individual.html', {'invitationemail':invitation.email, 'invitationblock':invitation.block, 'invitationid':invitation.id})
+		#Return individual form
+	    elif invitation.organisation:
+		print("This invitation is for " + invitation.organisation.organisation_name + " organisation.")
+		organisationalcode = Organisation_Code.objects.get(organisation=invitation.organisation).code
+		organisation_name = invitation.organisation.organisation_name
+		state="Valid code"
+		
+	 	c = {}
+                c.update(csrf(request))
+                return render(request, 'user/user_create_website_organisation.html', {'invitationemail':invitation.email, 'invitationblock':invitation.block, 'invitationid':invitation.id, 'organisationalcode':organisationalcode, 'organisation_name':organisation_name, 'state':state})
+
+		
+	 
+            
+            authresponse = HttpResponse(status=200)
+            authresponse.write("Continuing...")
+            return authresponse
+
+	
 
 def getcourse_view(request):
 	courseid = request.GET.get('id')
@@ -1043,18 +1405,25 @@ def getcourse_view(request):
                 	print("Course exists!")
                 	print("The unique folder for course id: " + courseid + " is: " + matchedCourse.uid + "/" + matchedCourse.name)
                 	coursefolder = matchedCourse.uid + "/" + matchedCourse.name
+			"""
                 	xmlDownload = coursefolder + "_ustadpkg_html5.xml"
                 	data = {
                         	'folder' : coursefolder,
                         	'xmlDownload' : xmlDownload
                 	}
-                #response =  HttpResponse(status=200)
+                	#response =  HttpResponse(status=200)
                 	response = HttpResponse("folder:" + coursefolder)
                 	response = HttpResponse("xmlDownload:" + xmlDownload)
                 	response = render_to_response("getcourse.html", {'coursefolder': coursefolder, 'xmlDownload': xmlDownload}, context_instance=RequestContext(request))
                 	response['folder'] = coursefolder
                 	response['xmlDownload'] = xmlDownload
                 	return response
+			"""
+			json_course = simplejson.dumps({
+                            'blockurl':coursefolder })
+                	return HttpResponse(json_course, mimetype="application/json")
+
+			
 		else:
                 	response2 =  HttpResponse(status=403)
                 	print("Sorry, a course of that ID was not found globally")
@@ -1108,7 +1477,10 @@ def loginview(request):
 #This is the def that will authenticate the user over the umcloud website
 def auth_and_login(request, onsuccess='/', onfail='/login'):
     #Returns user object if parameters match the database.
-    user = authenticate(username=request.POST['username'], password=request.POST['password'])
+    try:
+        user = authenticate(username=request.POST['username'], password=request.POST['password'])
+    except:
+	return redirect ('login')
     if user is not None:
 	try:
 		print("Trying..")
@@ -1284,6 +1656,21 @@ def sign_up_in(request):
         user, reason = create_user_website(username=post['username'], email=post['email'], password=post['password'], first_name=post['first_name'], last_name=post['last_name'], website=post['website'], job_title=post['job_title'], company_name=post['company_name'], date_of_birth=post['dateofbirth'], address=post['address'], phone_number=post['phonenumber'], gender=post['gender'], organisation_request=post['organisationrequest'])
 
 	if user:
+	    try:
+		if post['blockid']:
+		    userprofile=UserProfile.objects.get(user=user)
+		    userprofile.admin_approved=True
+		    userprofile.save()
+		    blockid=post['blockid']
+		    block=Document.objects.get(id=blockid)
+		    block.students.add(user)
+		    block.save()
+	 	    invitationid = post['invitationid']
+		    invitation = Invitation.objects.get(id=invitationid)
+		    invitation.done = True
+		    invitation.save()
+		    return redirect('login')
+	    except:
 		#INSTEAD redirect to success page.
 		return render_to_response('confirmation.html',{'state':'Congratulations, your request has been sent to the organisation manager.You will be emailed when you get approved.'}, context_instance=RequestContext(request))
         	#return auth_and_login(request)

@@ -150,6 +150,12 @@ mv UMCloudDj/settings.py.2 UMCloudDj/settings.py
 
 #After getting latest version, we use this to create super user and assign database mappings:
 #Creates a super user and syncs models and databases
+
+#Added ADL_LRS specific cache databaase additions.
+python manage.py createcachetable cache_statement_list
+python manage.py createcachetable attachment_cache
+
+#Sync it all..
 python manage.py syncdb --noinput
 
 if [ $DB_CREATE_FLAG == "0" ]

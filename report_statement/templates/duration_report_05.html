@@ -98,7 +98,7 @@ $(function() {
 {% if state %}
 <p class="error" style="color:red;"><i>{{state}}</i></p>
 {% else %}
-<h3><i><center>Usage Report between {{date_since|date:"d M Y"}} and {{date_until|date:"d M Y"}}</center></i></h3>
+<h3><i><center>Duration Report between {{date_since|date:"d M Y"}} and {{date_until|date:"d M Y"}}</center></i></h3>
 <table id="{{tabletypeid}}">
   <thead>
     {% for d, f in table_headers_html %}
@@ -111,7 +111,7 @@ $(function() {
 </table>
 <br></br>
 <!-- HTML goes here -->
-<h3><i><center>Time vs Usage Report between {{date_since|date:"d M Y"}} and {{date_until|date:"d M Y"}}</center></i></h3>
+<h3><i><center>Time vs Duration Report between {{date_since|date:"d M Y"}} and {{date_until|date:"d M Y"}}</center></i></h3>
 <p></p>
 <canvas id="myChart" width="800" height="400"></canvas>
 

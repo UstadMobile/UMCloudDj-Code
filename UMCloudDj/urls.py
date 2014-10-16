@@ -23,28 +23,44 @@ from django.contrib import admin
 urlpatterns = patterns('',
         (r'^umlrs/', include('lrs.urls')),
 	url(r'^$', RedirectView.as_view(url='/userstable/')), # Just for ease of use.
-	url(r'^upload/', 'UMCloudDj.views.upload_view'),
-	url(r'^management/', 'UMCloudDj.views.management_view'),
-	url(r'^reports/$', 'UMCloudDj.views.reports_view'),
+	url(r'^upload/', 'UMCloudDj.views.upload_view', name='oldcoursesview'),
+	url(r'^management/', 'UMCloudDj.views.management_view', name='management'),
+	url(r'^reports/$', 'UMCloudDj.views.reports_view', name='reports'),
 
 	#url(r'^getreportzambia/', 'UMCloudDj.views.get_report_zambia'),
 	#url(r'getreportstatements/', 'UMCloudDj.views.get_report_statements'),
-        url(r'statementsreports/$', 'UMCloudDj.views.report_statements_view'),
-	url(r'^mcqreports/$', 'UMCloudDj.views.report_selection_view', name='mcqreports'),
-	url(r'^sendtestlog/$', 'UMCloudDj.views.sendtestlog_view', name='sendtestlog'),
+        #url(r'statementsreports/$', 'UMCloudDj.views.report_statements_view'),
+	#url(r'^mcqreports/$', 'UMCloudDj.views.report_selection_view', name='mcqreports'),
+	#url(r'^sendtestlog/$', 'UMCloudDj.views.sendtestlog_view', name='sendtestlog'),
 	url(r'^sendelpfile/$', 'UMCloudDj.views.sendelpfile_view', name='sendelpfile'),
 	url(r'^checklogin/$', 'UMCloudDj.views.checklogin_view', name='checklogin'),
 	url(r'^getassignedcourseids/$', 'UMCloudDj.views.getassignedcourseids_view', name='getassignedcourseids'),
+	url(r'^assigned_courses/$', 'UMCloudDj.views.getassignedecourses_json', name='getassignedcourses_json'),
+	url(r'^get_course_blocks/$', 'UMCloudDj.views.get_course_blocks', name='get_course_blocks'),
+	url(r'^invite_to_course/$', 'UMCloudDj.views.invite_to_course', name='invite_to_course'),
+	url(r'^register/invitation/$','UMCloudDj.views.check_invitation_view',  name='check_invitation_view'),
 
-	url(r'^reports/stmtdb/$','report_statement.views.show_statements_from_db'),
-        url(r'^reports/stmtsdynadb/$','report_statement.views.statements_db_dynatable'),
-	url(r'^reports/mystmtsdynadb/$','report_statement.views.my_statements_db_dynatable'),
-	url(r'^reports/chartjstest_selection/$','report_statement.views.chartjs_test_selection'),
-	url(r'^reports/chartjstest/$','report_statement.views.chartjs_test'),
-	url(r'^allclass/(?P<allclassid>[-\w]+)/allclasse_students/$', 'report_statement.views.allclasse_students'),
-	url(r'^reports/usagereport_selection/$', 'report_statement.views.usagereport_selection', name='usage_report_selection'),
-	url(r'^reports/usagereport/$', 'report_statement.views.usage_report', name='usage_report'),
-	url(r'^reports/usagereport/getstatements/(?P<userid>[-\w]+)/$', 'report_statement.views.all_statements_table'),
+	url(r'^reports/durationreport_selection/$', 'report_statement.views.durationreport_selection', name='durationreport_selection'), #duration report selection
+	url(r'^reports/durationreport/$', 'report_statement.views.durationreport', name='durationreport'), #duration report 
+	url(r'^reports/durationreport/getstatements/(?P<userid>[-\w]+)/$', 'report_statement.views.all_statements_table'), #Get statements by userid
+	url(r'^reports/stmtdb/$','report_statement.views.show_statements_from_db'), #SuperAdmin all statements
+        url(r'^reports/allstatements/$','report_statement.views.statements_db_dynatable'), #All organisation statements
+        url(r'^reports/mystmtsdynadb/$','report_statement.views.my_statements_db_dynatable'), #Current logged in user's statements
+        url(r'^reports/usage_report','report_statement.views.test_usage_report'),  #Usage Report (Testing)
+  	url(r'^reports/responsereport_selection/$', 'report_statement.views.response_report_selection', name='response_report_selection'), #Usage Report (Mockups)
+	url(r'^reports/breakdown_report/$', 'report_statement.views.test_heather_report', name='heather_report'), #Breakdown report
+	url(r'^reports/assign_already_stored_statements/$', 'report_statement.views.assign_already_stored_statements', name='assign_already_stored_statements'), #To sort already
+
+	#For ajax fetchings
+	url(r'^fetch/allclass/(?P<allclassid>[-\w]+)/allclasse_students/$', 'report_statement.views.allclasse_students'),
+ 	url(r'^fetch/allcourses/','report_statement.views.allcourses',name='allcourses'),
+	url(r'^fetch/allcourse/blocks/$', 'report_statement.views.allcourses_blocks', name='allcourses_blocks'),
+	url(r'^fetch/allschools/','report_statement.views.allschools',name='allschools'),
+	url(r'^fetch/school/allclasses/$', 'report_statement.views.school_allclasses', name='school_allclasses'),
+	url(r'^fetch/allclass/students/$','report_statement.views.allclass_students', name='allclass_students'),
+	url(r'^fetch/superawesomeajax/$', 'report_statement.views.super_awesome_ajax_handler', name='super_awesome_ajax_handler'),
+	url(r'^fetch/usage_report_data/$', 'report_statement.views.usage_report_data_ajax_handler', name='usage_report_data_ajax_handler'),
+
 
 	#url(r'^testelpfiles/$', 'UMCloudDj.views.testelpfiles_view', name='testelpfiles'),
 	#url(r'^selectelptest/$', 'UMCloudDj.views.elptestresults_selection_view', name='showelptestresults_selection'),
