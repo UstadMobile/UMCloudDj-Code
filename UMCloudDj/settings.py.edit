@@ -188,6 +188,16 @@ UMLRS = "http://svr2.ustadmobile.com:8001/xAPI/statements"
 # Where to be redirected after logging in
 LOGIN_REDIRECT_URL = '/login/'
 
+# Email info
+###EMAIL_HOST=''
+
+###EMAIL_PORT=
+
+##EMAIL_HOST_USER=''
+
+###EMAIL_HOST_PASSWORD=''
+
+
 # Me view has a tab of user's statements
 STMTS_PER_PAGE = 10
 

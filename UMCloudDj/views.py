@@ -735,6 +735,44 @@ def getassignedecourses_json(request):
 	    authresponse = HttpResponse(status=500)
             authresponse.write("Not a POST request. Assigned Course IDs retrival failed.")
             return authresponse
+
+@csrf_exempt
+def getassignedblocks_json(request):
+	if request.method == "POST":
+            print("Course list request coming from \
+                        outside (UstadMobile?)")
+            username = request.POST.get('username', False)
+            password = request.POST.get('password', False)
+            print("For user: " + username)
+            #Authenticate the user
+            user = authenticate(username=\
+                        request.POST['username'],\
+                 password=request.POST['password'])
+            if user is not None:
+                organisation = User_Organisations.objects.get(\
+                                user_userid=user)\
+                                .organisation_organisationid;
+                allorgcourses = Course.objects.filter(organisation=organisation)
+                alluserclasses = Allclass.objects.filter(students__in=[user])
+                matched_courses=Course.objects.filter(Q(organisation=\
+                        organisation, students__in=[user]) | \
+                            Q(organisation=organisation, \
+                                allclasses__in=alluserclasses))
+		#We need a matched blocks
+		
+                json_blocks = simplejson.dumps([
+                        {o.id:{
+                            'title':o.name,
+                            'last-modified':str(o.upd_date)
+                            }
+                        }for o in matched_blocks])
+                return HttpResponse(json_blocks, mimetype="application/json")
+
+        else:
+            authresponse = HttpResponse(status=500)
+            authresponse.write("Not a POST request. Assigned Block IDs retrival failed.")
+            return authresponse
+
 @csrf_exempt
 def get_course_blocks(request):
 	if request.method == "POST":
@@ -835,11 +873,17 @@ def invite_to_course(request):
                     	    	return authresponse
 			    invitation.save()
 			    print("All good, time to send emails..")
+			    sender=user.first_name + ' ' + user.last_name
+			    if sender == "":
+				sender=user.username
+			    invitation_id=str(invitation.invitation_id)
 			    try:
-			    	send_mail('You are invited to join ' + block.name, 'Hi,\
-					I am inviting you to access a course I made using eXe course creation software.\
-				Please click the link to acess the course. (Do not share this link. It is private to you).',\
-				 'hello@ustadmobile.com', [current_email], fail_silently=False)
+			    	send_mail('You are invited to join ' + block.name, 'Hi,\n' +\
+				'\n' + sender + ' has invited you to access the course ' + block.name + \
+				' using eXe course creation software.\nPlease click the link to acess the course.' +\
+				 '\nClick here: http://54.77.18.106:8004/register/invitation/?id='+invitation_id + '\n(Do not share this link. It is private to you). \
+				\n\nRegards, \nUstad Mobile\ninfo@ustadmobile.com\n@ustadmobile', \
+				 'Ustad Mobile' , [current_email], fail_silently=False)
 			    except:
 				authresponse = HttpResponse(status=500)
 				authresponse.write("Failed to send emails. Check if you have set it up and the settings are correct.")
@@ -854,7 +898,7 @@ def invite_to_course(request):
                             authresponse.write("Unable to create invitation object.")
                             return authresponse
 		    authresponse = HttpResponse(status=200)
-		    authresponse.write("Invitation objects created. Emails left to be sent")
+		    authresponse.write("Invitation objects created. Emails sent")
 		    return authresponse
 
 

@@ -18,6 +18,7 @@ v0.9.0
 - /auth/ will redirect to login if it isn't a POST request
 - set up invitation api and checking invitation views.
 - Removed sendtestlogs
+- Email sent logic finished. Updated git push login for EMAIL settings in settings.py
 
 v0.8.7
 - Organisation create for super admins creates default teacher and school. It also assigns it to the organsiation and sets admin password to default teacher.

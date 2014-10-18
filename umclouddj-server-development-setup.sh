@@ -35,7 +35,8 @@ sudo apt-get -f install
 sudo apt-get -y install sqlite3
 sudo apt-get -y install build-essential
 
-sudo apt-get install git fabric
+sudo apt-get install -y git 
+sudo apt-get install -y fabric
 sudo apt-get install -y postgresql
 sudo apt-get install -y python-setuptools
 sudo apt-get install -y postgresql-server-dev-9.3
