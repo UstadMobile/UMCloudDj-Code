@@ -52,6 +52,7 @@ import xml.etree.ElementTree as ET
 import hashlib
 import zipfile
 from django.core.mail import send_mail
+import socket
 
 #UMCloudDj.uploadeXe
 
@@ -877,11 +878,14 @@ def invite_to_course(request):
 			    if sender == "":
 				sender=user.username
 			    invitation_id=str(invitation.invitation_id)
+			    hostname="http://umcloud1.ustadmobile.com"
+			    devhostname="http://54.77.18.106:8004"
 			    try:
+				print(socket.gethostname())
 			    	send_mail('You are invited to join ' + block.name, 'Hi,\n' +\
 				'\n' + sender + ' has invited you to access the course ' + block.name + \
 				' using eXe course creation software.\nPlease click the link to acess the course.' +\
-				 '\nClick here: http://54.77.18.106:8004/register/invitation/?id='+invitation_id + '\n(Do not share this link. It is private to you). \
+				 '\nClick here: '+hostname+'/register/invitation/?id='+invitation_id + '\n(Do not share this link. It is private to you). \
 				\n\nRegards, \nUstad Mobile\ninfo@ustadmobile.com\n@ustadmobile', \
 				 'Ustad Mobile' , [current_email], fail_silently=False)
 			    except:
