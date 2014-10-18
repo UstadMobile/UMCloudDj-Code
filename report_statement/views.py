@@ -259,6 +259,7 @@ def statements_db_dynatable(request,template_name='statements_db_02.html'):
     organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
     all_org_users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
     all_statements = models.Statement.objects.filter(user__in=all_org_users)
+    #all_statements=models.Statement.objects.filter(id=749)
     data={}
     pagetitle="All statements from my organisation"
     tabletypeid="dbstatementsdynatable"
@@ -318,7 +319,6 @@ def my_statements_db_dynatable(request,template_name='user_statements_report_04.
 
 @login_required(login_url="/login/")
 def all_statements_table(request, userid, template_name='user_statements_report_04.html'):
-    template_name="user_statements_04.html"
     #, date_since, date_until):
     requestuser=request.user
     user=User.objects.get(id=userid)
@@ -1153,7 +1153,7 @@ def usage_report_data_ajax_handler(request):
         relevant_statements, user_by_duration=calculate_statements(\
                                 users, date_since, date_until, blocks)
 
-	"""
+	print('\n')
         print(date_since)
         print(date_until)
         print(reporttype)
@@ -1164,8 +1164,8 @@ def usage_report_data_ajax_handler(request):
         print(relevant_statements)
         print(len(relevant_statements))
         print(user_by_duration) 
-	"""
 
+	print("\n")
         #Push this to the statement Grouping
         #   (Statements, objectVal, level, parent, objectType)
         root = StatementGroupEntry(relevant_statements, None, 0, None, None)
@@ -1181,7 +1181,6 @@ def usage_report_data_ajax_handler(request):
 			'children':a}
 	    json_object.append(json_obj)
 	json_object_json=simplejson.dumps(json_object)
-	print("\n")
 	print(json_object_json)
 
 	#js=root.jdefault()
@@ -1201,6 +1200,25 @@ def usage_report_data_ajax_handler(request):
         print("Not a POST request brah, check your code.")
 	return HttpResponse(False)
 
+@login_required(login_url="/login/")
+def generate_statementinfo_existing_statements(request):
+    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
+    all_org_users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
+    all_statements = models.Statement.objects.all()
+    all_org_statements = models.Statement.objects.filter(user__in=all_org_users)
+    print(len(all_statements))
+    for a in all_org_statements:
+	print(a.id)
+    print(len(all_org_statements))
+    """
+    for org_statement in all_org_statements:
+	print(org_statement.id)
+	org_statement.save()
+    """
+    
+    authresponse=HttpResponse(status=200)
+    authresponse.write("What is Life?")
+    return authresponse
 ### To fix already stored statements
 @login_required(login_url="/login/")
 def assign_already_stored_statements(request):

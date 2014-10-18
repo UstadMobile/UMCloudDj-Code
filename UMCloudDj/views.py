@@ -877,9 +877,6 @@ def invite_to_course(request):
 			print("In here")
 			blocks.append(block)
 			print(blocks)
-			c=Course.objects.get(id=22)
-			print(c)
-			print(c.packages.all())
 			course=Course.objects.get(packages__in=blocks)
 			print("YAY")
 			print(course.name)
@@ -918,9 +915,9 @@ def invite_to_course(request):
 			    	send_mail('You are invited to join ' + course.name, 'Hi,\n' +\
 				'\n' + sender + ' has invited you to access the course ' + course.name + \
 				' using eXe course creation software.\nPlease click the link to acess the course.' +\
-				 '\nClick here: '+devhostname+'/register/invitation/?id='+invitation_id + '\n(Do not share this link. It is private to you). \
+				 '\nClick here: '+hostname+'/register/invitation/?id='+invitation_id + '\n(Do not share this link. It is private to you). \
 				\n\nRegards, \nUstad Mobile\ninfo@ustadmobile.com\n@ustadmobile', \
-				 'Ustad Mobile' , [current_email], fail_silently=False)
+				 'info@ustadmobile.com' , [current_email], fail_silently=False)
 			    except:
 				authresponse = HttpResponse(status=500)
 				authresponse.write("Failed to send emails. Check if you have set it up and the settings are correct.")

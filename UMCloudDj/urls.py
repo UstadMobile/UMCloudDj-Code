@@ -50,6 +50,7 @@ urlpatterns = patterns('',
   	url(r'^reports/responsereport_selection/$', 'report_statement.views.response_report_selection', name='response_report_selection'), #Usage Report (Mockups)
 	url(r'^reports/breakdown_report/$', 'report_statement.views.test_heather_report', name='heather_report'), #Breakdown report
 	url(r'^reports/assign_already_stored_statements/$', 'report_statement.views.assign_already_stored_statements', name='assign_already_stored_statements'), #To sort already
+	url(r'^reports/generate_statementinfo_existing_statements/$', 'report_statement.views.generate_statementinfo_existing_statements', name='generate_statementinfo_existing_statements'),
 
 	#For ajax fetchings
 	url(r'^fetch/allclass/(?P<allclassid>[-\w]+)/allclasse_students/$', 'report_statement.views.allclasse_students'),
