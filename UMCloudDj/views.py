@@ -713,12 +713,29 @@ def getassignedecourses_json(request):
 		organisation = User_Organisations.objects.get(\
 				user_userid=user)\
 				.organisation_organisationid;
+		individualorganisation = Organisation.objects.get(\
+			organisation_name="IndividualOrganisation")
 		allorgcourses = Course.objects.filter(organisation=organisation)
+
 		alluserclasses = Allclass.objects.filter(students__in=[user])
 		matched_courses=Course.objects.filter(Q(organisation=\
 			organisation, students__in=[user]) | \
-			    Q(organisation=organisation, \
-			        allclasses__in=alluserclasses))
+			 Q(organisation=organisation, \
+			     allclasses__in=alluserclasses))
+		if not matched_courses:
+		    users_in_individual=User.objects.filter(pk__in=User_Organisations.objects.filter(\
+                           organisation_organisationid=individualorganisation\
+                            ).values_list('user_userid', flat=True))
+		    if user in users_in_individual:
+			print("user in individual org")
+			matched_courses=Course.objects.filter(Q(\
+                         students__in=[user]) | \
+                          Q(organisation=organisation, \
+                             allclasses__in=alluserclasses))
+
+
+		print("Matched courses:")
+		print(matched_courses)
 		json_courses = simplejson.dumps([
 			{o.id:{
 			    'title':o.name,
@@ -836,6 +853,7 @@ def invite_to_course(request):
 	    print(emails)
 	    mode     = request.POST.get('mode', False)
             #Authenticate the user
+	    blocks=[]
             user = authenticate(username=\
                         request.POST['username'],\
                  password=request.POST['password'])
@@ -849,11 +867,26 @@ def invite_to_course(request):
 		try:
 		    #Check if the block youa re about to give permissions to, is
 		    #in your organisation and exists..
-		    block = Document.objects.get(id=blockid, success="YES", active=True, \
+		    print(blockid)
+		    block = Document.objects.get(elpid=blockid, success="YES", active=True, \
 			publisher__in=User.objects.filter(pk__in=\
 			    User_Organisations.objects.filter(\
 				organisation_organisationid=organisation).values_list(\
 					'user_userid', flat=True)))
+		    try:
+			print("In here")
+			blocks.append(block)
+			print(blocks)
+			c=Course.objects.get(id=22)
+			print(c)
+			print(c.packages.all())
+			course=Course.objects.get(packages__in=blocks)
+			print("YAY")
+			print(course.name)
+		    except:
+			authresponse=HttpResponse(status=500)
+			authresponse.write("Course with Block id not found. Please publish block first")
+			return authresponse
 		except:
 		    authresponse=HttpResponse(status=500)
 		    authresponse.write("Block requested does not exist or is in your organisation")
@@ -865,9 +898,9 @@ def invite_to_course(request):
 			print(current_email)
 			try:
 		            if mode == "organisation":
-		    	    	invitation=Invitation(organisation=organisation, invitee=user, email=current_email, block=block)
+		    	    	invitation=Invitation(organisation=organisation, invitee=user, email=current_email, block=block, course=course)
 			    elif mode == "individual":
-			    	invitation = Invitation(organisation=individual_organisation, invitee=user, email=current_email, block=block)
+			    	invitation = Invitation(organisation=individual_organisation, invitee=user, email=current_email, block=block, course=course)
 			    else:
 			    	authresponse=HttpResponse(status=500)
                     	    	authresponse.write("Unable to figure the mode out..")
@@ -882,10 +915,10 @@ def invite_to_course(request):
 			    devhostname="http://54.77.18.106:8004"
 			    try:
 				print(socket.gethostname())
-			    	send_mail('You are invited to join ' + block.name, 'Hi,\n' +\
-				'\n' + sender + ' has invited you to access the course ' + block.name + \
+			    	send_mail('You are invited to join ' + course.name, 'Hi,\n' +\
+				'\n' + sender + ' has invited you to access the course ' + course.name + \
 				' using eXe course creation software.\nPlease click the link to acess the course.' +\
-				 '\nClick here: '+hostname+'/register/invitation/?id='+invitation_id + '\n(Do not share this link. It is private to you). \
+				 '\nClick here: '+devhostname+'/register/invitation/?id='+invitation_id + '\n(Do not share this link. It is private to you). \
 				\n\nRegards, \nUstad Mobile\ninfo@ustadmobile.com\n@ustadmobile', \
 				 'Ustad Mobile' , [current_email], fail_silently=False)
 			    except:
@@ -1409,6 +1442,10 @@ def check_invitation_view(request):
 		if alreadyauser:
 			invitation.block.students.add(alreadyauser)
 		 	invitation.block.save()
+
+			invitation.course.students.add(alreadyauser)
+			invitation.course.save()
+
 			invitation.done = True
 			invitation.save()
 			c = {}
@@ -1422,7 +1459,7 @@ def check_invitation_view(request):
 		print("This invitation is for individual organisation")
 		c = {}
         	c.update(csrf(request))
-        	return render(request, 'user/user_create_website_individual.html', {'invitationemail':invitation.email, 'invitationblock':invitation.block, 'invitationid':invitation.id})
+        	return render(request, 'user/user_create_website_individual.html', {'invitationemail':invitation.email, 'invitationcourse':invitation.course, 'invitationid':invitation.id})
 		#Return individual form
 	    elif invitation.organisation:
 		print("This invitation is for " + invitation.organisation.organisation_name + " organisation.")
@@ -1432,7 +1469,7 @@ def check_invitation_view(request):
 		
 	 	c = {}
                 c.update(csrf(request))
-                return render(request, 'user/user_create_website_organisation.html', {'invitationemail':invitation.email, 'invitationblock':invitation.block, 'invitationid':invitation.id, 'organisationalcode':organisationalcode, 'organisation_name':organisation_name, 'state':state})
+                return render(request, 'user/user_create_website_organisation.html', {'invitationemail':invitation.email, 'invitationcourse':invitation.course, 'invitationid':invitation.id, 'organisationalcode':organisationalcode, 'organisation_name':organisation_name, 'state':state})
 
 		
 	 
@@ -1705,14 +1742,23 @@ def sign_up_in(request):
 
 	if user:
 	    try:
-		if post['blockid']:
+		if post['courseid']:
 		    userprofile=UserProfile.objects.get(user=user)
 		    userprofile.admin_approved=True
 		    userprofile.save()
+
+		    """
 		    blockid=post['blockid']
-		    block=Document.objects.get(id=blockid)
+		    block=Document.objects.get(elpid=blockid)
 		    block.students.add(user)
 		    block.save()
+		    """
+
+		    courseid=post['courseid']
+		    course=Course.objects.get(id=courseid)
+	    	    course.students.add(user)
+		    course.save()
+
 	 	    invitationid = post['invitationid']
 		    invitation = Invitation.objects.get(id=invitationid)
 		    invitation.done = True

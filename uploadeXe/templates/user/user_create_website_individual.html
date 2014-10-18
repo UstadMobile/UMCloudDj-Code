@@ -49,7 +49,7 @@
 <p cass="error" style="color:red;"><i>{{state}}</i></p>
 <div id="notifytop"></div>
 {% if invitationemail %}
- <p style="color:green"><i>Hi {{invitationemail}}, please fill in the form below to continue to {{invitationblock.name}} course</i></p>
+ <p style="color:green"><i>Hi {{invitationemail}}, please fill in the form below to continue to {{invitationcourse.name}} course</i></p>
 {% endif %}
 
 {% if invitationemail %}
@@ -111,7 +111,7 @@
 
     {% if invitationemail %}
      <div data-role="fieldcontain" style="padding-bottom:5px">
-      <input type="text" placeholder="Block Id" style="height: 30px; width: 250px;" id="blockid" name="blockid" value="{{invitationblock.id}}" hidden/>
+      <input type="text" placeholder="Block Id" style="height: 30px; width: 250px;" id="courseid" name="courseid" value="{{invitationcourse.id}}" hidden/>
      </div>
 
      <div data-role="fieldcontain" style="padding-bottom:5px">

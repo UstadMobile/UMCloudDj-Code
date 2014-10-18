@@ -65,6 +65,7 @@ class Invitation(models.Model):
     email = models.CharField(max_length=100)
     invitee = models.ForeignKey(User, related_name='invitee')
     block = models.ForeignKey(Package, related_name='invitationblock')
+    course = models.ForeignKey(Course, related_name='invitationbourse')
     done = models.BooleanField(default=False)
 
     #blocks = models.ManyToManyField(Package, related_name='invitationblocks')
