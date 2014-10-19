@@ -1476,6 +1476,51 @@ def check_invitation_view(request):
             return authresponse
 
 	
+def getblock_view(request):
+        courseid = request.GET.get('id')
+        print("External request of public course..")
+
+        try:
+                matchedCourse = Document.objects.filter(id=str(courseid)).get(id=str(courseid))
+                if matchedCourse:
+                        print("Course exists!")
+                        print("The unique folder for course id: " + courseid + " is: " + matchedCourse.uid + "/" + matchedCourse.name)
+                        coursefolder = matchedCourse.uid + "/" + matchedCourse.name
+                        """
+                        xmlDownload = coursefolder + "_ustadpkg_html5.xml"
+                        data = {
+                                'folder' : coursefolder,
+                                'xmlDownload' : xmlDownload
+                        }
+                        #response =  HttpResponse(status=200)
+                        response = HttpResponse("folder:" + coursefolder)
+                        response = HttpResponse("xmlDownload:" + xmlDownload)
+                        response = render_to_response("getcourse.html", {'coursefolder': coursefolder, 'xmlDownload': xmlDownload}, context_instance=RequestContext(request))
+                        response['folder'] = coursefolder
+                        response['xmlDownload'] = xmlDownload
+                        return response
+                        """
+                        json_course = simplejson.dumps({
+                            'blockurl':coursefolder })
+                        return HttpResponse(json_course, mimetype="application/json")
+
+                        
+                else:
+                        response2 =  HttpResponse(status=403)
+                        print("Sorry, a course of that ID was not found globally")
+                        response2.write("folder:na")
+                        return response2
+
+        except Document.DoesNotExist, e:
+                response2 =  HttpResponse(status=403)
+                print("Sorry, a course of that ID was not found globally")
+                response2 = HttpResponse(status=403)
+                response2.write("folder:na")
+                return response2
+        
+        return redirect("/")
+
+
 
 def getcourse_view(request):
 	courseid = request.GET.get('id')
@@ -1487,7 +1532,6 @@ def getcourse_view(request):
                 	print("Course exists!")
                 	print("The unique folder for course id: " + courseid + " is: " + matchedCourse.uid + "/" + matchedCourse.name)
                 	coursefolder = matchedCourse.uid + "/" + matchedCourse.name
-			"""
                 	xmlDownload = coursefolder + "_ustadpkg_html5.xml"
                 	data = {
                         	'folder' : coursefolder,
@@ -1500,7 +1544,6 @@ def getcourse_view(request):
                 	response['folder'] = coursefolder
                 	response['xmlDownload'] = xmlDownload
                 	return response
-			"""
 			json_course = simplejson.dumps({
                             'blockurl':coursefolder })
                 	return HttpResponse(json_course, mimetype="application/json")
