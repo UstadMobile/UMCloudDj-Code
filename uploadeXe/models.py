@@ -54,7 +54,7 @@ class Course(models.Model):
    success = models.CharField(max_length=10)
    students = models.ManyToManyField(User, related_name='coursestudents')
    allclasses = models.ManyToManyField(Allclass, related_name='coursesallclasses')
-   tincanid = models.CharField(max_length=200, default="http://www.ustadmobile.com/um-tincan/activities")
+   tincanid = models.CharField(max_length=200, default="http://www.ustadmobile.com/um-tincan/course")
 
    def __unicode__(self):
         return u'%s' % (self.name)

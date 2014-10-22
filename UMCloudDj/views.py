@@ -737,10 +737,10 @@ def getassignedecourses_json(request):
 		print("Matched courses:")
 		print(matched_courses)
 		json_courses = simplejson.dumps([
-			{o.id:{
+			{
+			    'id':str(o.tincanid)+'/'+str(o.id),
 			    'title':o.name,
 			    'last-modified':str(o.upd_date)
-			    }
 			}for o in matched_courses])	
 		"""
 		json_courses_old = simplejson.dumps( [{'id': o.id,
@@ -823,10 +823,21 @@ def get_course_blocks(request):
 		else:
 		    all_blocks_in_course=course.packages.all()
 		    json_blocks = simplejson.dumps([
-			{o.id:{
+			{
+			  o.id:{
 			    'title':o.name
 			      }
 		        }for o in all_blocks_in_course])
+		    json_blocks = simplejson.dumps({
+			"title":course.name,
+			"description":course.description, 
+			"id":str(course.tincanid)+'/'+str(course.id),
+			"blocks":[
+                        {
+			  "id":o.tincanid+'/'+o.elpid,
+			  "title":o.name
+                        }for o in all_blocks_in_course]})
+
                	    return HttpResponse(json_blocks, mimetype="application/json")
 
         else:
@@ -1477,14 +1488,19 @@ def check_invitation_view(request):
 
 	
 def getblock_view(request):
-        courseid = request.GET.get('id')
+        blockid = request.GET.get('id')
+	try:
+	    blockid= blockid.rsplit('/',1)[1]
+	    blocktincanid=blockid.rsplit('/',1)[0]
+	except:
+	    pass
         print("External request of public course..")
 
         try:
-                matchedCourse = Document.objects.filter(id=str(courseid)).get(id=str(courseid))
+                matchedCourse = Document.objects.filter(elpid=str(blockid)).get(elpid=str(blockid))
                 if matchedCourse:
                         print("Course exists!")
-                        print("The unique folder for course id: " + courseid + " is: " + matchedCourse.uid + "/" + matchedCourse.name)
+                        print("The unique folder for course id: " + blockid + " is: " + matchedCourse.uid + "/" + matchedCourse.name)
                         coursefolder = matchedCourse.uid + "/" + matchedCourse.name
                         """
                         xmlDownload = coursefolder + "_ustadpkg_html5.xml"
