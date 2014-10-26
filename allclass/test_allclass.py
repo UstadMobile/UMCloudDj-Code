@@ -341,6 +341,7 @@ class AllclassViewTestCase(TestCase):
 	
 	"""
 	Logged in user deleting unknown allclass: 404
+	Update: Views redirect to allclassestable
 	allclass.views.allclass_delete
 	"""
 	
@@ -353,7 +354,8 @@ class AllclassViewTestCase(TestCase):
 
 	requesturl = reverse(view_name, kwargs={'pk':42})
         response = self.c.get(requesturl)
-        self.assertEqual(response.status_code, 404)
+	expected_url="/allclassestable/"
+	self.assertRedirects(response, expected_url, status_code=302, target_status_code=200, msg_prefix='')
 
 	
 	

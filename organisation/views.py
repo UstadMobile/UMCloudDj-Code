@@ -1,7 +1,7 @@
 
 from django.core.context_processors import csrf
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render_to_response, redirect, get_object_or_404 #Added 404
+from django.shortcuts import render_to_response, redirect, get_object_or_404 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -9,7 +9,6 @@ from django.shortcuts import redirect
 from django.contrib import auth
 from django.template import RequestContext
 
-#Testing..
 from django.forms import ModelForm
 from school.models import School
 from organisation.models import Organisation
@@ -28,7 +27,6 @@ import time
 import os
 import urllib
 import urllib2, base64, json
-import glob #For file ^VS 130420141454
 from random import randrange
 
 
@@ -36,34 +34,27 @@ from random import randrange
 ###################################
 # Organisation CRUD
 
+"""
+The organisation model form that is used for update and creation
+"""
 class OrganisationForm(ModelForm):
     class Meta:
         model = Organisation
 
+"""
+The organisation code model form that is used to set org code and update
+it
+"""
 class OrganisationCodeForm(ModelForm):
     class Meta:
 	model = Organisation_Code
 	fields=('code',)
+
 """
-@login_required(login_url='/login/')
-def organisation_list(request, template_name='organisation/organisation_list.html'):
-    organisations = Organisation.objects.all()
-    organisation_packages = []
-    #for organisation in organisations:
-	#umpackage = Organisation_Package.objects.get(organisation_organisationid=organisation).set_package
-	#organisation_packages.append(umpackage)
-
-
-    data = {}
-    data['object_list'] = organisations
-    #data['object_list'] = zip(organisations,organisation_packages)
-    data['umpackage_list'] = organisation_packages
-    return render(request, template_name, data)
+This view renders the organisations or logged in user and displays
+to a template html that renders it to a prime ui html table.
+Only super admins have access to this page.
 """
-def is_superadmin(user, organisation):
-    print("testing")
-    return None
-
 @login_required(login_url='/login/')
 def organisation_table(request, template_name='organisation/organisation_table.html'):
     if (request.user.is_staff==True):
@@ -77,14 +68,28 @@ def organisation_table(request, template_name='organisation/organisation_table.h
 		try:
 			org_code=Organisation_Code.objects.get(organisation=org)
 			organisation_code.append(org_code.code)
-		except Organisation_Code.DoesNotExist, e:
+		except Organisation_Code.DoesNotExist, e: 
+			#If organisation code doesn;t exist.
+			# When org admin loggs in the code 
+			# will be set. This is for super admin
+			# views.
 			nullcode="-"
 			organisation_code.append(nullcode)	
 		try:
 			organisation_admin_role=Role.objects.get(pk=2)
-			org_manager=User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=org).values_list('user_userid', flat=True)).filter(pk__in=User_Roles.objects.filter(role_roleid=organisation_admin_role).values_list('user_userid',flat=True))[0]
-			print("Found org manager for org: " + org.organisation_name)
-			print(org_manager)	
+			if organisation_admin_role.role_name != "Organisational Manager": 
+			    organisation_admin_role = Role.objects.get(\
+					role_name = "Organisational Manager")
+			#Get the first org manager set
+			org_manager=User.objects.filter(\
+			    pk__in=User_Organisations.objects.filter(\
+				organisation_organisationid=org\
+				    ).values_list('user_userid', flat=True)\
+			    ).filter(\
+				pk__in=User_Roles.objects.filter(\
+				    role_roleid=organisation_admin_role\
+					).values_list('user_userid',flat=True))[0]
+			#print("Found org manager for org: " + org.organisation_name)
 			organisation_manager.append(org_manager.username)
 		
 		except:
@@ -99,71 +104,104 @@ def organisation_table(request, template_name='organisation/organisation_table.h
 	data['organisations']=organisations
     	return render(request, template_name, data)
 
-        
     else:
-        print("Not a staff.")
         state="You do not have permission to see this page."
         return render(request, template_name, {'state':state})
 
+"""
+View to render view that Organisation Manager sees for its own
+organisation
+"""
 @login_required(login_url='/login/')
 def my_organisation(request, template_name='organisation/my_organisation.html'):
-    current_role = User_Roles.objects.get(user_userid=request.user.id).role_roleid
-    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid
+    current_role = User_Roles.objects.get(\
+		user_userid=request.user.id).role_roleid
+    organisation = User_Organisations.objects.get(\
+			user_userid=request.user\
+			).organisation_organisationid
     if current_role.id == 2:
-	print("You are an organisation")
-	try:
-		organisation_code=Organisation_Code.objects.get(organisation=organisation)
-		print(organisation_code.code)
-	except Organisation_Code.DoesNotExist, e:
-		organisation_code = Organisation_Code(organisation=organisation)
+ 	if current_role.role_name == "Organisational Manager":
+	    #print("You are an organisational Manager")
+	    try:
+		organisation_code=Organisation_Code.objects.get(
+				    organisation=organisation)
+	    except Organisation_Code.DoesNotExist, e:
+		organisation_code = Organisation_Code(\
+				    organisation=organisation)
 		random_code = randrange(1000000)
-		random_org_code=str(organisation.id)+str(random_code)
+		random_org_code=str(organisation.id)+\
+					str(random_code)
 		organisation_code.code=random_org_code
 		organisation_code.save()
-	return render(request, template_name,{'organisation':organisation,'organisation_code':organisation_code})
-	
+	    return render(request, template_name,{\
+			'organisation':organisation,\
+			'organisation_code':organisation_code})
     else:
-	
 	state="You do not have permission to see this page."
         return render(request, template_name, {'state':state})
-	
+
+"""
+View to update the organisation's details.
+"""
 @login_required(login_url='/login/')
 def my_organisation_update(request, pk, template_name='organisation/my_organisation_form.html'):
-    current_role = User_Roles.objects.get(user_userid=request.user.id).role_roleid
-    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid
-    organisation_code = Organisation_Code.objects.get(organisation=organisation)
+    current_role = User_Roles.objects.get(\
+			user_userid=request.user.id\
+			).role_roleid
+    organisation = User_Organisations.objects.get(\
+			user_userid=request.user\
+			).organisation_organisationid
+    organisation_code = Organisation_Code.objects.get(\
+			organisation=organisation)
     data={}
     data['organisation']=organisation
-    if current_role.id == 2 and pk == str(organisation_code.id):
-        print("You are an organisation and editing your own organisation")
-	organisation_code = get_object_or_404(Organisation_Code, pk=pk)
-        form = OrganisationCodeForm(request.POST or None, instance=organisation_code)
+    if current_role.id == 2 and \
+	current_role.role_name=="Organisational Manager"\
+ 	    and pk == str(organisation_code.id):
+        #("You are an organisational manager and editing \
+	#your own organisation")
+	organisation_code = get_object_or_404(Organisation_Code, \
+						pk=pk)
+        form = OrganisationCodeForm(request.POST or None, \
+				instance=organisation_code)
         if form.is_valid():
                 form.save()
 		return redirect('my_organisation')
-        return render(request, template_name, {'form':form, 'organisation':organisation})
-
+        return render(request, template_name, {'form':form, \
+				'organisation':organisation})
     else:
         print("Not a staff.")
         data['state']="You do not have permission to see this page."
         return render(request, template_name, data)
     
-
- 
+"""
+Check if organisation exist. Common function
+"""
 def organisation_exists(name):
-    organisation_count = Organisation.objects.filter(organisation_name=name).count()
+    organisation_count = Organisation.objects.filter(\
+			organisation_name=name).count()
     if organisation_count == 0:
         return False
     return True
 
+"""
+View to create organisation. Common function.
+"""
 def create_organisation(organisation_name, organisation_desc, umpackageid):
     umpackage = UMCloud_Package.objects.get(pk=umpackageid)
-    organisation = Organisation(organisation_name=organisation_name, organisation_desc=organisation_desc, set_package=umpackage)
+    organisation = Organisation(organisation_name=organisation_name, \
+				organisation_desc=organisation_desc, \
+				set_package=umpackage)
     organisation.save()
 
-    print("Organisation Package mapping success.")
+    #("Organisation Package mapping success.")
     return organisation
 
+"""
+This view will render a new organisation create form and take in the form
+to create a new organisation as per POST parameters. using Organisation form.
+This view will only be accesible for super admins.
+"""
 @login_required(login_url='/login/')
 def organisation_create(request, template_name='organisation/organisation_create.html'):
     if (request.user.is_staff==True):
@@ -180,46 +218,68 @@ def organisation_create(request, template_name='organisation/organisation_create
         	passwordagain=post['passwordagain']
         	if password != passwordagain:
                 	password=None
-                	print("Passwords dont match")
                 	state="The two passwords you gave do not match. Please try again."
                 	data['state']=state
                 	return render(request, template_name, data)
 
         	if not user_exists(post['username']):
 			if not organisation_exists(post['organisation_name']):
-                        	print("Creating the organisation..")
 				try:
 					umpackageid=post['umpackageid']
 				except:
 					umpackageid=2
-                        	organisation = create_organisation(organisation_name=post['organisation_name'], organisation_desc=post['organisation_desc'], umpackageid=post['umpackageid'])
+                        	organisation = create_organisation(\
+				    organisation_name=post['organisation_name'], \
+				    organisation_desc=post['organisation_desc'], \
+				    umpackageid=post['umpackageid'])
                         	#return redirect('organisation_table')
 
-
-                		print("Creating the user..")
-				org_admin_role_id=Role.objects.get(role_name="Organisational Manager").id
-                		user = create_user_more(username=post['username'], email=post['email'], password=post['password'], first_name=post['first_name'], last_name=post['last_name'], roleid=org_admin_role_id, organisationid=organisation.id, date_of_birth=post['dateofbirth'], address=post['address'], gender=post['gender'], phone_number=post['phonenumber'], organisation_request=organisation)
+				org_admin_role_id=Role.objects.get(\
+						role_name="Organisational Manager").id
+                		user = create_user_more(\
+					username=post['username'], email=post['email'], \
+					password=post['password'], \
+					first_name=post['first_name'], \
+					last_name=post['last_name'], \
+					roleid=org_admin_role_id, \
+					organisationid=organisation.id, \
+					date_of_birth=post['dateofbirth'], \
+					address=post['address'], gender=post['gender'], \
+					phone_number=post['phonenumber'], \
+					organisation_request=organisation)
                 		if user:
-					print("User created..")
-                    			current_user_role = User_Roles.objects.get(user_userid=user.id).role_roleid;
+					#("User created..")
+                    			current_user_role = User_Roles.objects.get(\
+							user_userid=user.id).role_roleid;
+
                     			student_role = Role.objects.get(pk=6)
 					teacher_role = Role.objects.get(pk=5)
 
-                    			state="The user " + user.username + " and organisation " + organisation.organisation_name + " has been created."
+                    			state="The user " + user.username +\
+						 " and organisation " + \
+						organisation.organisation_name + \
+							" has been created."
 					print("Creating the default teacher and school")
 					
-					org_school = School(school_name=organisation.organisation_name + "_school", school_desc="This is the default school for Organisation: "+ organisation.organisation_name,organisation_id=organisation.id)
+					org_school = School(school_name=organisation.organisation_name + \
+						"_school", \
+						school_desc="This is the default school for Organisation: "+ \
+						organisation.organisation_name,organisation_id=organisation.id)
         				org_school.save()
 					
-					org_teacher = User.objects.create(username=organisation.organisation_name+"_teacher", password=post['password'], first_name="Default", last_name="Teacher")
+					org_teacher = User.objects.create(username=organisation.organisation_name+\
+							"_teacher", password=post['password'], \
+							first_name="Default", last_name="Teacher")
 					org_teacher.save()
-					org_teacher_role = User_Roles(name="org_create", user_userid=org_teacher, role_roleid=teacher_role)
+					org_teacher_role = User_Roles(name="org_create", \
+						user_userid=org_teacher, role_roleid=teacher_role)
 					org_teacher_role.save()
-					org_teacher_organisation = User_Organisations(user_userid=org_teacher, organisation_organisationid=organisation)
+					org_teacher_organisation = User_Organisations(\
+					    user_userid=org_teacher, \
+						organisation_organisationid=organisation)
 					org_teacher_organisation.save()
-					print("Mapping done.")
+					#("Mapping done.")
 
-		
 					return redirect('organisation_table')
                 		else:
 					print("Something went wrong when creating the user.. ")
@@ -233,22 +293,21 @@ def organisation_create(request, template_name='organisation/organisation_create
 				state="The Organisation already exists.."
                                 data['state']=state
                                 return render(request, template_name, data)
-                                #return redirect('organisation_table')
 		else:
 			print("Username already exists..")
                         #Show message that the username/email address already exists in our database.
                         state="The Username already exists.."
                         data['state']=state
                         return render(request, template_name, data)
-                                #return redirect('organisation_table')
 
 	return render(request, template_name, data)
     else:
-        print("Not a staff.")
         state="You do not have permission to see this page."
         return render(request, template_name, {'state':state})
 
-
+"""
+View to update an organisation
+"""
 @login_required(login_url='/login/')
 def organisation_update(request, pk, template_name='organisation/organisation_form.html'):
     if (request.user.is_staff==True):
@@ -264,12 +323,19 @@ def organisation_update(request, pk, template_name='organisation/organisation_fo
         state="You do not have permission to see this page."
         return render(request, template_name, {'state':state})
 
+"""
+Super Admin option to delete an organisation
+"""
 @login_required(login_url='/login/')
 def organisation_delete(request, pk, template_name='organisation/organisation_confirm_delete.html'):
     if (request.user.is_staff==True):
 	organisation = get_object_or_404(Organisation, pk=pk)
     	if request.method=='POST':
-		users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
+		users= User.objects.filter(\
+		    pk__in=User_Organisations.objects.filter(
+			organisation_organisationid=organisation\
+			    ).values_list(\
+				'user_userid', flat=True))
 		print("Marking organisation's users inactive.")
 		for user in users:
 			user.is_active = False
@@ -288,18 +354,16 @@ def organisation_delete(request, pk, template_name='organisation/organisation_co
 ###################################
 # UMCloud_Package CRUD
 
+"""
+Organisation Subscription package model
+"""
 class UMCloud_PackageForm(ModelForm):
     class Meta:
         model = UMCloud_Package
-"""
-@login_required(login_url='/login/')
-def umpackage_list(request, template_name='organisation/umpackage_list.html'):
-    umpackages = UMCloud_Package.objects.all()
-    data = {}
-    data['object_list'] = umpackages
-    return render(request, template_name, data)
-"""
 
+"""
+Super Admin View of all subscription packages
+"""
 @login_required(login_url='/login/')
 def umpackage_table(request, template_name='organisation/umpackage_table.html'):
     if (request.user.is_staff==True):
@@ -314,6 +378,9 @@ def umpackage_table(request, template_name='organisation/umpackage_table.html'):
         state="You do not have permission to see this page."
         return render(request, template_name, {'state':state})
 
+"""
+Organisation Subscription : to create new
+"""
 @login_required(login_url='/login/')
 def umpackage_create(request, template_name='organisation/umpackage_form.html'):
     if (request.user.is_staff==True):
@@ -327,6 +394,10 @@ def umpackage_create(request, template_name='organisation/umpackage_form.html'):
         state="You do not have permission to see this page."
         return render(request, template_name, {'state':state})
 
+"""
+To update organisation subscriptions 
+only by super use/staff
+"""
 @login_required(login_url='/login/')
 def umpackage_update(request, pk, template_name='organisation/umpackage_form.html'):
     if (request.user.is_staff==True):
@@ -341,6 +412,10 @@ def umpackage_update(request, pk, template_name='organisation/umpackage_form.htm
         state="You do not have permission to see this page."
         return render(request, template_name, {'state':state})
 
+"""
+View for deleting a subscription. 
+Only super user can have access to this.
+"""
 @login_required(login_url='/login/')
 def umpackage_delete(request, pk, template_name='organisation/umpackage_confirm_delete.html'):
     if (request.user.is_staff==True):

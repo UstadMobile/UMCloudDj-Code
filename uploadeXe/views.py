@@ -3,15 +3,12 @@ from django.template import RequestContext
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
-
-from django.shortcuts import render_to_response, redirect, get_object_or_404 #Added 404
+from django.shortcuts import render_to_response, redirect, get_object_or_404 
 
 import os 
 from uploadeXe.models import Package as Document
 from uploadeXe.forms import ExeUploadForm
 from uploadeXe.models import Course
-
-#Testing..
 from django.forms import ModelForm
 from organisation.models import Organisation
 from organisation.models import UMCloud_Package
@@ -22,7 +19,6 @@ from uploadeXe.models import Role
 from uploadeXe.models import User_Roles
 from django.contrib.auth.models import User
 from django import forms
-
 
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -44,21 +40,32 @@ import commands #Added for obtaining the elp hash
 ######################################################################
 #Package CRUD
 
+"""
+Document is Package which is a Block. This is the form for the block. 
+"""
 class DocumentForm(ModelForm):
     class Meta:
         model = Document
 	fields = ('name',)
 	
-
+"""
+The view to render delete a particular block. 
+"""
 @login_required(login_url='/login/')
 def delete(request, pk, template_name='myapp/package_confirm_delete.html'):
     document = get_object_or_404(Document, pk=pk)
     if request.method=='POST':
-        document.delete()
+	if request.user == document.publisher:
+            document.delete()
+	else:
+	    print("Only the publisher can delete the block")
+	    return redirect('manage')
         return redirect('manage')
     return render(request, template_name, {'object':document})
 
-
+"""
+Manages Blocks and reders to template rendering to primeui table
+"""
 @login_required(login_url='/login/')
 def manage(request, template_name='myapp/manage.html'):
     documents = Document.objects.filter(publisher=request.user,\
@@ -69,7 +76,12 @@ def manage(request, template_name='myapp/manage.html'):
 
     return render(request, template_name, {'courses_as_json':\
 					    courses_as_json})
-
+"""
+View to make edits to Blocks as oer Block model form.
+Assigned students are also rendered and given to the
+template for assignation and edits that are caught in
+this view via POST parameters
+"""
 @login_required(login_url='/login/')
 def edit(request, pk, template_name='myapp/update.html'):
     organisation = User_Organisations.objects.get(user_userid=request.user).\
@@ -95,7 +107,7 @@ def edit(request, pk, template_name='myapp/update.html'):
     if form.is_valid():
 	form.save()
 
-	print("Going to update the assigned students..")
+	#("Going to update the assigned students..")
 	studentidspicklist=request.POST.getlist('target')
 	document.students.clear()
 	assignedclear = document.students.all();
@@ -104,8 +116,8 @@ def edit(request, pk, template_name='myapp/update.html'):
                 document.students.add(currentstudent)
                 document.save()
 
-  	print("Going to update course where the package \
-		should be present..")
+  	#print("Going to update course where the package \
+	#	should be present..")
 	courseidspicklist=request.POST.getlist('target2')
 	for everycourseid in courseidspicklist:
 		everycourse = Course.objects.get(pk=everycourseid)
@@ -121,8 +133,9 @@ def edit(request, pk, template_name='myapp/update.html'):
 			'all_students':allstudents,\
 			'assigned_students':assignedstudents})
 
-# View to add a new elp file and upload it after assigning
-# it to a course.
+""" View to add a new elp file and upload it after assigning
+ it to a course.
+"""
 @login_required(login_url='/login/')
 def new(request, template_name='myapp/new.html'):
     # Handle file upload
@@ -157,8 +170,8 @@ def new(request, template_name='myapp/new.html'):
         context_instance=RequestContext(request)
     )
 
-#View and method to handle block/elp file uploads.
-#
+"""View and method to handle block/elp file uploads.
+"""
 @login_required(login_url='/login/')
 def list(request, template_name='myapp/list.html'):
     # Handle file upload
@@ -185,11 +198,8 @@ def list(request, template_name='myapp/list.html'):
         form = ExeUploadForm(request.POST, request.FILES)
 	forceNew     = request.POST.get('forceNew')
 	#noAutoassign = request.POST.get('noAutoassign')
-	print("FORCE NEW IS:")
         if form.is_valid():
 	  for exefile in request.FILES.getlist('exefile'):
-            #newdoc = Document(exefile = request.\
-				#FILES['exefile'])
 	    newdoc = Document(exefile=exefile)
             print("NEW elp file being uploaded by: " + \
 				request.user.username)
@@ -205,45 +215,37 @@ def list(request, template_name='myapp/list.html'):
             data['teacher_list'] = teachers
             data['student_list'] = students
             studentidspicklist=post.getlist('target')
-            print("students selected from picklist:")
-            print(studentidspicklist)
+            #("students selected from picklist:")
 
             uid = str(getattr(newdoc, 'exefile'))
             appLocation = (os.path.dirname(os.path.realpath(__file__)))
             #Get url / path
             setattr (newdoc, 'url', 'bull')
             setattr (newdoc, 'publisher', request.user)
-	    #Added 24Sept2014
 	    setattr (newdoc, 'elphash','-')
 	    setattr (newdoc, 'tincanid', '-')
             newdoc.save()
 
             for everystudentid in studentidspicklist:
-                print("Looping student:")
-                print(everystudentid)
+                #("Looping student:")
                 currentstudent=User.objects.get(pk=everystudentid)
                 newdoc.students.add(currentstudent)
                 newdoc.save()
 
-            os.system("echo Current location:")
             serverlocation=os.system("pwd")
 	    status, serverlocation = commands.getstatusoutput("pwd")
             mainappstring = "/UMCloudDj/"
             uid = str(getattr(newdoc, 'exefile'))
-            print("File saved as: ")
-            print(uid)
+            #t("File saved as: ")
             elphash = hashlib.md5(open(serverlocation + mainappstring \
 			+ settings.MEDIA_URL + uid).read()).hexdigest()	
 	    hashlist=Document.objects.all().values_list('elphash')
-	    print("|||||||||||||||||||||||||||||||||||||||||||||||||")
-	    print(hashlist)
 	    if str(elphash) in hashlist:
 		print("Elp already uploaded. Do we want to upload it again?")
+		#Put action here for future logic for existing files.
 	    setattr(newdoc, 'elphash', elphash)
             unid = uid.split('.um.')[-2]
             unid = unid.split('/')[-1]  #Unique id here.
-            print("Unique id:")
-            print (unid)
             setattr(newdoc, 'uid', unid)
             
             elpfile=appLocation + '/../UMCloudDj/media/' + uid
@@ -285,8 +287,8 @@ def list(request, template_name='myapp/list.html'):
 		        elplomid=None
 		        for e in elplomidobject:
 			    elplomid=e.getAttribute('value')
-		    	print("ELP LOM ID:")
-		    	print(elplomid)
+		    	#("ELP LOM ID:")
+		    	#(elplomid)
 		    	setattr(newdoc, 'elpid', elplomid)
 	    	    except:
 			setattr(newdoc, 'elpid', '-')
@@ -310,11 +312,8 @@ def list(request, template_name='myapp/list.html'):
             uidwe = uidwe.split('.elp')[-2]
             uidwe=uidwe.replace(" ", "_")
 	    
-            #rete=ustadmobile_export(uid, unid, uidwe)
 	    rete = ustadmobile_export(uid, unid, elpiname, elplomid, forceNew)
-	    #rete = ustadmobile_export(uid, unid, elpiname, elplomid, None)
 	 	
-	    print("here")
             if rete =="newsuccess":
 		print("True, this block will be newly created.")
                 courseURL = '/media/eXeExport' + '/' + unid + '/' + elpiname + '/' + 'deviceframe.html'
@@ -327,7 +326,7 @@ def list(request, template_name='myapp/list.html'):
                 """
                 Adding package to course
                 """
-                print("Going to assign the package to the selected book")
+                #("Going to assign the package to the selected book")
                 courseidspicklist=request.POST.getlist('target2')
                 for everycourseid in courseidspicklist:
                     currentcourse = Course.objects.get(pk=everycourseid)
@@ -344,18 +343,7 @@ def list(request, template_name='myapp/list.html'):
 		#just to be sure..
                 newdoc.save()
 		# Redirect to the document list after POST
-		"""
-		if 'submittotable' in request.POST:
-			return HttpResponseRedirect(reverse(\
-					'uploadeXe.views.list'))
-                if 'submittonew' in request.POST:
-			return HttpResponseRedirect(reverse(\
-					'uploadeXe.views.new'))
-                else:
-			return HttpResponseRedirect(reverse('\
-					uploadeXe.views.list'))
-		"""
-		print("Going to check next file..")
+		#("Going to check next file..")
 
 	    elif rete=="newfail":
 	 	print("Failed to create and start process for new course and export")
@@ -372,7 +360,6 @@ def list(request, template_name='myapp/list.html'):
             elif rete=="updatesuccess":
 		print("This block is going to be an update and has been updated.")
                 setattr(newdoc, 'success', "NO")
-		#added 24Sept2014
 		setattr(newdoc, 'active', False)
                 newdoc.save()
 		newdoc.delete()
@@ -408,6 +395,16 @@ def list(request, template_name='myapp/list.html'):
         context_instance=RequestContext(request)
     )
 
+"""
+Common function to export an elp file and depending on the success, 
+return options
+newsuccess for block is newly created and successfully expoorted.
+newfail for blocks to be newly created but export process failed.
+newfailcopy : elp exported but failed to verify the export process.
+updatefail: Failed to start export process for updating a block(elp)
+updatefailcopy: elp updated and exported but failed to verify the update
+updatesuccess: elp file updated and exported successfully. All good.
+"""
 def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
     appLocation = (os.path.dirname(os.path.realpath(__file__)))
     #try:
@@ -416,12 +413,11 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
     if found and not forceNew:
         print("elp ID EXISTS!")
         url=found[0].url.rsplit('/',2)[0]
+	"""
 	for f in found:
 	    print(f.id)
+	"""
 	
-        print("url:" ) 
-        print(url)
-
 	print("Command is:")
 	print('mv ' + appLocation + '/../UMCloudDj' +\
                     url + ' ' + appLocation + '/../UMCloudDj' +\
@@ -443,17 +439,15 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
                 	' ' + appLocation + '/../UMCloudDj' +\
                          	url+'' ) == 0: # If command ran successfully,
      	    print("1. Exported success")
-            print("Folder name: " + uidwe)
+            #("Folder name: " + uidwe)
             if os.system('cp ' + appLocation + '/../UMCloudDj'\
                      + url + '/' + uidwe + '/ustadpkg_html5.xml ' +\
                          "\"" + appLocation + '/../UMCloudDj'\
                              + url + '/' + uidwe + '_ustadpkg_html5.xml' +\
                                  "\"" ) == 0: #ie if command got executed in success
 		print("2. UstadMobile course exported successfully.")
-		print("a success, trying to update date and stuff")
-                print(found[0].id)
+		#("a success, trying to update date and stuff")
                 found[0].upd_date=datetime.datetime.now()
-                print(found[0].upd_date)
                 found[0].save()
 
 		if os.system('rm -rf ' + appLocation + '/../UMCloudDj'+\
@@ -462,7 +456,7 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
 	 	else:
 		    print("Unable to delete old folder")
 		return "updatesuccess"
-                #return False
+
 		"""
 	        if os.system('rm -rf ' + appLocation + '/../UMCloudDj'\
 			 +url + '_old'):
@@ -484,16 +478,13 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
                	print("!!Couldn't copy html file xml to main directoy. \
                       Something went wrong in the exe export!!")
 		return "updatefailcopy"
-               	#return False
 	else:
 	    print("YOU SHOULDNT EVEN BE SEEING THIS..:")
 	    return "updatefail"
-	    #return False
 
     else:
 	print("Continuing as normal or ForceNew selected")
 	none="none"
-        #os.system('tree')
         print("Possible command: ")
         print('exe_do -s ustadMobileTestMode=True -x ustadmobile ' +\
 	 "\"" +appLocation + '/../UMCloudDj/media/' + uid + "\"" +\
@@ -503,7 +494,6 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
 		' ' + appLocation + '/../UMCloudDj/media/eXeExport/' +\
 			 unid ) == 0: # If command ran successfully,
             print("1. Exported success")
-            print("Folder name: " + uidwe)
             if os.system('cp ' + appLocation + '/../UMCloudDj/media/eXeExport/'\
 			 + unid + '/' + uidwe + '/ustadpkg_html5.xml ' +\
 			 "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
@@ -511,22 +501,23 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
 			 "\"" ) == 0: #ie if command got executed in success
                 print("2. UstadMobile course exported successfully.")
 		return "newsuccess"
-                #return True
             else:
                 #Couldn't copy html file xml to main directoy. 
 	        #Something went wrong in the exe export
                 print("!!Couldn't copy html file xml to main directoy. \
 			Something went wrong in the exe export!!")
 		return "newfailcopy"
-                #return False
-        
         else:
             #Exe didn't run. exe_do : something went wrong in eXe.
             print("!!Exe didn't run. exe_do : something went wrong in eXe!!")
 	    return "newfail"
-            #return False
       
-    
+"""Currently disabled and depricated. Grunt course function was used to run the exported
+unit tests and go through a couese using grunt and webkit.This would validate if all the pages 
+can be loaded and would result in success for that course exproted.
+Process involved getting and setting up grunt for every course exported. Resulted in big folders.
+Direction of test changed to being on eXe instead of UMCloud.
+""" 
 def grunt_course(unid, uidwe):
     appLocation= (os.path.dirname(os.path.realpath(__file__)))
     print("Starting grunt process..")
@@ -566,12 +557,17 @@ def grunt_course(unid, uidwe):
 ##################################################################################
 #Courses CRUD
 
-
+"""
+Course Model Form that would expose name, category and description
+for edits and creation forms.
+"""
 class CourseForm(ModelForm):
     class Meta:
         model = Course
         fields = ('name', 'category','description')
 
+"""Course view to render all courses in a primeui table rendered
+by course template"""
 @login_required(login_url='/login/')
 def course_table(request, template_name='myapp/course_table.html'):
     organisation = User_Organisations.objects.get(\
@@ -596,14 +592,26 @@ def course_table(request, template_name='myapp/course_table.html'):
     return render(request, template_name, {'data':data, \
 			'courses_as_json':courses_as_json})
 
+"""
+View to delete a course.
+Only the course publisher can delete the course
+"""
 @login_required(login_url='/login/')
 def course_delete(request, pk, template_name='myapp/course_confirm_delete.html'):
     course = get_object_or_404(Course, pk=pk)
     if request.method=='POST':
-        course.delete()
+	if request.user == course.publisher:
+            course.delete()
+	else:
+	    return redirect('managecourses')
         return redirect('managecourses')
     return render(request, template_name, {'object':course})
 
+"""
+View to create a new course with form elements in Course Model 
+Form and render it and create the course with POST parameters.
+The template also asks for block(package) assignment.
+"""
 @login_required(login_url="/login/")
 def course_create(request, template_name='myapp/course_create.html'):
     organisation = User_Organisations.objects.get(user_userid=\
@@ -714,6 +722,9 @@ def course_create(request, template_name='myapp/course_create.html'):
 
     return render(request, template_name, data)
 
+"""
+View to update the the course details as per course model form and template
+"""
 @login_required(login_url='/login/')
 def course_update(request, pk, template_name='myapp/course_form.html'):
     organisation = User_Organisations.objects.get(\

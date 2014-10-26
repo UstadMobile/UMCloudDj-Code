@@ -2,6 +2,14 @@ from django.db import models
 from school.models import School
 from django.contrib.auth.models import User
 
+"""
+Class object called Allclass because we cant
+call it class to avoid confusion
+This model is for classes that reside under a school 
+which is part of an organisation. 
+Class is realted to School (assigned to organisation)
+and teachers and students are assigned to the class. 
+"""
 class Allclass(models.Model):
     allclass_name = models.CharField(max_length=300)
     allclass_desc = models.CharField(max_length=1000)

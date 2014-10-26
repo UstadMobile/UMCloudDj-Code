@@ -1,19 +1,17 @@
 from django.core.context_processors import csrf
 from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import render_to_response, redirect, get_object_or_404 #Added 404
+from django.shortcuts import render_to_response, redirect, get_object_or_404 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from django.contrib import auth
 from django.template import RequestContext
-#from uploadeXe.models import Document
 from uploadeXe.models import Package as Document
 from uploadeXe.models import Course
 from uploadeXe.models import Ustadmobiletest
 from uploadeXe.models import Invitation
 
-#Testing..
 from uploadeXe.models import Role
 from uploadeXe.models import User_Roles
 from django.forms import ModelForm
@@ -34,13 +32,10 @@ from django.core import serializers
 import datetime
 import time
 import os
-#import urllib, json
 import urllib
 import urllib2, base64, json
 import glob #For file ^VS 130420141454
-#from UMCloudDj.models import Ustadmobiletest
 from uploadeXe.models import Ustadmobiletest
-#from django.utils import simplejson
 import simplejson
 from django.conf import settings
 from django.db.models import Q
@@ -54,106 +49,89 @@ import zipfile
 from django.core.mail import send_mail
 import socket
 
-#UMCloudDj.uploadeXe
 
 ###################################
 # Role CRUD
 
+"""Role Model Form 
+"""
 class RoleForm(ModelForm):
     class Meta:
         model = Role
 
+"""View to list all roles. Only accessable to super admins
 """
-@login_required(login_url='/login/')
-def role_list(request, template_name='role/role_list.html'):
-    roles = Role.objects.all()
-    data = {}
-    data['object_list'] = roles
-    return render(request, template_name, data)
-"""
-
 @login_required(login_url='/login/')
 def role_table(request, template_name='role/role_table.html'):
-    roles = Role.objects.all()
-    data = {}
-    data['object_list'] = roles
-    roles_as_json = serializers.serialize('json', roles)
-    roles_as_json =json.loads(roles_as_json)
+    if request.user.is_staff == True:
+        roles = Role.objects.all()
+        data = {}
+    	data['object_list'] = roles
+    	roles_as_json = serializers.serialize('json', roles)
+    	roles_as_json =json.loads(roles_as_json)
+    	return render(request, template_name, {'data':data,\
+			 'roles_as_json':roles_as_json})
+    else:
+	return redirect('home')
 
-    return render(request, template_name, {'data':data, 'roles_as_json':roles_as_json})
-
+"""View to create a new role as per Role Model Form.
+Only accessable to Super Admins.
 """
-@login_required(login_url='/login/')
-def role_dynatable(request, template_name='table/dynatable.html'):
-    roles=Role.objects.all()
-    data={}
-    data['object_list']=roles;
-    data_as_json=serializers.serialize('json', roles)
-    data_as_json=json.loads(data_as_json)
-    pagetitle="UstadMobile Roles"
-    newtypeid="newrole"
-    newtypelink="/rolenew/"
-    tabletypeid="tblroles"
-    table_headers_html=[]
-    table_headers_name=[]
-    #table_headers_html.append("approve")
-    #table_headers_name.append("Approve-Slide")
-    table_headers_html.append("radio")
-    table_headers_name.append("Approve")
-    table_headers_html.append("radio2")
-    table_headers_name.append("Reject")
-    table_headers_html.append("pk")
-    table_headers_name.append("ID")
-    #table_headers_html.append("model");
-    table_headers_html.append("fields.role_name")
-    table_headers_name.append("Role Name")
-    table_headers_html.append("fields.role_desc")
-    table_headers_name.append("Role Desc")
-    table_headers_html = zip(table_headers_html, table_headers_name)
-    logicpopulation = '{"pk":"{{c.pk}}","model":"{{c.model}}", "role_name":"{{c.fields.role_name}}","role_desc":"{{c.fields.role_desc}}"}{% if not forloop.last %},{% endif %}'
-
-    return render(request, template_name, {'data':data, 'data_as_json':data_as_json, 'table_headers_html':table_headers_html, 'pagetitle':pagetitle, 'newtypeid':newtypeid, 'tabletypeid':tabletypeid, 'newtypelink':newtypelink, 'logicpopulation':logicpopulation}, context_instance=RequestContext(request))
-"""
-
 @login_required(login_url='/login/')
 def role_create(request, template_name='role/role_form.html'):
-    form = RoleForm(request.POST or None)
-    if form.is_valid():
-        form.save()
-        return redirect('role_table')
-    return render(request, template_name, {'form':form})
+    if request.user.is_staff==True:
+    	form = RoleForm(request.POST or None)
+    	if form.is_valid():
+            form.save()
+            return redirect('role_table')
+    	return render(request, template_name, {'form':form})
+    else:
+	return redirect('home')
 
+"""View to update an existing role
+Only accessable to Super Admins.
+"""
 @login_required(login_url='/login/')
 def role_update(request, pk, template_name='role/role_form.html'):
-    role = get_object_or_404(Role, pk=pk)
-    form = RoleForm(request.POST or None, instance=role)
-    if form.is_valid():
-        form.save()
-        return redirect('role_table')
-    return render(request, template_name, {'form':form})
+    if request.user.is_staff == True:
+    	role = get_object_or_404(Role, pk=pk)
+    	form = RoleForm(request.POST or None, instance=role)
+    	if form.is_valid():
+            form.save()
+            return redirect('role_table')
+    	return render(request, template_name, {'form':form})
+    else:
+	return redirect('home')
 
+"""View to delete an existing role.
+Only accessable to super admins
+"""
 @login_required(login_url='/login/')
 def role_delete(request, pk, template_name='role/role_confirm_delete.html'):
-    role = get_object_or_404(Role, pk=pk)    
-    if request.method=='POST':
-        role.delete()
-        return redirect('role_table')
-    return render(request, template_name, {'object':role})
-
-#@login_required(login_url='/login/')
-####################################
-
+    if request.user.is_staff == True:
+    	role = get_object_or_404(Role, pk=pk)    
+    	if request.method=='POST':
+            role.delete()
+            return redirect('role_table')
+    	return render(request, template_name, {'object':role})
+    else:
+	return redirect('home')
 
 ###################################
 # USER CRUD
 
+"""UserProfile model form for additional details about the user
+"""
 class UserProfileForm(ModelForm):
     raw_id_fields=("user",)
     readonly_fields=("user",)
     class Meta:
         model = UserProfile
-	fields=('website','company_name','job_title','date_of_birth','address','phone_number','gender', 'notes')
+	fields=('website','company_name','job_title','date_of_birth',\
+			'address','phone_number','gender', 'notes')
 
+"""User model form for user addition and update forms.
+"""
 class UserForm(ModelForm):
     password = forms.CharField(widget=forms.PasswordInput, required=False)
     class Meta:
@@ -162,7 +140,9 @@ class UserForm(ModelForm):
 	widgets = {
         #'password': forms.PasswordInput(),
     	}
-
+	
+    """Override the save method to update password
+    """
     def save(self, commit=True):
     	user = super(UserForm, self).save(commit=False)
 	oldpassword = user.password
@@ -179,12 +159,12 @@ class UserForm(ModelForm):
 		user.save()
     	return user
 
+    """For uploading avatars. Not used yet
+    """
     def clean_avatar(self):
         avatar = self.cleaned_data['avatar']
-
         try:
             w, h = get_image_dimensions(avatar)
-
             #validate dimensions
             max_width = max_height = 100
             if w > max_width or h > max_height:
@@ -212,13 +192,17 @@ class UserForm(ModelForm):
 
         return avatar
 
+"""Model form for image avatar for users.
+Currently not used
+"""
 class ImageUploadForm(forms.Form):
     avatar = forms.FileField(
         label='Select an image file'
         #content_types = 'application/elp'
     )
 
-
+"""Upload view for avatar for a user. Not currently made visible.
+"""
 @login_required(login_url='/login/')
 def upload_avatar(request, template_name='myapp/avatar.html'):
     organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
@@ -256,11 +240,28 @@ def upload_avatar(request, template_name='myapp/avatar.html'):
         context_instance=RequestContext(request)
     )
 
+
+"""View to render all users within the user's organisation.
+If super user/system admin all organisation users will be displayed. 
+This renders the data to the template that renders the data to a prime
+ui table"""
 @login_required(login_url='/login/')
 def user_table(request, template_name='user/user_table.html', created=None):
-    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
+    organisation = User_Organisations.objects.get(\
+				user_userid=request.user\
+					).organisation_organisationid;
     #Syntax to ignore un aproved users.
-    users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True)).exclude(pk__in=UserProfile.objects.filter(admin_approved=False).values_list('user', flat=True)).filter(is_active=True)
+    users= User.objects.filter(\
+	pk__in=User_Organisations.objects.filter(\
+	    organisation_organisationid=organisation\
+		).values_list(\
+		    'user_userid', flat=True)\
+	).exclude(\
+	    pk__in=UserProfile.objects.filter(\
+		admin_approved=False).values_list(\
+		    'user', flat=True)\
+	).filter(\
+	    is_active=True)
 
     if request.user.is_staff == True:
 	users = User.objects.filter(is_active=True)
@@ -269,15 +270,22 @@ def user_table(request, template_name='user/user_table.html', created=None):
     organisational_admin_role = Role.objects.get(pk=2)
 
     current_user_role = user_role.role_name;
-    current_user = "Hi, " + request.user.first_name + ". You are a " + current_user_role + " in " + organisation.organisation_name + " organisation."
+    current_user = "Hi, " + request.user.first_name + ". You are a " +\
+	 current_user_role + " in " +\
+		 organisation.organisation_name + " organisation."
     if request.user.is_staff == True:
-	current_user = "SUPER ADMIN: Hi, " + request.user.first_name + ". You are a " + current_user_role + " in " + organisation.organisation_name + " organisation and all organisations."
+	current_user = "SUPER ADMIN: Hi, " + request.user.first_name +\
+		 ". You are a " + current_user_role + " in " +\
+		     organisation.organisation_name +\
+			 " organisation and all organisations."
     data={}
     if created:
 	try:
 		usercreated=User.objects.get(id=created)
 		if usercreated in users:
-			data['state']="Username : " + usercreated.username + " created successfully"
+			data['state']="Username : " + \
+			    usercreated.username + \
+  				" created successfully"
 			#print("A success redirect")
 		else:
 			data['state']=""
@@ -291,9 +299,11 @@ def user_table(request, template_name='user/user_table.html', created=None):
     if user_role == organisational_admin_role:
 	org_role = True
 	try:
-                organisation_code=Organisation_Code.objects.get(organisation=organisation)
+                organisation_code=Organisation_Code.objects.get(\
+					    organisation=organisation)
         except Organisation_Code.DoesNotExist, e:
-                organisation_code = Organisation_Code(organisation=organisation)
+                organisation_code = Organisation_Code(\
+  					    organisation=organisation)
                 random_code = random.randrange(1000000)
                 random_org_code=str(organisation.id)+str(random_code)
                 organisation_code.code=random_org_code
@@ -301,7 +311,18 @@ def user_table(request, template_name='user/user_table.html', created=None):
 	print(organisation_code)
 	data['organisation_code']=organisation_code
 
-	users_notification= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True)).filter(pk__in=UserProfile.objects.filter(admin_approved=False).values_list('user', flat=True)).filter(is_active=True)
+	users_notification= User.objects.filter(\
+	    pk__in=User_Organisations.objects.filter(\
+		organisation_organisationid=organisation\
+		    ).values_list(\
+			'user_userid', flat=True)\
+	    ).filter(\
+	  	pk__in=UserProfile.objects.filter(\
+		    admin_approved=False\
+			).values_list(\
+			    'user', flat=True)\
+	    ).filter(\
+		is_active=True)
 	requestspending = users_notification.count()
     else:
 	org_role = False
@@ -311,11 +332,15 @@ def user_table(request, template_name='user/user_table.html', created=None):
     user_roles = []
     user_organisations = []
     for user in users:
-	role = User_Roles.objects.get(user_userid=user).role_roleid
-	organisation = User_Organisations.objects.get(user_userid=user).organisation_organisationid
+	role = User_Roles.objects.get(user_userid=user\
+					).role_roleid
+	organisation = User_Organisations.objects.get(\
+				user_userid=user\
+			).organisation_organisationid
 	user_roles.append(role)
 	user_organisations.append(organisation)
-    data['object_list'] = zip(users,user_roles,user_organisations)
+    data['object_list'] = zip(users,user_roles,\
+				user_organisations)
     data['role_list'] = user_roles
     data['organisation_list'] = user_organisations
     users_as_json = serializers.serialize('json', users)
@@ -327,16 +352,28 @@ def user_table(request, template_name='user/user_table.html', created=None):
     return render(request, template_name, data)
 
 
+"""View for orgaisational admins to approve users or reject them
+"""
 @login_required(login_url='/login/')
 def admin_approve_request(request, template_name='user/admin_approve_request_table2.html'):
-    role = User_Roles.objects.get(user_userid=request.user).role_roleid;
-    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
+    role = User_Roles.objects.get(user_userid=request.user\
+				 ).role_roleid;
+    organisation = User_Organisations.objects.get(\
+			user_userid=request.user\
+			).organisation_organisationid;
     organisational_admin_role = Role.objects.get(pk=2)
     
     if role == organisational_admin_role:
 	roles=Role.objects.all()
 	#Syntax to ignore un aproved users.
-	users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True)).filter(pk__in=UserProfile     .objects.filter(admin_approved=False).values_list('user', flat=True)).filter(is_active=True)
+	users= User.objects.filter(\
+	    pk__in=User_Organisations.objects.filter(\
+		organisation_organisationid=organisation\
+		    ).values_list('user_userid', flat=True)\
+	    ).filter(\
+		pk__in=UserProfile.objects.filter(\
+		    admin_approved=False).values_list(\
+			'user', flat=True)).filter(is_active=True)
 	
 	if request.method == 'POST':
         	post = request.POST;
@@ -368,7 +405,8 @@ def admin_approve_request(request, template_name='user/admin_approve_request_tab
 	
         for user in users:
                 role = User_Roles.objects.get(user_userid=user).role_roleid
-                organisation = User_Organisations.objects.get(user_userid=user).organisation_organisationid
+                organisation = User_Organisations.objects.get(\
+				user_userid=user).organisation_organisationid
                 user_roles.append(role)
                 user_organisations.append(organisation)
 		userprofile=UserProfile.objects.get(user=user)
@@ -408,27 +446,43 @@ def admin_approve_request(request, template_name='user/admin_approve_request_tab
         logicpopulation = '{"pk":"{{c.pk}}","model":"{{c.model}}", "username":"{{c.fields.username}}","first_name":"{{c.fields.first_name}}"}{% if not forloop.last %},{% endif %}'
 	if not users:
 		state="No new user requests"
-		return render(request, template_name, {'data_as_json':data_as_json, 'table_headers_html':table_headers_html, 'pagetitle':pagetitle, 'tabletypeid':tabletypeid,'user_mapping':user_mapping,'state':state}, context_instance=RequestContext(request))
+		return render(request, template_name, {\
+				'data_as_json':data_as_json,\
+				 'table_headers_html':table_headers_html,\
+				 'pagetitle':pagetitle,\
+				 'tabletypeid':tabletypeid,\
+				 'user_mapping':user_mapping,\
+				 'state':state}, \
+			context_instance=RequestContext(request))
 	else:
-        	return render(request, template_name, {'data_as_json':data_as_json, 'table_headers_html':table_headers_html, 'pagetitle':pagetitle, 'tabletypeid':tabletypeid,'user_mapping':user_mapping}, context_instance=RequestContext(request))
-
+        	return render(request, template_name, {\
+				'data_as_json':data_as_json, \
+				'table_headers_html':table_headers_html, \
+				'pagetitle':pagetitle, \
+				'tabletypeid':tabletypeid,\
+				'user_mapping':user_mapping},\
+			 context_instance=RequestContext(request))
     else:
 	state="You do not have permission to see this page."
 	return render(request, template_name, {'state':state})
 
-
-
+"""View to render the create user form and get parameters from POST request and 
+create the user"""
 @login_required(login_url='/login/')
 def user_create(request, template_name='user/user_create.html'):
-    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
+    organisation = User_Organisations.objects.get(\
+		user_userid=request.user\
+		).organisation_organisationid;
     form = UserForm(request.POST or None)
     #form.fields['username'].widget.attrs['readonly'] = True
-    #upform.fields['date_of_birth'].widget.attrs = {'class':'dobdatepicker'}
+    #upform.fields['date_of_birth'].widget.attrs\
+    # = {'class':'dobdatepicker'}
     roles = Role.objects.all()
     organisations = Organisation.objects.all()
     organisations=[]
     organisations.append(organisation)
-    allclasses=Allclass.objects.filter(school__in=School.objects.filter(organisation=organisation));
+    allclasses=Allclass.objects.filter(school__in=\
+		School.objects.filter(organisation=organisation));
     data = {}
     data['object_list'] = roles
     data['organisation_list'] = organisations
@@ -446,9 +500,21 @@ def user_create(request, template_name='user/user_create.html'):
 
 	if not user_exists(post['username']):
 		
-        	user = create_user_more(username=post['username'], email=post['email'], password=post['password'], first_name=post['first_name'], last_name=post['last_name'], roleid=post['role'], organisationid=organisation.id, date_of_birth=post['dateofbirth'], address=post['address'], gender=post['gender'], phone_number=post['phonenumber'], organisation_request=organisation)
+        	user = create_user_more(username=post['username'], \
+					email=post['email'], \
+					password=post['password'], \
+					first_name=post['first_name'], \
+					last_name=post['last_name'], \
+					roleid=post['role'], \
+					organisationid=organisation.id, \
+					date_of_birth=post['dateofbirth'], \
+					address=post['address'], \
+					gender=post['gender'], \
+					phone_number=post['phonenumber'], \
+					organisation_request=organisation)
 		if user:
-		    current_user_role = User_Roles.objects.get(user_userid=user.id).role_roleid;
+		    current_user_role = User_Roles.objects.get(\
+					user_userid=user.id).role_roleid;
 		    student_role = Role.objects.get(pk=6)
 		    
 		    if current_user_role == student_role:
@@ -478,7 +544,8 @@ def user_create(request, template_name='user/user_create.html'):
                     state="The Username already exists.."
 		    data['state']=state
 		    return render(request, template_name, data)
-                    #return render_to_response('user/user_create.html',{'state':state}, context_instance=RequestContext(request))
+                    #return render_to_response('user/user_create.html',\
+		    #{'state':state}, context_instance=RequestContext(request))
                 #return redirect("/register", {'state':state})
 
     	else:
@@ -490,13 +557,21 @@ def user_create(request, template_name='user/user_create.html'):
 
     return render(request, template_name, data)
 
-	
+
+"""View to render edit form for particular user
+Only user in organisation can edit.
+"""
 @login_required(login_url='/login/')
 def user_update(request, pk, template_name='user/user_update.html'):
     user = get_object_or_404(User, pk=pk)
-    organisation=User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
-    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
-    users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
+    organisation=User_Organisations.objects.get(\
+		user_userid=request.user).organisation_organisationid;
+    organisation = User_Organisations.objects.get(\
+		user_userid=request.user).organisation_organisationid;
+    users= User.objects.filter(\
+	pk__in=User_Organisations.objects.filter(\
+	    organisation_organisationid=organisation\
+		).values_list('user_userid', flat=True))
     if request.user.is_staff == False:
     	if user not in users:
 	    return redirect('user_table')
@@ -518,163 +593,55 @@ def user_update(request, pk, template_name='user/user_update.html'):
 	return redirect('user_table')
     return render(request, template_name, {'form':form,'upform':upform})
 
+"""View to delete a user. Only organisation admin can delete users
+"""
 @login_required(login_url='/login/')
 def user_delete(request, pk, template_name='user/user_confirm_delete.html'):
     user = get_object_or_404(User, pk=pk)
+    organisation = User_Organisations.objects.get(\
+	user_userid=request.user).organisation_organisationid;
+    orgusers= User.objects.filter(\
+	pk__in=User_Organisations.objects.filter(\
+	    organisation_organisationid=organisation\
+		).values_list('user_userid', flat=True))
+    if user not in orgusers:
+	return redirect('user_table')
     if request.method=='POST':
-        user.delete()
+	role = User_Roles.objects.get(user_userid=request.user\
+                                 ).role_roleid;
+	if role.id < 3:
+	    if user in orgusers:
+                user.delete()
+	    else:
+	    	return redirect('user_table')
+	else:
+	    return redirect('user_table')
         return redirect('user_table')
     return render(request, template_name, {'object':user})
 
 ####################################
 
+"""View to render report section of home page 
 """
-@login_required(login_url='/login/')
-def get_report_statements(request, onfail='/statementsreports'):
-        date_since = request.POST['since_1_alt']
-        date_until = request.POST['until_1_alt']
-        #activity = request.POST['activity']
-        print("Got variables. They are: ")
-        print(date_since)
-        print(date_until)
-        #Code for report making here.
-	umlrs = settings.UMLRS
-        #lrs_endpoint = umlrs + "?" + "&since=" + date_since + "&until=" + date_until + "&activity=" + activity
-        lrs_endpoint = umlrs + "?" + "&since=" + date_since + "&until=" + date_until
-        #BASIC AUTHENTICATION
-        username="testuser"
-        #username = request.POST['username']
-        password="testpassword"
-        #password = request.POST['password']
-        #Username and password to be in sync or already known by Django. For now using the only test account on the TinCan LRS.
-
-        req = urllib2.Request(lrs_endpoint)
-        base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
-        req.add_header("Authorization", "Basic %s" % base64string)
-        req.add_header("X-Experience-API-Version", "1.0.1")
-        #GETTING JSON String from URL
-        jdata_string = urllib2.urlopen(req).read() #gets string..
-        jdata_string = jdata_string.replace('en-US', 'en_US')
-        jdata = json.dumps(jdata_string) #puts in a JSON string  #JSON encoding
-        data = json.loads(jdata_string) #puts in a JSON #JSON decoding # to a python dictionary
-        print(data['statements'])
-        print("Going one by one..")
-        statements_as_json = data['statements']
-
-        return render_to_response("report_statements.html", {'date_since':date_since , 'date_until':date_until , 'data':data , 'lrs_endpoint':lrs_endpoint ,'statements_as_json':statements_as_json }, context_instance=RequestContext(request))
-"""
-
-"""
-@login_required(login_url='/login/')
-def get_report_zambia(request, onfail='/mcqreports'):
-    	print("Getting variables..")
-    	date_since = request.POST['since_1_alt']
-    	date_until = request.POST['until_1_alt']
-    	#activity = request.POST['activity']
-    	print("Got variables. They are: ")
-    	print(date_since)
-    	print(date_until)
-	#Code for report making here.
-	umlrs = settings.UMLRS
-	#lrs_endpoint = umlrs + "?" + "&since=" + date_since + "&until=" + date_until + "&activity=" + activity
-	lrs_endpoint = umlrs + "?" + "&since=" + date_since + "&until=" + date_until
-	#BASIC AUTHENTICATION
-        username="testuser"
-	#username = request.POST['username']
-        password="testpassword"
-	#password = request.POST['password']
-	#Username and password to be in sync or already known by Django. For now using the only test account on the TinCan LRS.
-
-        req = urllib2.Request(lrs_endpoint)
-        base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
-        req.add_header("Authorization", "Basic %s" % base64string)
-        req.add_header("X-Experience-API-Version", "1.0.1")
-	#GETTING JSON String from URL
-        jdata_string = urllib2.urlopen(req).read() #gets string..
-	jdata_string = jdata_string.replace('en-US', 'en_US')
-        jdata = json.dumps(jdata_string) #puts in a JSON string  #JSON encoding
-        data = json.loads(jdata_string) #puts in a JSON #JSON decoding # to a python dictionary
-	print(data['statements'])
-	print("Going one by one..")
-	statements_as_json = data['statements']
-	##play with the data now.
-
-    	return render_to_response("report_zambia.html", {'date_since':date_since , 'date_until':date_until , 'data':data , 'lrs_endpoint':lrs_endpoint ,'statements_as_json':statements_as_json }, context_instance=RequestContext(request))
-"""
-
 @login_required(login_url='/login/')
 def report_selection_view(request):
 	c = {}
         c.update(csrf(request))
 	return render(request, "report_selection.html")
 
+"""View to render statement selection in report
+"""
 @login_required(login_url='/login/')
 def report_statements_view(request):
 	c = {}
 	c.update(csrf(request))
 	return render(request, "report_statements_selection.html")
 
+"""External facing API to check username and password credentials in POST request. Used for external queries (eg: eXe)
+Returns 200: Login success
+Returns 403: Login unsuccess
+Returns 500: Something wrong with POST request.
 """
-def elptestresults_selection_view(request):
-	c= {}
-	c.update(csrf(request))
-	return render(request, "elptestresults_selection.html")
-
-def apptestresults_selection_view(request):
-	c = {}
-	c.update(csrf(request))
-	return render(request, "apptestresults_selection.html")
-"""
-"""
-@csrf_exempt
-def sendtestlog_view(request):
-	print("Receiving the test logs..")
-        unittestlogs = 'hiii'
-
-	unittestlogs = request.POST.get('appunittestoutput')
-	#print("The unit test logs recieved is: " + unittestlogs)
-	
-	username = request.POST.get('username');
-	password = request.POST.get('password');
-
-	os.system("pwd")
-
-	with open ("umpassword.txt", "r") as myfile:
-    		umpassword=myfile.read().replace('\n', '')
-
-	if ( username == "test" and password == umpassword ):
-		#process with inserting data into table.	
-		print("The username and password matches! The unit test output recieved is: " + unittestlogs)
-		unittestlogs = unittestlogs.strip()
-	
-		for i, phrase in enumerate(unittestlogs.split('new|')):
-			if phrase != '':
-				utestfields = phrase.split('|')
-				
-				
-				
-				##Code for putting in database goes here.	
-				newunittestresult = Ustadmobiletest(name = utestfields[0] )
-				setattr (newunittestresult, 'result', utestfields[1] )
-				setattr (newunittestresult, 'runtime', utestfields[2] )
-  				setattr (newunittestresult, 'dategroup',  utestfields[3])
-				setattr (newunittestresult, 'platform', utestfields[4])
-				setattr (newunittestresult, 'ustad_version', utestfields[5])
-				newunittestresult.save()
-			else:
-				pass
-	
-		context_instance=RequestContext(request)
-        	response = render_to_response("sendtestlog.html", {'appunittestoutput': unittestlogs}, context_instance=RequestContext(request))
-        	return response
-
-	else:
-		#Return a bad signal. 
-		print("The username and password is incorrect. Sorry bro..")
-		return render_to_response("invalid.html", {'invalid': invalid}, context_instance=RequestContext(request))
-	
-"""
-
 @csrf_exempt
 def checklogin_view(request):
 
@@ -687,16 +654,25 @@ def checklogin_view(request):
 
                 #Code for Authenticating the user
 	
-		user = authenticate(username=request.POST['username'], password=request.POST['password'])
+		user = authenticate(username=request.POST['username'],\
+			 password=request.POST['password'])
                 if user is not None:
 			authresponse = HttpResponse(status=200)
-			authresponse.write("User: " + username + " authentication a success.")
+			authresponse.write("User: " + username + \
+				" authentication a success.")
 			return authresponse
 		else:
 			authresponse = HttpResponse(status=403)
-			authresponse.write("User: " + username + " authentication failed.")
+			authresponse.write("User: " + username + \
+				" authentication failed.")
 			return authresponse
 
+"""External API to get username/password authenticated user's course
+POST parameters:
+username, password
+Returns a JSON 
+[{"id":1, "title":"Hello World", "last-modified":"2014-10-10 10:10:10"},{...},{..}]
+"""
 @csrf_exempt
 def getassignedecourses_json(request):
 	if request.method == "POST":
@@ -742,11 +718,6 @@ def getassignedecourses_json(request):
 			    'title':o.name,
 			    'last-modified':str(o.upd_date)
 			}for o in matched_courses])	
-		"""
-		json_courses_old = simplejson.dumps( [{'id': o.id,
-                           'title': o.name,
-                            'last-modified':str(o.upd_date)} for o in matched_courses] )
-		"""
         	return HttpResponse(json_courses, mimetype="application/json")
 
 	else:
@@ -754,6 +725,12 @@ def getassignedecourses_json(request):
             authresponse.write("Not a POST request. Assigned Course IDs retrival failed.")
             return authresponse
 
+"""External API To get assigned blocks from username/password authenticated user. 
+POST parameters: 
+username, password
+Returns a JSON
+[{"22":{""title":"First Block", "last-modified":"date"}},{...},{...}]
+"""
 @csrf_exempt
 def getassignedblocks_json(request):
 	if request.method == "POST":
@@ -791,6 +768,14 @@ def getassignedblocks_json(request):
             authresponse.write("Not a POST request. Assigned Block IDs retrival failed.")
             return authresponse
 
+"""External API to get blocks for a course for authenticated user 
+credentials.
+POST parameters:
+username, password, course id (primary key)
+
+ Returns JSON
+[{"title":"Course Title", "description":"Test Course", "id":"http:/tin.can.id/unique-123-454-6dfd-564fsd", "blocks":[{"id":"http://a.v.c/1212-asdad3d3ad-3d-3","title":"Block Title"},{..},{..}]},{..},{..}]
+"""
 @csrf_exempt
 def get_course_blocks(request):
 	if request.method == "POST":
@@ -845,6 +830,15 @@ def get_course_blocks(request):
             authresponse.write("Not a POST request. Assigned Block retrival for course failed.")
             return authresponse
 
+"""External API for eXe to POST request invitations
+POST parameters:
+username, password, blockid(elplomid), emailids(json list:['a@b.c', 'b@c.c'], 
+mode:organisation/individual, foreNew: set or not in request, 
+
+Returns stats code
+200: Success
+500: Failed/Server Error
+"""
 @csrf_exempt
 def invite_to_course(request):
 	if request.method == "POST":
@@ -858,10 +852,6 @@ def invite_to_course(request):
 	    emails=[]
 	    for item in emailidsjson:
 		emails.append(item)
-	    print(username)
-	    print(blockid)
-	    print(mode)
-	    print(emails)
 	    mode     = request.POST.get('mode', False)
             #Authenticate the user
 	    blocks=[]
@@ -874,23 +864,17 @@ def invite_to_course(request):
                 organisation = User_Organisations.objects.get(\
                                 user_userid=user)\
                                 .organisation_organisationid;
-		print(organisation)
 		try:
 		    #Check if the block youa re about to give permissions to, is
 		    #in your organisation and exists..
-		    print(blockid)
 		    block = Document.objects.get(elpid=blockid, success="YES", active=True, \
 			publisher__in=User.objects.filter(pk__in=\
 			    User_Organisations.objects.filter(\
 				organisation_organisationid=organisation).values_list(\
 					'user_userid', flat=True)))
 		    try:
-			print("In here")
 			blocks.append(block)
-			print(blocks)
 			course=Course.objects.get(packages__in=blocks)
-			print("YAY")
-			print(course.name)
 		    except:
 			authresponse=HttpResponse(status=500)
 			authresponse.write("Course with Block id not found. Please publish block first")
@@ -900,15 +884,21 @@ def invite_to_course(request):
 		    authresponse.write("Block requested does not exist or is in your organisation")
 		    return authresponse
 		else:
-		    print("Going through emails..")
 		    for current_email in emails:
 			print("Current email:")
 			print(current_email)
 			try:
 		            if mode == "organisation":
-		    	    	invitation=Invitation(organisation=organisation, invitee=user, email=current_email, block=block, course=course)
+		    	    	invitation=Invitation(\
+				    organisation=organisation, invitee=user,\
+				    email=current_email,\
+			  	    block=block, course=course)
 			    elif mode == "individual":
-			    	invitation = Invitation(organisation=individual_organisation, invitee=user, email=current_email, block=block, course=course)
+			    	invitation = Invitation(\
+				    organisation=individual_organisation,\
+				    invitee=user,\
+				    email=current_email, \
+				    block=block, course=course)
 			    else:
 			    	authresponse=HttpResponse(status=500)
                     	    	authresponse.write("Unable to figure the mode out..")
@@ -926,7 +916,8 @@ def invite_to_course(request):
 			    	send_mail('You are invited to join ' + course.name, 'Hi,\n' +\
 				'\n' + sender + ' has invited you to access the course ' + course.name + \
 				' using eXe course creation software.\nPlease click the link to acess the course.' +\
-				 '\nClick here: '+hostname+'/register/invitation/?id='+invitation_id + '\n(Do not share this link. It is private to you). \
+				 '\nClick here: '+hostname+'/register/invitation/?id='+invitation_id +\
+					 '\n(Do not share this link. It is private to you). \
 				\n\nRegards, \nUstad Mobile\ninfo@ustadmobile.com\n@ustadmobile', \
 				 'info@ustadmobile.com' , [current_email], fail_silently=False)
 			    except:
@@ -961,7 +952,8 @@ def invite_to_course(request):
             return authresponse
 
 
-
+"""External API. Original xml implementation of getting assigned courses and blocks
+"""
 @csrf_exempt
 def getassignedcourseids_view(request):
         if request.method == 'POST':
@@ -1038,7 +1030,12 @@ def getassignedcourseids_view(request):
 		return authresponse
 
 
+"""External API to send elp file as POST request with authentication to upload and set the block to a course
+by default
+POST parameters:
+username, password, foreceNew(set or not set), noAutoassign(set or not set)
 
+"""
 @csrf_exempt
 def sendelpfile_view(request):
 	print("Receiving the elp file..")
@@ -1055,13 +1052,15 @@ def sendelpfile_view(request):
 		print request.FILES
 
 		#Code for Authenticating the user
-		user = authenticate(username=request.POST['username'], password=request.POST['password'])
+		user = authenticate(username=request.POST['username'], \
+				password=request.POST['password'])
     		if user is not None:
 			print("Login a success!..")
         		#We Sign the user..
 			login(request, user)
 
-			organisation = User_Organisations.objects.get(user_userid=user).organisation_organisationid;
+			organisation = User_Organisations.objects.get(\
+				user_userid=user).organisation_organisationid;
 			#Try to save the file
 			newdoc = Document(exefile = request.FILES['exeuploadelp'])
 		        uid = str(getattr(newdoc, 'exefile'))
@@ -1270,159 +1269,11 @@ def sendelpfile_view(request):
                 return uploadresponse
 
 
+"""External invitation links will be checked  and redirected here. 
+If valid, will redirect to organisation or individual user creation
+page with email adress pre filled.
+Upon user creation, will assign user to course
 """
-@login_required(login_url='/login/')
-def testelpfiles_view(request):
-	appLocation = (os.path.dirname(os.path.realpath(__file__)))
-	#Log start time here..
-	cmdStartTime = datetime.datetime.today()
-	print ("The Start time is: " + str(cmdStartTime))
-	#Code here..
-	print "hello there"
-	for dir in os.listdir(appLocation + '/../UMCloudDj/media/eXeTestElp/'):
-		print dir
-	print "glob"
-	print glob.glob(appLocation + '/../UMCloudDj/media/eXeTestElp/*elp');
-	testelpfiles = glob.glob(appLocation + '/../UMCloudDj/media/eXeTestElp/*elp');
-	for testelp in testelpfiles:
-		print ("[testelpfiles]: FOR LOOP BEGINS. FILE: " + testelp);
-		#unid = testelp.split('.um.')[-2] #OLD
-		unid = testelp.split('.elp')[-2]
-		unid = unid.split('/')[-1]
-		print("[testelpfiles] unid: " + unid)
-		
-		elpfile=appLocation + '/../UMCloudDj/media/eXeTestExport/' + unid
-		elpfilehandle = open(elpfile, 'rb')
-            	elpzipfile = zipfile.ZipFile(elpfilehandle)
-            	for name in elpzipfile.namelist():
-                	if name.find('contentv3.xml') != -1:
-                    		elpxmlfile=elpzipfile.open(name)
-                    		elpxmlfilecontents=elpxmlfile.read()
-                    		elpxml=minidom.parseString(elpxmlfilecontents)
-                    		dictionarylist=elpxml.getElementsByTagName('dictionary')
-                    		stringlist=elpxml.getElementsByTagName('string')
-                    		print("/////////////////////////////////////////////////////////////")
-                    		elpid="replacemewithxmldata"
-                    		setattr(newdoc, 'elpid', elpid)
-                    		#print(dictionarylist[0].attributes['string'].value)
-
-		uidwe = uid.split('.um.')[-1]
-            	uidwe = uidwe.split('.elp')[-2]
-            	uidwe=uidwe.replace(" ", "_")
-            	rete=ustadmobile_export(uid, unid, uidwe)
-
-		if rete:
-			retg = grunt_course(unid, uidwe)
-			
-	cmdEndTime = datetime.datetime.today()
-	matchedCourseTestResults = Ustadmobiletest.objects.filter(dategroup='grunt', pub_date__gte=cmdStartTime, pub_date__lte=cmdEndTime)
-	if matchedCourseTestResults:
-		print("[testelpfiles] Test results exists")
-		#for matchedCourseResult in matchedCourseTestResults:
-			#print ("[testelpfiles]: Result: ")
-			#print (matchedCourseResult.name)
-		
-		matchedCourseResultList = list(matchedCourseTestResults)
-		#jdata = json.dumps(matchedCourseResultList)
-		#jdata = json.dumps(list(matchedCourseTestResults).values())
-		#print (jdata)
-		success="success"
-
-		#context_instance=RequestContext(request)
-                #response = render_to_response("testelpfiles-result.html", {'result': success}, context_instance=RequestContext(request))
-                #return response
-
-	else:
-		print ("[testelpfiles] No results exists.")
-		failed="fail"
-		#context_instance=RequestContext(request)
-                #response = render_to_response("testelpfiles-result.html", {'result': failed} , context_instance=RequestContext(request))
-                #return response
-	success="success"
-	failed="fail"
-	context_instance=RequestContext(request)
-        response = render_to_response("testelpfiles-result.html", {'result': success}, context_instance=RequestContext(request))
-        return response
-
-
-def testresults_function(typeofdata, date_from, date_to):
-	today = datetime.datetime.today()
-	yesterday = datetime.datetime.now() - datetime.timedelta(days = 1)
-	if typeofdata == "elp":
-		matchedCourseTestResults = (Ustadmobiletest.objects.filter(dategroup='grunt', pub_date__gte=date_from, pub_date__lte=date_to).values('id', 'name', 'dategroup', 'pub_date', 'result'))
-	if typeofdata == "app":
-		matchedCourseTestResults = (Ustadmobiletest.objects.filter(pub_date__gte=date_from, pub_date__lte=date_to).exclude(dategroup='grunt').values('id', 'name', 'dategroup', 'pub_date', 'result','platform','ustad_version','runtime'))
-	return matchedCourseTestResults
-
-@login_required(login_url='/login/')
-def showappunittestresults_view(request):
-	today = datetime.datetime.today()
-        yesterday = datetime.datetime.now() - datetime.timedelta(days = 1)
-	if request.method == 'POST':
-		print("POST request to get UstadMobile App unit test results")
-		print("Getting variables..")
-                date_since = request.POST['since_1_alt']
-                date_until = request.POST['until_1_alt']
-                print("Got variables. They are: ")
-                print(date_since)
-                print(date_until)
-
-		#json_object = testresults_function("app", yesterday, today)
-		json_object = testresults_function("app", date_since, date_until)
-
-        	response =[]
-        	for ja in json_object:
-                	jatime = ja['pub_date']
-                	jatime=str(jatime)
-                	response.append({'id':ja['id'], 'name':ja['name'], 'dategroup':ja['dategroup'],'pub_date':jatime,'result':ja['result'], 'platform':ja['platform'], 'ustad_version':ja['ustad_version'], 'runtime':ja['runtime']})
-	        return render_to_response("apptestresults.html", {'data': response, 'date_since':date_since , 'date_until':date_until}, context_instance=RequestContext(request))
-
-        if request.method == 'GET':
-                print("Not a POST response")
-                return render_to_response("apptestresults.html", {'data': ''}, context_instance=RequestContext(request))
-
-
-
-        json_object = testresults_function("app", yesterday, today)
-
-        response =[]    
-        for ja in json_object:
-                jatime = ja['pub_date']
-                jatime=str(jatime)
-                response.append({'id':ja['id'], 'name':ja['name'], 'dategroup':ja['dategroup'],'pub_date':jatime,'result':ja['result']})
-
-        return render_to_response("apptestresults.html", {'data': response}, context_instance=RequestContext(request))
-	
-@login_required(login_url='/login/')
-def showelptestresults_view(request):
-	today = datetime.datetime.today()
-        yesterday = datetime.datetime.now() - datetime.timedelta(days = 1)
-	if request.method == 'POST':
-		print("POST request to get elp test results..")
-		print("Getting variables..")
-        	date_since = request.POST['since_1_alt']
-        	date_until = request.POST['until_1_alt']
-        	print("Got variables. They are: ")
-        	print(date_since)
-        	print(date_until)
-
-		#json_object = testresults_function("elp", yesterday, today)
-
-		json_object = testresults_function("elp", date_since, date_until)
-
-		response =[]	
-		for ja in json_object:
-			jatime = ja['pub_date']
-			jatime=str(jatime)
-			response.append({'id':ja['id'], 'name':ja['name'], 'dategroup':ja['dategroup'],'pub_date':jatime,'result':ja['result']})
-	
-		return render_to_response("elptestresults.html", {'data': response, 'date_since':date_since , 'date_until':date_until}, context_instance=RequestContext(request))
-
-	if request.method == 'GET':
-		print("Not a POST response")
-		return render_to_response("elptestresults.html", {'data': ''}, context_instance=RequestContext(request))
-"""
-		
 #@csrf_exempt
 def check_invitation_view(request):
 	invitationid = request.GET.get('id')
@@ -1435,7 +1286,11 @@ def check_invitation_view(request):
 	    try:
 		invitation=Invitation.objects.get(invitation_id=invitationid)
 		if invitation:
-		    return render_to_response('login.html', {'statesuccess':1,'state':'Your account is created. Log in to see your course', 'invitation':invitation}, context_instance=RequestContext(request))
+		    return render_to_response('login.html', {\
+			'statesuccess':1,\
+			'state':'Your account is created. Log in to see your course',\
+			'invitation':invitation\
+			}, context_instance=RequestContext(request))
 	    except:
 	        print("invitation id does not exists")
 	        authresponse = HttpResponse(status=403)
@@ -1458,35 +1313,46 @@ def check_invitation_view(request):
 			invitation.save()
 			c = {}
         		c.update(csrf(request))
-        		return render_to_response('login.html', {'invitation':invitation}, context_instance=RequestContext(request))
-			#redirect('login')
+        		return render_to_response('login.html', {\
+						'invitation':invitation\
+				}, context_instance=RequestContext(request))
 	    except:
 		print("A fresh new user is to be created..")
-	    individual_organisation = Organisation.objects.get(organisation_name="IndividualOrganisation")
+	    individual_organisation = Organisation.objects.get(\
+				organisation_name="IndividualOrganisation")
 	    if invitation.organisation  == individual_organisation:
 		print("This invitation is for individual organisation")
 		c = {}
         	c.update(csrf(request))
-        	return render(request, 'user/user_create_website_individual.html', {'invitationemail':invitation.email, 'invitationcourse':invitation.course, 'invitationid':invitation.id})
-		#Return individual form
+        	return render(request, 'user/user_create_website_individual.html', \
+			{'invitationemail':invitation.email, \
+			 'invitationcourse':invitation.course,\
+			 'invitationid':invitation.id})
 	    elif invitation.organisation:
-		print("This invitation is for " + invitation.organisation.organisation_name + " organisation.")
-		organisationalcode = Organisation_Code.objects.get(organisation=invitation.organisation).code
+		print("This invitation is for " + \
+			invitation.organisation.organisation_name + " organisation.")
+		organisationalcode = Organisation_Code.objects.get(\
+					organisation=invitation.organisation).code
 		organisation_name = invitation.organisation.organisation_name
 		state="Valid code"
 		
 	 	c = {}
                 c.update(csrf(request))
-                return render(request, 'user/user_create_website_organisation.html', {'invitationemail':invitation.email, 'invitationcourse':invitation.course, 'invitationid':invitation.id, 'organisationalcode':organisationalcode, 'organisation_name':organisation_name, 'state':state})
+                return render(request, 'user/user_create_website_organisation.html',\
+		 {'invitationemail':invitation.email, \
+		  'invitationcourse':invitation.course,\
+		  'invitationid':invitation.id, \
+		  'organisationalcode':organisationalcode,\
+		  'organisation_name':organisation_name, 'state':state})
 
-		
-	 
-            
             authresponse = HttpResponse(status=200)
             authresponse.write("Continuing...")
             return authresponse
 
-	
+"""Gets block details, url and folder.
+GET request takes in full url tincan prefix plus elp lom id as "id"
+Returns JSON
+"""
 def getblock_view(request):
         blockid = request.GET.get('id')
 	try:
@@ -1497,30 +1363,19 @@ def getblock_view(request):
         print("External request of public course..")
 
         try:
-                matchedCourse = Document.objects.filter(elpid=str(blockid)).get(elpid=str(blockid))
+                matchedCourse = Document.objects.filter(\
+			elpid=str(blockid)).get(elpid=str(blockid))
                 if matchedCourse:
                         print("Course exists!")
-                        print("The unique folder for course id: " + blockid + " is: " + matchedCourse.uid + "/" + matchedCourse.name)
-                        coursefolder = matchedCourse.uid + "/" + matchedCourse.name
-                        """
-                        xmlDownload = coursefolder + "_ustadpkg_html5.xml"
-                        data = {
-                                'folder' : coursefolder,
-                                'xmlDownload' : xmlDownload
-                        }
-                        #response =  HttpResponse(status=200)
-                        response = HttpResponse("folder:" + coursefolder)
-                        response = HttpResponse("xmlDownload:" + xmlDownload)
-                        response = render_to_response("getcourse.html", {'coursefolder': coursefolder, 'xmlDownload': xmlDownload}, context_instance=RequestContext(request))
-                        response['folder'] = coursefolder
-                        response['xmlDownload'] = xmlDownload
-                        return response
-                        """
+                        print("The unique folder for course id: " +\
+			    blockid + " is: " + matchedCourse.uid +\
+				 "/" + matchedCourse.name)
+                        coursefolder = matchedCourse.uid + "/" + \
+			    matchedCourse.name
+
                         json_course = simplejson.dumps({
                             'blockurl':coursefolder })
                         return HttpResponse(json_course, mimetype="application/json")
-
-                        
                 else:
                         response2 =  HttpResponse(status=403)
                         print("Sorry, a course of that ID was not found globally")
@@ -1537,7 +1392,10 @@ def getblock_view(request):
         return redirect("/")
 
 
-
+"""Gets block details as GET parameters and sets headers and resposne body with block details.
+This was the original implementation for the app to talk and download blocks. Retained because 
+currently the app uses this API.
+"""
 def getcourse_view(request):
 	courseid = request.GET.get('id')
 	print("External request of public course..")
@@ -1580,22 +1438,33 @@ def getcourse_view(request):
 	
 	return redirect("/")
 
+"""View to render the template to register a new user as
+an individual
+"""
 def register_individual_view(request, ):
 	c = {}
 	c.update(csrf(request))
 	return render(request, 'user/user_create_website_individual.html')
 
+"""View to render the template to register a new user as 
+an organisation
+"""
 def register_organisation_view(request,):
 	try:
 		if 'organisationalcode' in request.session:
 			organisationalcode=request.session['organisationalcode']
 			request.session.flush();
-        		organisation_requested = Organisation_Code.objects.get(code=organisationalcode).organisation
+        		organisation_requested = Organisation_Code.objects.get(\
+			    code=organisationalcode).organisation
 			organisation_name=organisation_requested.organisation_name;
         		state="Valid code"
 			c = {}
         		c.update(csrf(request))
-        		return render(request, 'user/user_create_website_organisation.html', {'organisationalcode':organisationalcode, 'organisation_name':organisation_name, 'state':state})
+        		return render(request, \
+			    'user/user_create_website_organisation.html', \
+				{'organisationalcode':organisationalcode, \
+				 'organisation_name':organisation_name, \
+				 'state':state})
 		else:
 			state="Please enter your organisation code first"
 			return redirect('register_selection')
@@ -1603,19 +1472,23 @@ def register_organisation_view(request,):
         	state="Please enter your organisation code first"
 		return redirect('register_selection')
 	
-
+"""View to render the template to create a new user when 
+register button is clicked.
+"""
 def register_selection_view(request, ):
         c = {}
         c.update(csrf(request))
         return render(request, 'user/user_create_website_selection.html')
 
-
+"""View to render the login page.
+"""
 def loginview(request):
 	c = {}
 	c.update(csrf(request))
 	return render_to_response('login.html', c, context_instance=RequestContext(request))
 
-#This is the def that will authenticate the user over the umcloud website
+"""This is the def that will authenticate the user over the umcloud website
+"""
 def auth_and_login(request, onsuccess='/', onfail='/login'):
     #Returns user object if parameters match the database.
     try:
@@ -1658,6 +1531,9 @@ def auth_and_login(request, onsuccess='/', onfail='/login'):
 	return render_to_response('login.html', {'state':state},context_instance=RequestContext(request))
         return redirect(onfail)  
 
+"""Common function used in register views to create user as per POST parameters
+sent to this function.
+"""
 def create_user_website(username, email, password, first_name, last_name, website, job_title, company_name, date_of_birth, address, phone_number, gender, organisation_request):
     #Usage:
     #user = create_user_website(username=post['email'], email=post['email'], password=post['password'], 
@@ -1752,15 +1628,16 @@ def create_user_more(username, email, password, first_name, last_name, roleid, o
 	print("Username exists")
 	return None
 
-
+"""Common function used by views to check if a user exists
+"""
 def user_exists(username):
     user_count = User.objects.filter(username=username).count()
     if user_count == 0:
         return False
     return True
 
-
-
+"""View to check organisation code inputted from the register options in
+register view"""
 def organisation_sign_up_in(request):
     print("Checking organisation code")
     post=request.POST
@@ -1779,6 +1656,8 @@ def organisation_sign_up_in(request):
     state="Nothing has happened"
     return render_to_response('user/user_create_website_selection.html',{'state':state}, context_instance=RequestContext(request))
 
+"""submit link that handles user creation from website. 
+"""
 def sign_up_in(request):
     print("Creating new user from website..")
     organisation_list=Organisation.objects.all()
@@ -1831,10 +1710,14 @@ def sign_up_in(request):
         state="The Username already exists.."
         return render_to_response('user/user_create_website.html',{'state':state,'organisation_list':organisation_list}, context_instance=RequestContext(request))
 
+"""View to log out existing user and redirect back to login page
+"""
 def logout_view(request):
     logout(request)
     return redirect('login')
 
+"""View was used to render this view after a success login
+"""
 @login_required(login_url='/login/')
 def secured(request):
     organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid
@@ -1847,12 +1730,16 @@ def secured(request):
 	context_instance=RequestContext(request)
     )
 
+"""View to render template for uploading new block 
+"""
 @login_required(login_url='/login/')
 def upload_view(request):
     current_user = request.user.username
     return render_to_response("upload.html", {'current_user': current_user},
         context_instance=RequestContext(request))
 
+"""View to render the management  page on home screen
+"""
 @login_required(login_url='/login/')
 def management_view(request):
     current_user = request.user.username
@@ -1875,6 +1762,8 @@ def management_view(request):
     return render_to_response("manage.html", {'current_user': current_user, 'superadmin_role':superadmin_role, 'orgadmin_role':orgadmin_role},
         context_instance=RequestContext(request))
 
+"""View to render reporting page at home screen.
+"""
 @login_required(login_url='/login/')
 def reports_view(request):
     current_user = request.user.username

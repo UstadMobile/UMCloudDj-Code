@@ -194,7 +194,8 @@ class SchoolViewTestCase(TestCase):
         self.assertEquals(response.status_code,200)
 
         """
-        Logged in user deleting unknown user: 4040
+        Logged in user deleting unknown user: 404
+	Update: View to redirect to schoolstable
 	school.views.school_delete
         """
         self.c = Client();
@@ -206,7 +207,10 @@ class SchoolViewTestCase(TestCase):
 
         requesturl = reverse(view_name, kwargs={'pk':42})
         response = self.c.get(requesturl)
-        self.assertEqual(response.status_code, 404)
+	expected_url="/schoolstable/"
+        self.assertRedirects(response, expected_url, status_code=302, target_status_code=200, msg_prefix='')
+
+        #self.assertEqual(response.status_code, 404)
 
     def test_table(self):
 	view_url="/schoolstable/"
