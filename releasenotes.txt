@@ -1,5 +1,6 @@
 v0.9.1
 -Code comment, code clean, security enhancements and bug fixes
+- Further code coverage and unit tests
 
 v0.9.0
 - Fixed /umlrs/statements on login giving error. (using string conversion as dict was being returned)

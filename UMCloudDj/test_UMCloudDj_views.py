@@ -13,6 +13,8 @@ from django.forms import ModelForm
 from organisation.models import Organisation, Organisation_Code
 from organisation.models import UMCloud_Package
 from organisation.models import User_Organisations
+from school.models import School
+from allclass.models import Allclass
 from users.models import UserProfile
 from django import forms
 from uploadeXe.models import Package as Document
@@ -42,7 +44,17 @@ class UMCloudDjViewTestCase(TestCase):
 	user_organisation2 = User_Organisations(user_userid=testuser2, organisation_organisationid=mainorganisation)
 	user_organisation2.save()
 
-	orgadmin01=User.objects.create(username='orgadmin01', password='12345', is_active=True, is_staff=True, is_superuser=False)
+	student1 = User.objects.create(username="student1", password="12345")
+	student1.save()
+	studentrole=Role.objects.get(role_name="Student")
+	studentrole.save()
+	student_rol1=User_Roles(name="test", user_userid=student1, role_roleid=studentrole)
+	student_rol1.save()
+	student_organisation1=User_Organisations(user_userid=student1, organisation_organisationid=mainorganisation)
+	student_organisation1.save()
+
+
+	orgadmin01=User.objects.create(username='orgadmin01', password='12345', is_active=True, is_superuser=False)
 	orgadmin01.save()
 	orgadminrole=Role.objects.get(pk=2)
 	orgadmin01_role = User_Roles(name="test", user_userid=orgadmin01, role_roleid=orgadminrole)
@@ -59,6 +71,16 @@ class UMCloudDjViewTestCase(TestCase):
 	test_block.save()
 	test_course.packages.add(test_block)
 	test_course.save()
+
+	school1 = School(school_name="TestSchool", school_desc="This is the desc of the TestSchool",organisation_id=1)
+        school1.save()
+
+        allclass1 = Allclass(allclass_name="TestAllClassTableTest1", allclass_desc="TestAllClass1 Desc", allclass_location="Test Land" ,school=school1)
+        allclass1.save()
+
+	allclass1.students.add(student1)
+	allclass1.save()
+
 
     def test_checklogin_view(self):
 	"""
@@ -512,5 +534,145 @@ class UMCloudDjViewTestCase(TestCase):
 	self.assertRedirects(response, "/userstable/")
 	self.assertEquals(True, UserProfile.objects.get(user=userrequest).admin_approved)
 
+	#To Reject
+	idname=str(testrequest01id)+"_radio"
+        idvalue=str(testrequest01id)+"_0" #To reject
+        post_data={idname:idvalue}
+        response = self.c.post(view_url, post_data)
+        self.assertEquals(response.status_code, 302)
+        self.assertRedirects(response, "/userstable/")
+        self.assertEquals(True, UserProfile.objects.get(user=userrequest).admin_approved)
+
+    def test_statements_db_dynatable(self):
+	view_name="allstatements"
+	view_url="/reports/allstatements/"
+	self.c = Client();
+	self.user = User.objects.get(username="orgadmin01")
+	self.user = authenticate(username='orgadmin01', password='12345')
+        login = self.c.login(username='orgadmin01', password='12345')
+	
+	response = self.c.get(view_url)
+	self.assertContains(response, "All statements from your organisation")
+
+    def test_durationreport_selection(self):
+	view_name="durationreport_selection"
+	view_url="/reports/durationreport_selection/"
+	self.c = Client();
+	self.user = User.objects.get(username="orgadmin01")
+        self.user = authenticate(username='orgadmin01', password='12345')
+        login = self.c.login(username='orgadmin01', password='12345')
+
+        response = self.c.get(view_url)
+ 	print(response)
+	self.assertContains(response, "Select the filters below to generate a report")
+
+    def test_durationreport(self):
+	view_url="/reports/durationreport/"
+	self.c = Client();
+        self.user = User.objects.get(username="orgadmin01")
+        self.user = authenticate(username='orgadmin01', password='12345')
+        login = self.c.login(username='orgadmin01', password='12345')
+
+	response = self.c.get(view_url)
+	self.assertRedirects(response, "/reports/durationreport_selection/")
+
+	post_data={'since_1_alt':'2014-07-01T12:0', 'until_1_alt':'2014-10-28T12:36', 'model':['ALL'], 'brand':['1']}
+	response = self.c.post(view_url, post_data)
+	self.assertContains(response, "Duration Report between 01 Jul 2014 and 28 Oct 2014")
+
+    def test_breakdownreport(self):
+	#url(r'^reports/breakdown_report/$', 'report_statement.views.test_heather_report', name='heather_report'), #Breakdown report
+	view_url="/reports/breakdown_report/"
+	self.c = Client();
+        self.user = User.objects.get(username="orgadmin01")
+        self.user = authenticate(username='orgadmin01', password='12345')
+        login = self.c.login(username='orgadmin01', password='12345')
+
+        response = self.c.get(view_url)
+	self.assertEquals(response.status_code, 200)
+	self.assertContains(response, "breakdowntreetable")
+
+    def test_all_statements_table(self):
+	#url(r'^reports/durationreport/getstatements/(?P<userid>[-\w]+)/$', 'report_statement.views.all_statements_table'), #Get statements by userid
+	student1=User.objects.get(username="student1")
+	view_url="/reports/durationreport/getstatements/"+str(student1.id)+"/"
+	self.c = Client();
+        self.user = User.objects.get(username="orgadmin01")
+        self.user = authenticate(username='orgadmin01', password='12345')
+        login = self.c.login(username='orgadmin01', password='12345')
+
+        response = self.c.get(view_url)
+	self.assertContains(response, "User statements")
+
+	
+    def test_my_statements_db_dynatable(self):
+	view_url="/reports/mystmtsdynadb/"
+	self.c = Client();
+        self.user = User.objects.get(username="orgadmin01")
+        self.user = authenticate(username='orgadmin01', password='12345')
+        login = self.c.login(username='orgadmin01', password='12345')
+
+        response = self.c.get(view_url)
+        self.assertContains(response, "User statements")
+    
+    def test_response_report_selection(self):
+	#url(r'^reports/responsereport_selection/$', 'report_statement.views.response_report_selection', name='response_report_selection')
+	view_url="/reports/responsereport_selection/"
+	self.c = Client();
+        self.user = User.objects.get(username="orgadmin01")
+        self.user = authenticate(username='orgadmin01', password='12345')
+        login = self.c.login(username='orgadmin01', password='12345')
+
+        response = self.c.get(view_url)
+	self.assertContains(response, "Usage Report Mockups")
+
+    def test_test_usage_report(self):
+	view_url="/reports/usage_report/"
+	self.c = Client();
+        self.user = User.objects.get(username="orgadmin01")
+        self.user = authenticate(username='orgadmin01', password='12345')
+        login = self.c.login(username='orgadmin01', password='12345')
+
+        response = self.c.get(view_url)
+	self.assertContains(response, "Usage Report")
+	self.assertContains(response, "Indicators")
+
+	post_data= {'until_1_alt': ['2014-11-28'], 'coursesjstreefields': ['allcourses|course.small.png,1|course.small.png'], 'searchcourses': [''], 'since_1': [''], 'searchusers': [''], 'radiotype': ['table'], 'usersjstreefields': ['allschools|school.small.png,1|school.small.png'], 'until_1': [''], 'since_1_alt': ['2014-9-27'], 'totalduration': ['on']}
+
+	response = self.c.post(view_url, post_data)
+
+    def test_usage_report_data_ajax_handler(self):
+	view_url="/fetch/usage_report_data/"
+	self.c = Client();
+        self.user = User.objects.get(username="orgadmin01")
+        self.user = authenticate(username='orgadmin01', password='12345')
+        login = self.c.login(username='orgadmin01', password='12345')
+
+        post_data= {'until_1_alt': ['2014-11-28'], 'coursesjstreefields': ['allcourses|course.small.png,1|course.small.png'], 'searchcourses': [''], 'since_1': [''], 'searchusers': [''], 'radiotype': ['table'], 'usersjstreefields': ['allschools|school.small.png,1|school.small.png'], 'until_1': [''], 'since_1_alt': ['2014-9-27'], 'totalduration': ['on']}
+
+        response = self.c.post(view_url, post_data)
+
+
+    def test_show_statements_from_db(self):
+	#url(r'^reports/stmtdb/$','report_statement.views.show_statements_from_db'), #SuperAdmin all statements
+	view_url="/reports/stmtdb/"
+	self.c = Client();
+        self.user = User.objects.get(username="orgadmin01")
+        self.user = authenticate(username='orgadmin01', password='12345')
+        login = self.c.login(username='orgadmin01', password='12345')
+
+        response = self.c.get(view_url)
+	self.assertRedirects(response, '/reports/')
+
+	self.c = Client();
+        self.user = User.objects.get(username="testuser1")
+        self.user = authenticate(username='testuser1', password='12345')
+        login = self.c.login(username='testuser1', password='12345')
+        response = self.c.get(view_url)
+
+        self.assertContains(response, "Statements from Databse")
+
+	
+	
     def tearDown(self):
 	print("end of UMCloud Views test")

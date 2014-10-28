@@ -31,12 +31,21 @@ class RoleViewTestCase(TestCase):
 	"""
 	testuser = User.objects.create(username='testuser', password='12345', is_active=True, is_staff=True, is_superuser=True)
         adminrole=Role.objects.get(pk=1)
+
+	orgadminrole=Role.objects.get(pk=2)
+	mainorganisation = Organisation.objects.get(pk=1)
+	testuser3 = User.objects.create(username="testuser3", password="45678")
+	testuser3.save()
+	user_role3=User_Roles(name="test", user_userid=testuser3, role_roleid=orgadminrole)
+	user_role3.save()
+	user_organisation3=User_Organisations(user_userid=testuser3, organisation_organisationid=mainorganisation)
+	user_organisation3.save()
+
         user_role = User_Roles(name="test", user_userid=testuser, role_roleid=adminrole)
         user_role.save()
         testuser2 = User.objects.create(username="testuser2", password="54321", is_active=True, is_staff=True, is_superuser=True)
         user_role2 = User_Roles(name="test", user_userid=testuser2, role_roleid=adminrole)
         user_role2.save()
-        mainorganisation = Organisation.objects.get(pk=1)
         user_organisation = User_Organisations(user_userid=testuser, organisation_organisationid=mainorganisation)
         user_organisation.save()
         user_organisation2 = User_Organisations(user_userid=testuser2, organisation_organisationid=mainorganisation)
@@ -86,6 +95,73 @@ class RoleViewTestCase(TestCase):
         test_create_role = Role.objects.get(role_name="Tester")
         self.assertEqual('Tester',Role.objects.get(role_name='Tester').role_name)
         self.assertRedirects(response, '/rolestable/')
+
+    def test_create_security(self):
+	view_name="role_new"
+	"""Test if non super admin tried role cRUD should redirect back to home
+	"""
+	self.c = Client();
+        self.user = authenticate(username='testuser3', password='45678')
+        login = self.c.login(username='testuser3', password='45678')
+	
+        requesturl = reverse(view_name)
+
+	response = self.c.get(requesturl)
+	self.assertRedirects(response, '/home/')
+
+    def test_table_security(self):
+	view_name="role_table"
+	"""Test if non super admin tried role cRUD should redirect back to home
+        """
+        self.c = Client();
+        self.user = authenticate(username='testuser3', password='45678')
+        login = self.c.login(username='testuser3', password='45678')
+
+        requesturl = reverse(view_name)
+
+        response = self.c.get(requesturl)
+        self.assertRedirects(response, '/home/')
+
+    def test_update_security(self):
+	view_name="role_edit"
+	"""Test if non super admin tried role cRUD should redirect back to home
+        """
+        self.c = Client();
+        self.user = authenticate(username='testuser3', password='45678')
+        login = self.c.login(username='testuser3', password='45678')
+
+        requesturl = reverse(view_name, kwargs={'pk':42})
+
+        response = self.c.get(requesturl)
+        self.assertRedirects(response, '/home/')
+
+    def test_delete_security(self):
+	view_name="role_delete"
+	"""Test if non super admin tried role cRUD should redirect back to home
+        """
+        self.c = Client();
+        self.user = authenticate(username='testuser3', password='45678')
+        login = self.c.login(username='testuser3', password='45678')
+
+        requesturl = reverse(view_name, kwargs={'pk':42})
+
+        response = self.c.get(requesturl)
+        self.assertRedirects(response, '/home/')
+	
+	
+    def test_delete_success(self):
+	view_name="role_delete"
+	newrole=Role.objects.create(role_name="Role_To_Delete", role_desc="Test")
+        newrole.save()
+	role_to_delete_id=newrole.id
+	self.c=Client()
+	self.user=authenticate(username="testuser", password="12345")
+	login = self.c.login(username="testuser", password="12345")
+	requesturl = reverse(view_name, kwargs={'pk':role_to_delete_id})
+	response=self.c.post(requesturl)
+	self.assertRedirects(response, '/rolestable/')
+
+
 
     @unittest.expectedFailure
     def test_create_faiilure(self):
@@ -166,8 +242,8 @@ class RoleViewTestCase(TestCase):
     def test_delete(self):
 	view_name='role_delete'
 	"""
-	User logged in should be able to delete user
-	UMCloudDj.views.user_delete
+	User logged in should be able to delete role
+	UMCloudDj.views.role_delete
         """
 	self.c = Client();
 	self.user = User.objects.get(username="testuser")

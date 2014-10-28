@@ -161,6 +161,7 @@ class UserForm(ModelForm):
 
     """For uploading avatars. Not used yet
     """
+    """
     def clean_avatar(self):
         avatar = self.cleaned_data['avatar']
         try:
@@ -184,13 +185,12 @@ class UserForm(ModelForm):
                     u'Avatar file size may not exceed 20k.')
 
         except AttributeError:
-            """
-            Handles case when we are updating the user profile
-            and do not supply a new avatar
-            """
+            #Handles case when we are updating the user profile
+            #and do not supply a new avatar
             pass
 
         return avatar
+    """
 
 """Model form for image avatar for users.
 Currently not used
@@ -201,7 +201,8 @@ class ImageUploadForm(forms.Form):
         #content_types = 'application/elp'
     )
 
-"""Upload view for avatar for a user. Not currently made visible.
+"""Upload view for avatar for a user. Not currently made visible. Not used yet.
+"""
 """
 @login_required(login_url='/login/')
 def upload_avatar(request, template_name='myapp/avatar.html'):
@@ -239,6 +240,7 @@ def upload_avatar(request, template_name='myapp/avatar.html'):
         {'form': form, 'current_user': current_user,'currentuser':currentuser,'current_user_role':current_user_role,'current_organisation':current_organisation,'current_user_profile':current_user_profile},
         context_instance=RequestContext(request)
     )
+"""
 
 
 """View to render all users within the user's organisation.
@@ -332,6 +334,7 @@ def user_table(request, template_name='user/user_table.html', created=None):
     user_roles = []
     user_organisations = []
     for user in users:
+	print(user.username)
 	role = User_Roles.objects.get(user_userid=user\
 					).role_roleid
 	organisation = User_Organisations.objects.get(\
@@ -477,7 +480,8 @@ def user_create(request, template_name='user/user_create.html'):
     #form.fields['username'].widget.attrs['readonly'] = True
     #upform.fields['date_of_birth'].widget.attrs\
     # = {'class':'dobdatepicker'}
-    roles = Role.objects.all()
+    #roles = Role.objects.all()
+    roles = Role.objects.exclude(role_name="Administrator")
     organisations = Organisation.objects.all()
     organisations=[]
     organisations.append(organisation)
@@ -537,11 +541,10 @@ def user_create(request, template_name='user/user_create.html'):
 			data['state']=state
 			data['object_list'] = roles
 			return render(request, 'user/user_create.html',data)
-			return redirect('user_new')
 		    else:
 			return redirect ('user_table')
         	else:
-                    state="The Username already exists.."
+                    state="Could not create user. Make sure you specified all fields."
 		    data['state']=state
 		    return render(request, template_name, data)
                     #return render_to_response('user/user_create.html',\
@@ -621,21 +624,25 @@ def user_delete(request, pk, template_name='user/user_confirm_delete.html'):
 
 ####################################
 
-"""View to render report section of home page 
+"""View to render report section of home page . This is depricated.
+"""
 """
 @login_required(login_url='/login/')
 def report_selection_view(request):
 	c = {}
         c.update(csrf(request))
 	return render(request, "report_selection.html")
-
-"""View to render statement selection in report
 """
+
+"""View to render statement selection in report. This is depricated.
+"""
+"""	
 @login_required(login_url='/login/')
 def report_statements_view(request):
 	c = {}
 	c.update(csrf(request))
 	return render(request, "report_statements_selection.html")
+"""
 
 """External facing API to check username and password credentials in POST request. Used for external queries (eg: eXe)
 Returns 200: Login success
@@ -698,6 +705,12 @@ def getassignedecourses_json(request):
 			organisation, students__in=[user]) | \
 			 Q(organisation=organisation, \
 			     allclasses__in=alluserclasses))
+
+		#We traditionally search for users who are in their own organisations
+		# and the couress are part of their organisation
+		# Now that invitation can assign indicidual org uses to other organisation's courses, 
+		# we search for courses where students are set but not bound to being in the 
+		# organisation where the course was originally ploaded from. 
 		if not matched_courses:
 		    users_in_individual=User.objects.filter(pk__in=User_Organisations.objects.filter(\
                            organisation_organisationid=individualorganisation\
@@ -731,6 +744,7 @@ username, password
 Returns a JSON
 [{"22":{""title":"First Block", "last-modified":"date"}},{...},{...}]
 """
+"""depricated
 @csrf_exempt
 def getassignedblocks_json(request):
 	if request.method == "POST":
@@ -767,6 +781,7 @@ def getassignedblocks_json(request):
             authresponse = HttpResponse(status=500)
             authresponse.write("Not a POST request. Assigned Block IDs retrival failed.")
             return authresponse
+"""
 
 """External API to get blocks for a course for authenticated user 
 credentials.
@@ -1595,37 +1610,57 @@ def create_user_website(username, email, password, first_name, last_name, websit
 
 
 def create_user_more(username, email, password, first_name, last_name, roleid, organisationid, date_of_birth, address, gender, phone_number, organisation_request):
-    #try:
-    if True:
+    try:
     	user = User(username=username, email=email, first_name=first_name, last_name=last_name)
     	user.set_password(password)
     	user.save()
-    	role=Role.objects.get(pk=roleid)
-    	organisation = Organisation.objects.get(pk=organisationid)
+	try:
+    	    role=Role.objects.get(pk=roleid)
+    	    organisation = Organisation.objects.get(pk=organisationid)
 
-    	#Create role mapping. 
-    	user_role = User_Roles(name="blah", user_userid=user, role_roleid=role)
-    	user_role.save()
+	    try:
+    	    	#Create role mapping. 
+    	    	user_role = User_Roles(name="blah", user_userid=user, role_roleid=role)
+    	    	user_role.save()
+	    except:
+		print("Could not save role.")
+		user.delete()
+		return None
 
-    	#Create organisation mapping.
-    	user_organisation = User_Organisations(user_userid=user, organisation_organisationid=organisation)
-    	user_organisation.save()
+	    try:
+    	    	#Create organisation mapping.
+    	    	user_organisation = User_Organisations(user_userid=user, organisation_organisationid=organisation)
+    	    	user_organisation.save()
+	    except:
+		print("Could not set organisation")
+		user_role.delete()
+		user.delete()
+		return None
 
-    	#Create same user in UM-TinCan LRS
+    	    #Create same user in UM-TinCan LRS
     
-    	print("User Role mapping success.")
-
-	b=datetime.datetime.strptime(date_of_birth, '%m/%d/%Y').strftime('%Y-%m-%d')
-        date_of_birth=b
-	user_profile = UserProfile(user=user, gender=gender, phone_number=phone_number, address=address, date_of_birth=date_of_birth, organisation_requested=organisation_request)
-	user_profile.admin_approved=True
-	user_profile.save()
-	print("User Profile mapping success.")
+    	    print("User Role mapping success.")
+	    try:
+	    	b=datetime.datetime.strptime(date_of_birth, '%m/%d/%Y').strftime('%Y-%m-%d')
+            	date_of_birth=b
+	    	user_profile = UserProfile(user=user, gender=gender, phone_number=phone_number, address=address, date_of_birth=date_of_birth, organisation_requested=organisation_request)
+	    	user_profile.admin_approved=True
+	    	user_profile.save()
+	    	print("User Profile mapping success.")
+	    except:
+		print("User Profile mapping could not be set")
+		user_organisation.delete()
+		user_role.delete()
+		user.delete()
+		return None
+	except:
+	    print("Something went wronng")
+	    user.delete()
+	    return None
 
     	return user
-    #except:
-    else:
-	print("Username exists")
+    except:
+	print("Something went wrong.")
 	return None
 
 """Common function used by views to check if a user exists

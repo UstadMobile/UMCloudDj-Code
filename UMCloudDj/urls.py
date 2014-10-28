@@ -44,7 +44,7 @@ urlpatterns = patterns('',
 	url(r'^reports/durationreport/$', 'report_statement.views.durationreport', name='durationreport'), #duration report 
 	url(r'^reports/durationreport/getstatements/(?P<userid>[-\w]+)/$', 'report_statement.views.all_statements_table'), #Get statements by userid
 	url(r'^reports/stmtdb/$','report_statement.views.show_statements_from_db'), #SuperAdmin all statements
-        url(r'^reports/allstatements/$','report_statement.views.statements_db_dynatable'), #All organisation statements
+        url(r'^reports/allstatements/$','report_statement.views.statements_db_dynatable', name='allstatements'), #All organisation statements
         url(r'^reports/mystmtsdynadb/$','report_statement.views.my_statements_db_dynatable'), #Current logged in user's statements
         url(r'^reports/usage_report','report_statement.views.test_usage_report'),  #Usage Report (Testing)
   	url(r'^reports/responsereport_selection/$', 'report_statement.views.response_report_selection', name='response_report_selection'), #Usage Report (Mockups)
@@ -59,7 +59,7 @@ urlpatterns = patterns('',
 	url(r'^fetch/allschools/','report_statement.views.allschools',name='allschools'),
 	url(r'^fetch/school/allclasses/$', 'report_statement.views.school_allclasses', name='school_allclasses'),
 	url(r'^fetch/allclass/students/$','report_statement.views.allclass_students', name='allclass_students'),
-	url(r'^fetch/superawesomeajax/$', 'report_statement.views.super_awesome_ajax_handler', name='super_awesome_ajax_handler'),
+	#url(r'^fetch/superawesomeajax/$', 'report_statement.views.super_awesome_ajax_handler', name='super_awesome_ajax_handler'),
 	url(r'^fetch/usage_report_data/$', 'report_statement.views.usage_report_data_ajax_handler', name='usage_report_data_ajax_handler'),
 
 
@@ -94,7 +94,7 @@ urlpatterns = patterns('',
         url(r'^usernew/$', 'UMCloudDj.views.user_create', name='user_new'),
         url(r'^useredit/(?P<pk>\d+)$', 'UMCloudDj.views.user_update', name='user_edit'),
         url(r'^userdelete/(?P<pk>\d+)$', 'UMCloudDj.views.user_delete', name='user_delete'),
-  	url(r'^upload_avatar/$', 'UMCloudDj.views.upload_avatar', name='upload_avatar'),
+  	#url(r'^upload_avatar/$', 'UMCloudDj.views.upload_avatar', name='upload_avatar'),
 
 	#url(r'^organisations/$', 'organisation.views.organisation_list', name='organisation_list'),
 	url(r'^organisationstable/$', 'organisation.views.organisation_table', name='organisation_table'),

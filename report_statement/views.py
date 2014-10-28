@@ -525,6 +525,11 @@ def durationreport(request, template_name='duration_report_05.html'):
     date_until = request.POST['until_1_alt']
     user_selected = request.POST.getlist('model')
 
+    print(request.POST)
+    print(date_since)
+    print(date_until)
+    print(user_selected)
+
     if True:
         date_since = datetime.strptime(date_since[:10], '%Y-%m-%d')
         date_until = datetime.strptime(date_until[:10], '%Y-%m-%d')
@@ -787,9 +792,10 @@ def get_sge_details(obj):
 				for o in obj.child_groups]
     return json_objects
 
-### This is the function that is called when the user
-### sends the indicators and parameters for reports
-### returns Ajax friendly JSON response
+"""
+ This is the function that is called when the user
+ asks for a usage reports
+"""
 @login_required(login_url="/login/")
 def test_usage_report(request):
     organisation = User_Organisations.objects.get(\
@@ -801,6 +807,7 @@ def test_usage_report(request):
 			organisation.organisation_name \
 		        + " organisation."
     if request.method == 'POST':
+	print("POST IN test_usage_report")
 	date_since = request.POST['since_1_alt']
         date_until = request.POST['until_1_alt']
 	#Changing the time into something that statement can 
@@ -961,6 +968,11 @@ def test_usage_report(request):
     return render_to_response('usage_report_06.html', {'current_user':current_user},
                                 context_instance = RequestContext(request))
 
+"""Common function used by duration report to calculate duration for a list of
+users by looking at the statements themseleves. This wil be depricated once statements
+and users are assigned to courses and blocks in statement info to full full 
+the statement generator object for reporting.
+"""
 def calculate_duration_nodate(students):
         total_duration=0
 	user_by_duration=[]
@@ -979,7 +991,13 @@ def calculate_duration_nodate(students):
 	return user_by_duration, total_duration
 
     
-
+"""Used to render a breakdown report that is old style and doesnt need
+course and blocks to search. Generates a breakdown tree table report
+directly looking at the satatmenets for users in the organisation 
+and the duration. This will be depricated once statements and users 
+are assigned to courses and blocks to full fill the statement generator
+object. 
+"""
 @login_required(login_url="/login/")
 def test_heather_report(request, template_name='breakdown_report_08.html'):
     organisation = User_Organisations.objects.get(\
@@ -1028,14 +1046,17 @@ def test_heather_report(request, template_name='breakdown_report_08.html'):
 
     return render(request, template_name, data)
 
-def super_awesome_statement_generator():
-    return None
 
+"""This view is called when usage report submit button is clicked. This renders a JSON 
+that is fetched back by the page to render the usage report within the same page.
+"""
 @login_required(login_url="/login/")
 def usage_report_data_ajax_handler(request):
     print("In Usage Report Data Ajax Handler")
 
     if request.method == 'POST':
+	print("POST REQUEST in usage_report_data_ajax_handler")
+	print(request.POST)
         date_since = request.POST['since_1_alt']
         date_until = request.POST['until_1_alt']
         #Changing the time into something that statement can 
@@ -1187,18 +1208,15 @@ def usage_report_data_ajax_handler(request):
 	
 	return HttpResponse(json_object_json, mimetype="application/json")
 
-	#testing='[ { "objectName": "Turn8-Karmasnap School", "total_duration": 4, "children": [ { "objectName": "DC-Karmasnap Class", "total_duration": 4, "children": [ { "objectName": "Karma Kid02 User", "total_duration": 2, "children": [] }, { "objectName": "Karma Kid03 User", "total_duration": 2, "children": [] } ] } ] }, { "objectName": "Bangalore-Karmasnap School", "total_duration": 2, "children": [ { "objectName": "BC-Karmasnap Class", "total_duration": 2, "children": [ { "objectName": "Karma Kid03 User", "total_duration": 2, "children": [] } ] } ] } ]'
-	#return HttpResponse(testing, mimetype="application/json")
-	#return HttpResponse(root.jdefault(), mimetype="application/json")
-	#data = serializers.serialize('json', root)
-	#return HttpResponse(data, mimetype="application/json")
-	#return HttpResponse(json.dumps(root))
-	#return HttpResponse(root_json)
-        
     
     else:
         print("Not a POST request brah, check your code.")
 	return HttpResponse(False)
+
+"""Internal function, not used in any views or functioning of reporting. 
+Purpose is to assign existing statements to statementinfo and re assign them during transition of block and courses
+assignement with statements
+"""
 
 @login_required(login_url="/login/")
 def generate_statementinfo_existing_statements(request):
@@ -1219,6 +1237,11 @@ def generate_statementinfo_existing_statements(request):
     authresponse=HttpResponse(status=200)
     authresponse.write("What is Life?")
     return authresponse
+
+"""Internal function, not used in any views or functioning of reporting. 
+Purpose is to fix statements and re assign them during transition of block and courses
+assignement with statements
+"""
 ### To fix already stored statements
 @login_required(login_url="/login/")
 def assign_already_stored_statements(request):
@@ -1322,6 +1345,9 @@ def assign_already_stored_statements(request):
 
     return HttpResponse(simplejson.dumps(statementids))
 
+"""This ajax fetch internal api is not used.
+"""
+"""
 @login_required(login_url="/login/")
 def super_awesome_ajax_handler(request):
     try:
@@ -1353,5 +1379,6 @@ def super_awesome_ajax_handler(request):
 	test=""
 	return HttpResponse(test, mimetype="application/json")
         return HttpResponse(None)
+"""
 
 # Create your views here.

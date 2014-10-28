@@ -62,7 +62,7 @@
     "model": "organisation.organisation",
     "pk": 1,
     "fields": {
-      "organisation_name" : "IndividualOrg",
+      "organisation_name" : "IndividualOrganisation",
       "organisation_desc" : "This is the default organisation for users from the website.",
       "set_package": 1
     }
