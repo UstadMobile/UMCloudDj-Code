@@ -42,11 +42,7 @@ register = template.Library()
 
 @register.inclusion_tag("templatetags/report_umlrs_03_selection_students.html", takes_context=True)
 def all_students_select(context):
-    print("REQUEST IS:")
-    print(context['user'])
     user=context['user']
-    print user.username
-    print("In template tag")
     student_role = Role.objects.get(pk=6)
     organisation = User_Organisations.objects.get(user_userid=user).organisation_organisationid;
     student_list= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True)).filter(pk__in=User_Roles.objects.filter(role_roleid=student_role).values_list('user_userid', flat=True))
@@ -54,17 +50,15 @@ def all_students_select(context):
 
     return {'allclass_list' : allclass_list}
 
+"""
 @register.inclusion_tag("templatetags/report_umlrs_05.html", takes_context=True)
 def all_statements_table_notused(context):
-    print("In statement request")
-    print("REQUEST IS:")
     requestuser=context['user']
     user=context['forthisuser']
     date_since = context['since_1_alt']
     date_until = context['until_1_alt']
 
     all_statements=models.Statement.objects.filter(user=user)
-    print(all_statements)
     data={}
     pagetitle="UstadMobile User Statements"
     tabletypeid="userstatementasrequesteddyna"
@@ -86,6 +80,7 @@ def all_statements_table_notused(context):
     logicpopulation = "{\"user\":\"{{c.user.first_name}} {{c.user.last_name}}\",\"activity_verb\":\"{{c.verb.get_display}}\",\"activity_type\":\"{{c.object_activity.get_a_name}}\",\"timestamp\":\"{{c.timestamp}}\"},\"duration\":\"{{c.result_duration}}\""
 
     return {'object_list':all_statements, 'table_headers_html':table_headers_html, 'pagetitle':pagetitle, 'tabletypeid':tabletypeid, 'logicpopulation':logicpopulation}
+"""
 
 
 

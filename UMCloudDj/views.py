@@ -48,8 +48,9 @@ import hashlib
 import zipfile
 from django.core.mail import send_mail
 import socket
+import logging
 
-
+logger = logging.getLogger(__name__)
 ###################################
 # Role CRUD
 
@@ -148,14 +149,14 @@ class UserForm(ModelForm):
 	oldpassword = user.password
 	newpassword = self.cleaned_data["password"]
 	if newpassword:
-		print("New password specified")
+		logger.info("New password specified")
     		user.set_password(self.cleaned_data["password"])
 	else:
-		print("password not specified.")
+		logger.info("password not specified.")
 		oldpassword=User.objects.get(pk=user.id).password
 		user.password=oldpassword
     	if commit:
-		print("commit.")
+		logger.info("commit.")
 		user.save()
     	return user
 
@@ -283,20 +284,17 @@ def user_table(request, template_name='user/user_table.html', created=None):
     data={}
     if created:
 	try:
+		logger.info("A success redirect.")
 		usercreated=User.objects.get(id=created)
 		if usercreated in users:
 			data['state']="Username : " + \
 			    usercreated.username + \
   				" created successfully"
-			#print("A success redirect")
 		else:
 			data['state']=""
-			#print("Not a success redirect")
 	except User.DoesNotExist, e:
 		data['state']=""
-		#print("Not a success redirect")
     else:
-	print("Not a success redirect")
     	data['state']=""
     if user_role == organisational_admin_role:
 	org_role = True
@@ -310,7 +308,6 @@ def user_table(request, template_name='user/user_table.html', created=None):
                 random_org_code=str(organisation.id)+str(random_code)
                 organisation_code.code=random_org_code
                 organisation_code.save()
-	print(organisation_code)
 	data['organisation_code']=organisation_code
 
 	users_notification= User.objects.filter(\
@@ -334,7 +331,6 @@ def user_table(request, template_name='user/user_table.html', created=None):
     user_roles = []
     user_organisations = []
     for user in users:
-	print(user.username)
 	role = User_Roles.objects.get(user_userid=user\
 					).role_roleid
 	organisation = User_Organisations.objects.get(\
@@ -385,16 +381,16 @@ def admin_approve_request(request, template_name='user/admin_approve_request_tab
 				value=request.POST[key]
 				userid, action = value.split("_")
 				if action == '1':
-					print("Time to Approve")
+					logger.info("Time to Approve")
 					usertoapprove=User.objects.get(pk=userid)
 					usertoapprove.is_active=True
 					userprofile=UserProfile.objects.get(user=usertoapprove)
 					userprofile.admin_approved=True
 					userprofile.save()
 			
-					print("User: " + usertoapprove.username + " approved.")
+					logger.info("User: " + usertoapprove.username + " approved.")
 				if action == '0':
-					print("Time to reject..")
+					logger.info("Time to reject..")
 					usertoreject=User.objects.get(pk=userid)
 					userprofile=UserProfile.objects.get(user=usertoreject)
 					usertoreject.is_active=False
@@ -624,26 +620,6 @@ def user_delete(request, pk, template_name='user/user_confirm_delete.html'):
 
 ####################################
 
-"""View to render report section of home page . This is depricated.
-"""
-"""
-@login_required(login_url='/login/')
-def report_selection_view(request):
-	c = {}
-        c.update(csrf(request))
-	return render(request, "report_selection.html")
-"""
-
-"""View to render statement selection in report. This is depricated.
-"""
-"""	
-@login_required(login_url='/login/')
-def report_statements_view(request):
-	c = {}
-	c.update(csrf(request))
-	return render(request, "report_statements_selection.html")
-"""
-
 """External facing API to check username and password credentials in POST request. Used for external queries (eg: eXe)
 Returns 200: Login success
 Returns 403: Login unsuccess
@@ -653,11 +629,11 @@ Returns 500: Something wrong with POST request.
 def checklogin_view(request):
 
         if request.method == 'POST':
-                print 'Login request coming from outside (eXe)'
+                logger.info('Login request coming from outside (eXe)')
                 username = request.POST.get('username');
                 password = request.POST.get('password');
-                print "The username is"
-                print username
+                logger.info("The username is")
+		logger.info(username)
 
                 #Code for Authenticating the user
 	
@@ -683,11 +659,11 @@ Returns a JSON
 @csrf_exempt
 def getassignedecourses_json(request):
 	if request.method == "POST":
-	    print("Course list request coming from \
+	    logger.info("Course list request coming from \
 			outside (UstadMobile?)")
 	    username = request.POST.get('username', False)
 	    password = request.POST.get('password', False)
-            print("For user: " + username)
+            logger.info("For user: " + username)
 	    #Authenticate the user
 	    user = authenticate(username=\
 			request.POST['username'],\
@@ -716,15 +692,15 @@ def getassignedecourses_json(request):
                            organisation_organisationid=individualorganisation\
                             ).values_list('user_userid', flat=True))
 		    if user in users_in_individual:
-			print("user in individual org")
+			logger.info("user in individual org")
 			matched_courses=Course.objects.filter(Q(\
                          students__in=[user]) | \
                           Q(organisation=organisation, \
                              allclasses__in=alluserclasses))
 
 
-		print("Matched courses:")
-		print(matched_courses)
+		logger.info("Matched courses:")
+		logger.info(matched_courses)
 		json_courses = simplejson.dumps([
 			{
 			    'id':str(o.tincanid)+'/'+str(o.id),
@@ -794,12 +770,12 @@ username, password, course id (primary key)
 @csrf_exempt
 def get_course_blocks(request):
 	if request.method == "POST":
-            print("Course list request coming from \
+            logger.info("Course list request coming from \
                         outside (UstadMobile?)")
             username = request.POST.get('username', False)
             password = request.POST.get('password', False)
 	    courseid = request.POST.get('courseid', False)
-            print("For user: " + username)
+            logger.info("For user: " + username)
             #Authenticate the user
             user = authenticate(username=\
                         request.POST['username'],\
@@ -857,7 +833,8 @@ Returns stats code
 @csrf_exempt
 def invite_to_course(request):
 	if request.method == "POST":
-            print("Invitation request coming from outside (eXe?)")
+            logger.info("Invitation request coming from outside (eXe?)")
+	    print(request.POST)
             username = request.POST.get('username', False)
             password = request.POST.get('password', False)
 	    blockid  = request.POST.get('blockid', False)
@@ -873,7 +850,12 @@ def invite_to_course(request):
             user = authenticate(username=\
                         request.POST['username'],\
                  password=request.POST['password'])
-            if user is not None:
+            if user is None:
+		authresponse = HttpResponse(status=403)
+                authresponse.write("Not a POST request. Invitation set up failed.")
+                return authresponse
+	    else:
+		
 		individual_organisation = Organisation.objects.get(\
 			organisation_name="IndividualOrganisation")
                 organisation = User_Organisations.objects.get(\
@@ -891,17 +873,17 @@ def invite_to_course(request):
 			blocks.append(block)
 			course=Course.objects.get(packages__in=blocks)
 		    except:
-			authresponse=HttpResponse(status=500)
+			authresponse=HttpResponse(status=504)
 			authresponse.write("Course with Block id not found. Please publish block first")
 			return authresponse
 		except:
-		    authresponse=HttpResponse(status=500)
+		    authresponse=HttpResponse(status=503)
 		    authresponse.write("Block requested does not exist or is in your organisation")
 		    return authresponse
 		else:
 		    for current_email in emails:
-			print("Current email:")
-			print(current_email)
+			logger.info("Current email:")
+			logger.info(current_email)
 			try:
 		            if mode == "organisation":
 		    	    	invitation=Invitation(\
@@ -919,7 +901,7 @@ def invite_to_course(request):
                     	    	authresponse.write("Unable to figure the mode out..")
                     	    	return authresponse
 			    invitation.save()
-			    print("All good, time to send emails..")
+			    logger.info("All good, time to send emails..")
 			    sender=user.first_name + ' ' + user.last_name
 			    if sender == "":
 				sender=user.username
@@ -927,7 +909,7 @@ def invite_to_course(request):
 			    hostname="http://umcloud1.ustadmobile.com"
 			    devhostname="http://54.77.18.106:8004"
 			    try:
-				print(socket.gethostname())
+				logger.info(socket.gethostname())
 			    	send_mail('You are invited to join ' + course.name, 'Hi,\n' +\
 				'\n' + sender + ' has invited you to access the course ' + course.name + \
 				' using eXe course creation software.\nPlease click the link to acess the course.' +\
@@ -936,7 +918,7 @@ def invite_to_course(request):
 				\n\nRegards, \nUstad Mobile\ninfo@ustadmobile.com\n@ustadmobile', \
 				 'info@ustadmobile.com' , [current_email], fail_silently=False)
 			    except:
-				authresponse = HttpResponse(status=500)
+				authresponse = HttpResponse(status=506)
 				authresponse.write("Failed to send emails. Check if you have set it up and the settings are correct.")
 				return authresponse
 			    #@@@@@@@@@@@@@@@@@@@@@@@@@
@@ -972,12 +954,12 @@ def invite_to_course(request):
 @csrf_exempt
 def getassignedcourseids_view(request):
         if request.method == 'POST':
-                print 'Login request coming from outside (eXe)'
+                logger.info('Login request coming from outside (eXe)')
                 username = request.POST.get('username',False);
                 password = request.POST.get('password', False);
                 #Code for Authenticating the user
-		print("Username;")
-		print(username)
+		logger.info("Username;")
+		logger.info(username)
                 user = authenticate(username=request.POST['username'], password=request.POST['password'])
                 if user is not None:
 			xmlreturn="<?xml version=\"1.0\" ?>"
@@ -1053,24 +1035,30 @@ username, password, foreceNew(set or not set), noAutoassign(set or not set)
 """
 @csrf_exempt
 def sendelpfile_view(request):
-	print("Receiving the elp file..")
+	logger.info("Receiving the elp file..")
 
 	if request.method == 'POST':
-		print 'Login request coming from outside (eXe)'
+		logger.info('Login request coming from outside (eXe)')
 		username = request.POST.get('username');
 		password = request.POST.get('password');
-		forceNew = request.POST.get('forceNew');
-		noAutoassign = request.POST.get('noAutoassign');
-		print "The username is" 
-		print username 
-		print "The file: " 
-		print request.FILES
+		if request.POST.get('forceNew') != 'false':
+		    forceNew = request.POST.get('forceNew');
+		else:
+		    forceNew = None
+		if request.POST.get('noAutoassign') != 'false':
+		    noAutoassign = request.POST.get('noAutoassign');
+		else:
+		    noAutoassign = None
+		logger.info("The username is")
+		logger.info(username)
+		logger.info("The file: ")
+		logger.info(request.FILES)
 
 		#Code for Authenticating the user
 		user = authenticate(username=request.POST['username'], \
 				password=request.POST['password'])
     		if user is not None:
-			print("Login a success!..")
+			logger.info("Login a success!..")
         		#We Sign the user..
 			login(request, user)
 
@@ -1091,16 +1079,16 @@ def sendelpfile_view(request):
             		os.system("pwd")
 			status, serverlocation = commands.getstatusoutput("pwd")
             		uid = str(getattr(newdoc, 'exefile'))
-            		print("File saved as: ")
-            		print(uid)
+            		logger.info("File saved as: ")
+            		logger.info(uid)
 			mainappstring = "/UMCloudDj/"
 			elphash = hashlib.md5(open(serverlocation + mainappstring \
                         	+ settings.MEDIA_URL + uid).read()).hexdigest()
 			setattr(newdoc, 'elphash', elphash)
             		unid = uid.split('.um.')[-2]
             		unid = unid.split('/')[-1]  #Unique id here.
-            		print("Unique id:")
-            		print (unid)
+            		logger.info("Unique id:")
+            		logger.info(unid)
 			
 			#Code for elp to ustadmobile export
 
@@ -1143,12 +1131,12 @@ def sendelpfile_view(request):
                             		if x.getAttribute('class') == "exe.engine.lom.lomsubs.entrySub":
                                 	    lomentry=x
                                 	    break
-                        	    elplomidobject=lomentry.getElementsByTagName('string')
+                        	    elplomidobject=lomentry.getElementsByTagName('unicode')
                         	    elplomid=None
                         	    for e in elplomidobject:
                             		elplomid=e.getAttribute('value')
-                        	    print("ELP LOM ID:")
-                        	    print(elplomid)
+                        	    logger.info("ELP LOM ID:")
+                        	    logger.info(elplomid)
                         	    setattr(newdoc, 'elpid', elplomid)
                     		except:
                         	    setattr(newdoc, 'elpid', '-')
@@ -1160,7 +1148,7 @@ def sendelpfile_view(request):
 			uidwe = uid.split('.um.')[-1]
             		uidwe = uidwe.split('.elp')[-2]
             		uidwe=uidwe.replace(" ", "_")
-			print("Going to export..")
+			logger.info("Going to export..")
 
 			root = ET.fromstring(elpxmlfilecontents)
                     	for child in root:
@@ -1179,6 +1167,7 @@ def sendelpfile_view(request):
 				newdoc.students.add(user)
 			  	#newdoc.save()
 			#rete=ustadmobile_export(uid, unid, uidwe)
+		 	logger.info("Going to export 2..")
 			rete = ustadmobile_export(uid, unid, elpiname, elplomid, forceNew)
             		if rete=="newsuccess":
                 		courseURL = '/media/eXeExport' + '/' + unid + '/' + elpiname + '/' + 'deviceframe.html'
@@ -1201,26 +1190,24 @@ def sendelpfile_view(request):
 				"""
 
                 		newdoc.save()
-				print("Going to create the course...")
+				logger.info("Going to create the course...")
 				#Update  14th October 2014: We want blocks coming from eXe to be created as single courses.
 				blockcourse = Course(name=newdoc.name, category="-",\
 					 description="Block course for "+newdoc.name,\
 						 publisher=user, organisation=organisation)
 				blockcourse.save()
-				print("assigning students to course..")
+				logger.info("assigning students to course..")
 				try:
 				    for every_user in newdoc.students.all():
-				    	print("in loop:")
-				    	print(every_user.username)
 				    	blockcourse.students.add(every_user)
 					blockcourse.save()
-				    print("Assigning block to course..")	
+				    logger.info("Assigning block to course..")	
 				    blockcourse.packages.add(newdoc);
 				    setattr(blockcourse, 'success', "YES")
 				    blockcourse.save()
-				    print("Block course: " + blockcourse.name + " saved successfully!")
+				    logger.info("Block course: " + blockcourse.name + " saved successfully!")
 				except:
-				    print("Could not create course..")
+				    logger.info("Could not create course..")
 				    newdoc.students.remove(all);
 				    newdoc.delete()
 			    	    blockcourse.delete()
@@ -1229,8 +1216,6 @@ def sendelpfile_view(request):
                 		#form is valid (upload file form)
                 		# Redirect to the document list after POST
 				uploadresponse = HttpResponse(status=200)
-                        	print "Block ID: "
-                        	print getattr(newdoc, 'id')
                         	uploadresponse['courseid'] = getattr(blockcourse, 'id')
                         	uploadresponse['coursename'] = getattr(blockcourse, 'name')
                         	return uploadresponse
@@ -1276,7 +1261,7 @@ def sendelpfile_view(request):
                         uploadresponse.write("LOGIN FAILED. USERNAME and PASSWORD DO NOT MATCH. AUTHENTICATION FAILURE")
                         return uploadresponse
         else:
-                print 'Not a POST request';
+                logger.info('Not a POST request');
 
                 uploadresponse = HttpResponse(status=500)
                 uploadresponse.write("Request is not POST")
@@ -1292,10 +1277,10 @@ Upon user creation, will assign user to course
 #@csrf_exempt
 def check_invitation_view(request):
 	invitationid = request.GET.get('id')
-	print("Invitation id is:" + str(invitationid) )
+	logger.info("Invitation id is:" + str(invitationid) )
 	try:
 	    invitation = Invitation.objects.get(invitation_id=invitationid, done=False)
-	    print("Starting registration process for : " + invitation.email)
+	    logger.info("Starting registration process for : " + invitation.email)
 
 	except:	
 	    try:
@@ -1307,7 +1292,7 @@ def check_invitation_view(request):
 			'invitation':invitation\
 			}, context_instance=RequestContext(request))
 	    except:
-	        print("invitation id does not exists")
+	        logger.info("invitation id does not exists")
 	        authresponse = HttpResponse(status=403)
 	        authresponse.write("Invalid invitation id.")
 	        if invitationid:
@@ -1332,11 +1317,11 @@ def check_invitation_view(request):
 						'invitation':invitation\
 				}, context_instance=RequestContext(request))
 	    except:
-		print("A fresh new user is to be created..")
+		logger.info("A fresh new user is to be created..")
 	    individual_organisation = Organisation.objects.get(\
 				organisation_name="IndividualOrganisation")
 	    if invitation.organisation  == individual_organisation:
-		print("This invitation is for individual organisation")
+		logger.info("This invitation is for individual organisation")
 		c = {}
         	c.update(csrf(request))
         	return render(request, 'user/user_create_website_individual.html', \
@@ -1344,7 +1329,7 @@ def check_invitation_view(request):
 			 'invitationcourse':invitation.course,\
 			 'invitationid':invitation.id})
 	    elif invitation.organisation:
-		print("This invitation is for " + \
+		logger.info("This invitation is for " + \
 			invitation.organisation.organisation_name + " organisation.")
 		organisationalcode = Organisation_Code.objects.get(\
 					organisation=invitation.organisation).code
@@ -1375,14 +1360,14 @@ def getblock_view(request):
 	    blocktincanid=blockid.rsplit('/',1)[0]
 	except:
 	    pass
-        print("External request of public course..")
+        logger.info("External request of public course..")
 
         try:
                 matchedCourse = Document.objects.filter(\
 			elpid=str(blockid)).get(elpid=str(blockid))
                 if matchedCourse:
-                        print("Course exists!")
-                        print("The unique folder for course id: " +\
+                        logger.info("Course exists!")
+                        logger.info("The unique folder for course id: " +\
 			    blockid + " is: " + matchedCourse.uid +\
 				 "/" + matchedCourse.name)
                         coursefolder = matchedCourse.uid + "/" + \
@@ -1393,13 +1378,13 @@ def getblock_view(request):
                         return HttpResponse(json_course, mimetype="application/json")
                 else:
                         response2 =  HttpResponse(status=403)
-                        print("Sorry, a course of that ID was not found globally")
+                        logger.info("Sorry, a course of that ID was not found globally")
                         response2.write("folder:na")
                         return response2
 
         except Document.DoesNotExist, e:
                 response2 =  HttpResponse(status=403)
-                print("Sorry, a course of that ID was not found globally")
+                logger.info("Sorry, a course of that ID was not found globally")
                 response2 = HttpResponse(status=403)
                 response2.write("folder:na")
                 return response2
@@ -1413,13 +1398,13 @@ currently the app uses this API.
 """
 def getcourse_view(request):
 	courseid = request.GET.get('id')
-	print("External request of public course..")
+	logger.info("External request of public course..")
 
 	try:
 		matchedCourse = Document.objects.filter(id=str(courseid)).get(id=str(courseid))
         	if matchedCourse:
-                	print("Course exists!")
-                	print("The unique folder for course id: " + courseid + " is: " + matchedCourse.uid + "/" + matchedCourse.name)
+                	logger.info("Course exists!")
+                	logger.info("The unique folder for course id: " + courseid + " is: " + matchedCourse.uid + "/" + matchedCourse.name)
                 	coursefolder = matchedCourse.uid + "/" + matchedCourse.name
                 	xmlDownload = coursefolder + "_ustadpkg_html5.xml"
                 	data = {
@@ -1440,13 +1425,13 @@ def getcourse_view(request):
 			
 		else:
                 	response2 =  HttpResponse(status=403)
-                	print("Sorry, a course of that ID was not found globally")
+                	logger.info("Sorry, a course of that ID was not found globally")
 			response2.write("folder:na")
                 	return response2
 
 	except Document.DoesNotExist, e:
                 response2 =  HttpResponse(status=403)
-                print("Sorry, a course of that ID was not found globally")
+                logger.info("Sorry, a course of that ID was not found globally")
                 response2 = HttpResponse(status=403)
 		response2.write("folder:na")
                 return response2
@@ -1512,7 +1497,6 @@ def auth_and_login(request, onsuccess='/', onfail='/login'):
 	return redirect ('login')
     if user is not None:
 	try:
-		print("Trying..")
 		user_role = User_Roles.objects.get(user_userid=user).role_roleid;
 		if user_role.id > 4:
 			state="Sorry, students and teachers cannot login at the moment."
@@ -1524,11 +1508,13 @@ def auth_and_login(request, onsuccess='/', onfail='/login'):
 	try:
 		if user.is_superuser:
 			login(request, user)
+			logger.info("User=" + user.username+" has just logged in.")
 			return redirect(onsuccess)
 
 		userprofile = UserProfile.objects.get(user=user)
 		if userprofile.admin_approved:
 			login(request, user)
+			logger.info("User=" + user.username+" has just logged in.")
 			return redirect(onsuccess)
 		else:
 			state="You are not yet approved by your organisation. Contact your organisation's admin"
@@ -1536,8 +1522,9 @@ def auth_and_login(request, onsuccess='/', onfail='/login'):
                 	return render_to_response('login.html', {'state':state,'statesuccess':statesuccess},context_instance=RequestContext(request))
 	
 	except UserProfile.DoesNotExist:
-		print("User profile does not exist")
+		logger.info("User profile does not exist")
 		login(request, user)
+		logger.info("User=" + user.username+" has just logged in.")
                 return redirect(onsuccess)
 
     else:
@@ -1563,13 +1550,13 @@ def create_user_website(username, email, password, first_name, last_name, websit
     	user = User(username=username, email=email, first_name=first_name, last_name=last_name)
     	user.set_password(password)
     	user.save()
-    	print("User object created..")
-    	print("Creating profile..")
+    	logger.info("User object created..")
+    	logger.info("Creating profile..")
 	individual_organisation = Organisation.objects.get(pk=1)
     
  	try:
 		if organisation_request == "":
-			print("No organisation code specified. Defaulting to Individual Organisation")
+			logger.info("No organisation code specified. Defaulting to Individual Organisation")
 			organisation_requested = individual_organisation
 		else:
 			organisation_requested = Organisation_Code.objects.get(code=organisation_request).organisation
@@ -1582,19 +1569,19 @@ def create_user_website(username, email, password, first_name, last_name, websit
 		new_organisation_mapping = User_Organisations(user_userid=user, organisation_organisationid=organisation_requested)
 
 		user_profile.save()
-                print("User profile created..")
+                logger.info("User profile created..")
 
 		new_role_mapping.save()
-		print("Role Mapping created..")
+		logger.info("Role Mapping created..")
 
 		new_organisation_mapping.save()
-		print("Organisation mapping created..")
+		logger.info("Organisation mapping created..")
 
     		#Check if previous were a success.
-    		print("User Role mapping (website) success.")
+    		logger.info("User Role mapping (website) success.")
 
 		if organisation_requested == individual_organisation:
-			print("Here we approve the individual org fellos")
+			logger.info("Here we approve the individual org fellos")
 			#user_profile.admin_approved=True
 			#user_profile.save()
 
@@ -1623,7 +1610,7 @@ def create_user_more(username, email, password, first_name, last_name, roleid, o
     	    	user_role = User_Roles(name="blah", user_userid=user, role_roleid=role)
     	    	user_role.save()
 	    except:
-		print("Could not save role.")
+		logger.info("Could not save role.")
 		user.delete()
 		return None
 
@@ -1632,35 +1619,35 @@ def create_user_more(username, email, password, first_name, last_name, roleid, o
     	    	user_organisation = User_Organisations(user_userid=user, organisation_organisationid=organisation)
     	    	user_organisation.save()
 	    except:
-		print("Could not set organisation")
+		logger.info("Could not set organisation")
 		user_role.delete()
 		user.delete()
 		return None
 
     	    #Create same user in UM-TinCan LRS
     
-    	    print("User Role mapping success.")
+    	    logger.info("User Role mapping success.")
 	    try:
 	    	b=datetime.datetime.strptime(date_of_birth, '%m/%d/%Y').strftime('%Y-%m-%d')
             	date_of_birth=b
 	    	user_profile = UserProfile(user=user, gender=gender, phone_number=phone_number, address=address, date_of_birth=date_of_birth, organisation_requested=organisation_request)
 	    	user_profile.admin_approved=True
 	    	user_profile.save()
-	    	print("User Profile mapping success.")
+	    	logger.info("User Profile mapping success.")
 	    except:
-		print("User Profile mapping could not be set")
+		logger.info("User Profile mapping could not be set")
 		user_organisation.delete()
 		user_role.delete()
 		user.delete()
 		return None
 	except:
-	    print("Something went wronng")
+	    logger.info("Something went wronng")
 	    user.delete()
 	    return None
 
     	return user
     except:
-	print("Something went wrong.")
+	logger.info("Something went wrong.")
 	return None
 
 """Common function used by views to check if a user exists
@@ -1674,12 +1661,12 @@ def user_exists(username):
 """View to check organisation code inputted from the register options in
 register view"""
 def organisation_sign_up_in(request):
-    print("Checking organisation code")
+    logger.info("Checking organisation code")
     post=request.POST
     try:
 	organisation_request=post['organisationalcode']
-	print("Code given:")
-	print(organisation_request)
+	logger.info("Code given:")
+	logger.info(organisation_request)
 	organisation_requested = Organisation_Code.objects.get(code=organisation_request).organisation
 	state="Valid code"
 	request.session['organisationalcode']=organisation_request
@@ -1694,7 +1681,7 @@ def organisation_sign_up_in(request):
 """submit link that handles user creation from website. 
 """
 def sign_up_in(request):
-    print("Creating new user from website..")
+    logger.info("Creating new user from website..")
     organisation_list=Organisation.objects.all()
     post = request.POST
     if not user_exists(post['username']): 
@@ -1748,6 +1735,7 @@ def sign_up_in(request):
 """View to log out existing user and redirect back to login page
 """
 def logout_view(request):
+    logger.info("User="+request.user.username+" has logged out.")
     logout(request)
     return redirect('login')
 
@@ -1759,7 +1747,7 @@ def secured(request):
     current_user = request.user.username + " (" + organisation.organisation_name + ")"
     current_user_role = User_Roles.objects.get(user_userid=request.user.id).role_roleid.role_name;
     current_user = "Hi, " + request.user.first_name + ". You are a " + current_user_role + " in " + organisation.organisation_name + " organisation."
-    print("secured: logged in username: " + current_user)
+    logger.info("Logged in user: " + request.user.username + " an " + current_user_role + " in " + organisation.organisation_name + " organisation.")
     return render_to_response("secure.html", 
 	{'current_user': current_user},
 	context_instance=RequestContext(request)
@@ -1801,7 +1789,10 @@ def management_view(request):
 """
 @login_required(login_url='/login/')
 def reports_view(request):
-    current_user = request.user.username
+    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid
+    current_user_role = User_Roles.objects.get(user_userid=request.user.id).role_roleid.role_name;
+    current_user = "Hi, " + request.user.first_name + ". You are a " + current_user_role + " in " + organisation.organisation_name + " organisation."
+    logger.info("User=" +request.user.username + " accessed /reports/")
     return render_to_response("reports.html", {'current_user': current_user},
         context_instance=RequestContext(request))
 

@@ -1,3 +1,12 @@
+v0.9.2
+- Fixed bugs
+- Fixed API to match with eXe elp id scan in latest eXe build
+- Tested with course publish and update against eXe
+- Tested with course invitation and upadte against eXe and made necessary changes.
+- Set logging to include User access to reporting and logging in and logging out.
+- Set up logging such that these request go to the file logs/umclouddj.log
+
+
 v0.9.1
 -Code comment, code clean, security enhancements and bug fixes
 - Further code coverage and unit tests

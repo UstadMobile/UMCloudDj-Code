@@ -283,7 +283,7 @@ def list(request, template_name='myapp/list.html'):
 			    if x.getAttribute('class') == "exe.engine.lom.lomsubs.entrySub":
 				lomentry=x
 				break
-		        elplomidobject=lomentry.getElementsByTagName('string')
+		        elplomidobject=lomentry.getElementsByTagName('unicode')
 		        elplomid=None
 		        for e in elplomidobject:
 			    elplomid=e.getAttribute('value')

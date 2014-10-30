@@ -109,11 +109,11 @@ class StatementGroupEntry():
 
             if len(all_statementinfo) != len(self.statements):
 		if len(list(set(all_statementinfo))) != len(list(set(self.statements))):
-		    print("!!Something went wrong. Statements and statementinfo unique count does not match")
+		    logger.info("!!Something went wrong. Statements and statementinfo unique count does not match")
 		else:
-		    print("~You may have duplicate results coming in for grouping")
+		    logger.info("~You may have duplicate results coming in for grouping")
 	except:
-	    print("!!Couldnt not fetch statement info")
+	    logger.info("!!Couldnt not fetch statement info")
 
 	applicable_stmts=[]
 	all_statementinfo = models.StatementInfo.objects.filter(statement__in=self.statements)
@@ -256,6 +256,7 @@ def show_statements_from_db(request,template_name='statements_db_01.html'):
 
 @login_required(login_url="/login/")    #Added by varuna
 def statements_db_dynatable(request,template_name='statements_db_02.html'):
+    logger.info("User="+request.user.username+" accessed /reports/allstatements/")
     organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
     all_org_users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
     all_statements = models.Statement.objects.filter(user__in=all_org_users)
@@ -321,8 +322,13 @@ def my_statements_db_dynatable(request,template_name='user_statements_report_04.
 def all_statements_table(request, userid, template_name='user_statements_report_04.html'):
     #, date_since, date_until):
     requestuser=request.user
-    user=User.objects.get(id=userid)
-
+    try:
+        user=User.objects.get(id=userid)
+    except:
+	logger.info("User="+request.user.username+" tried to access a false user's statements")
+	return redirect('reports')
+    
+    logger.info("User="+request.user.username+" accessed " +user.username+ " statements at /reports/durationreport/getstatements/"+str(user.id)+"/")
     all_statements=models.Statement.objects.filter(user=user)
     data={}
     pagetitle="UstadMobile User Statements"
@@ -362,7 +368,7 @@ def allclasse_students(request, allclassid):
 			    'last_name':o.last_name} for o in student_list] )
         return HttpResponse(json_students, mimetype="application/json")
     else:
-        print("Class requested not part of request user's organisation. Something is fishy")
+        logger.info("Class requested not part of request user's organisation. Something is fishy")
         return HttpResponse(None)
 
 @login_required(login_url='/login/')
@@ -383,7 +389,7 @@ def allcourses_blocks(request):
 			'text': b.name} for b in course_blocks])
     	return HttpResponse(json_blocks, mimetype="application/json")
     except:
-	print("Something went wrong in fetching blocks")
+	logger.info("Something went wrong in fetching blocks")
 	return HttpResponse(None)
 
 @login_required(login_url='/login/')
@@ -397,13 +403,13 @@ def allclass_students(request):
 						(organisation=organisation));
 	students=allclass.students.all()
 	if allclass not in allclasses:
-		print("That class isn't in your organisation")
+		logger.info("That class isn't in your organisation")
 		return HttpResponse("That class isn't in your organisation")
 	json_students = simplejson.dumps([{'id':s.id,'text':s.first_name+" "\
 				+s.last_name}for s in students])
 	return HttpResponse(json_students, mimetype="application/json")
     except:
-	print("Something went wrong.")
+	logger.info("Something went wrong.")
 	return HttpResponse(None)
 
 
@@ -415,7 +421,7 @@ def school_allclasses(request):
 		user_userid=request.user).organisation_organisationid
 	school = get_object_or_404(School, pk=schoolid)
 	if school.organisation != organisation:
-		print("That school does not exist in your organisation")
+		logger.info("That school does not exist in your organisation")
   		return HttpResponse("That school does not exist in your organisation")
 	allclasses = Allclass.objects.filter(school=school)
 	json_allclasses = simplejson.dumps([ {'id':c.id, 'text':c.allclass_name,
@@ -427,8 +433,8 @@ def school_allclasses(request):
 				 for s in c.students.all()]} for c in allclasses ])
 	return HttpResponse(json_allclasses, mimetype="application/json")
     except:
-	print("Something went wrong in fetching classes from schools..")
-	print("An Error really.")
+	logger.info("Something went wrong in fetching classes from schools..")
+	logger.info("An Error really.")
 	return HttpResponse("Something went wrong.")
 	    
 
@@ -449,8 +455,8 @@ def allcourses(request):
 				  json_courses[1:] + "}]"
     	return HttpResponse(json_courses,mimetype="application/json")
     except:
-	print("Something went wrong in fetcvhing all courses.")
-	print("You shouldn't even be seeing this, the login required \
+	logger.info("Something went wrong in fetcvhing all courses.")
+	logger.info("You shouldn't even be seeing this, the login required \
 		function should take you to the login page. Either \
 		something wrong in this code or login redirect.")
 	return HttpResponse(None)
@@ -470,8 +476,8 @@ def allschools(request):
 				"children":[' +  json_schools[1:] + "}]"
 	return HttpResponse(json_schools, mimetype="application/json")
     except:
-	print("Something went wrong in fetching all schools")
-	print("Error really..")
+	logger.info("Something went wrong in fetching all schools")
+	logger.info("Error really..")
 	return HttpResponse(None)
 	
 """
@@ -491,6 +497,7 @@ def chartjs_test_selection(request):
 
 @login_required(login_url='/login/')
 def durationreport_selection(request):
+	logger.info("User="+request.user.username+" accessed /reports/durationreport_selection/")
 	organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid
 	current_user = request.user.username + " (" + organisation.organisation_name + ")"
 	current_user_role = User_Roles.objects.get(user_userid=request.user.id).role_roleid.role_name;
@@ -525,11 +532,7 @@ def durationreport(request, template_name='duration_report_05.html'):
     date_until = request.POST['until_1_alt']
     user_selected = request.POST.getlist('model')
 
-    print(request.POST)
-    print(date_since)
-    print(date_until)
-    print(user_selected)
-
+    logger.info("User="+request.user.username+" accessed /reports/durationreport/")
     if True:
         date_since = datetime.strptime(date_since[:10], '%Y-%m-%d')
         date_until = datetime.strptime(date_until[:10], '%Y-%m-%d')
@@ -611,68 +614,6 @@ def durationreport(request, template_name='duration_report_05.html'):
 
     return render(request, template_name, data)
 
-"""
-@login_required(login_url="/login/")    #added by Varuna
-def chartjs_test(request,template_name='report_umlrs_03.html'):
-    date_since = request.POST['since_1_alt']
-    date_until = request.POST['until_1_alt']
-    user_selected = request.POST.getlist('model')
-
-    if True:
-	date_since = datetime.strptime(date_since[:10], '%Y-%m-%d')
-	date_until = datetime.strptime(date_until[:10], '%Y-%m-%d')
-	#"new datetime dates converted from unicode to datetime"
-	print(str(date_since) + "-->" + str(date_until))
-	delta=(date_until - date_since)
-	xaxis=[]
-	yaxis=[]
-	label_legend=[]
-	user_by_duration=[]
-	user_duration=0
-	if "ALL" in user_selected:
-		allclassid=request.POST['brand']
-		allclassid=int(allclassid)
-    		allclass_class = Allclass.objects.get(id=allclassid)
-		users_with_statements = allclass_class.students.all().values_list('id', flat=True)
-	else:
-		users_with_statements = user_selected #Just assuming so. Should re work naming convention
-	print("--------------------------------------")
-	
-	for i in range(delta.days +1):
-                current_date=date_since + td(days=i)
-                xaxis.append(str(current_date.strftime('%b %d, %Y')))
-        for user_id_with_statement in users_with_statements:
-                user_duration=0
-                user_with_statement=User.objects.get(id=user_id_with_statement)
-                label_legend.append(user_with_statement.first_name + " " + user_with_statement.last_name)
-                useryaxis=[]
-                for i in range(delta.days +1):
-                        current_date=date_since + td(days=i)
-                        all_statements_current_date = models.Statement.objects.filter(user=user_with_statement, timestamp__year=current_date.year, timestamp__month=current_date.month, timestamp__day=current_date.day)
-                        current_duration=0
-                        for every_statement_current_date in all_statements_current_date:
-                                current_duration=current_duration + int(every_statement_current_date.get_r_duration().seconds)
-                        if current_duration == 0 :
-                                current_duration=0
-                        useryaxis.append(current_duration)
-                        user_duration=user_duration+current_duration
-                user_by_duration.append(td(seconds=user_duration))
-                yaxis.append(useryaxis)
-
-	#Reduction by help of a fellow stack overflow use: 
-	#http://stackoverflow.com/questions/25656550/remove-occuring-elements-from-multiple-lists-shorten-multiple-lists-by-value/25656674#25656674
-	num_zeroes = len(list(takewhile(lambda p: p == 0, max(yaxis))))-1
-	yaxis=[li[num_zeroes:] for li in yaxis]
-	xaxis=xaxis[num_zeroes:]
-	yaxis=zip(label_legend, yaxis, user_by_duration)
-	data={}
-	data['xaxis']=xaxis;
-	data['yaxis']=yaxis
-	data['date_since']=date_since
-	data['date_until']=date_until
-
-    return render(request, template_name, data)
-"""
 @login_required(login_url="/login/")
 def get_all_students_in_this_organisation(request):
     organisation = User_Organisations.objects.get(\
@@ -690,7 +631,7 @@ def get_all_students_in_this_organisation(request):
                         users.append(s)
 	return users
     except:
-	print("Something went wrong")
+	logger.info("Something went wrong get getting all students in this organisation")
 	return None
 
 @login_required(login_url="/login/")
@@ -701,7 +642,7 @@ def get_all_blocks_in_this_organisation(request):
 	blocks = Block.objects.filter(success="YES", publisher__in=User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True)))
         return blocks 
     except:
-        print("Something went wrong")
+        logger.info("Something went wrong in getting all blocks in this organisation")
         return None
 
 #Calculates statment based on indicators,. users, blocks and date range
@@ -798,6 +739,7 @@ def get_sge_details(obj):
 """
 @login_required(login_url="/login/")
 def test_usage_report(request):
+    logger.info("User="+request.user.username+" accessed /reports/usage_report/")
     organisation = User_Organisations.objects.get(\
 		user_userid=request.user).organisation_organisationid
     current_user_role = User_Roles.objects.get(\
@@ -807,7 +749,6 @@ def test_usage_report(request):
 			organisation.organisation_name \
 		        + " organisation."
     if request.method == 'POST':
-	print("POST IN test_usage_report")
 	date_since = request.POST['since_1_alt']
         date_until = request.POST['until_1_alt']
 	#Changing the time into something that statement can 
@@ -838,7 +779,7 @@ def test_usage_report(request):
 			allusersflag = True
 			users=get_all_students_in_this_organisation(request)
 			if users is None:
-				print("Something went wrong")
+				logger.info("Something went wrong in getting users in this organiation")
 			break
 		else:
 			typestring=userjstreefields.split('|')[1]
@@ -865,7 +806,7 @@ def test_usage_report(request):
 			    if user not in users:
 			        users.append(user)
 			else:
-			    print("Something went wrong, couldn't judge")
+			    logger.info("Something went wrong, couldn't judge")
 
 			allusersflag = False
 	blocks=[]
@@ -874,7 +815,7 @@ def test_usage_report(request):
 	        allcoursesflag = True
 		blocks=get_all_blocks_in_this_organisation(request)
 		if blocks is None:
-			print("Something went wrong")
+			logger.info("Something went wrong")
 	        break
 	    else:
 	        allcoursesflag = False
@@ -893,7 +834,7 @@ def test_usage_report(request):
 		    if block_block not in blocks:
 			blocks.append(block_block)
 	    	else:
-		    print("Something went wrong. couldn't judge")
+		    logger.info("Something went wrong. couldn't judge")
 			
 	#looping over indicators to figure out which all indicators is needed.
 	indicators = []
@@ -1052,11 +993,9 @@ that is fetched back by the page to render the usage report within the same page
 """
 @login_required(login_url="/login/")
 def usage_report_data_ajax_handler(request):
-    print("In Usage Report Data Ajax Handler")
+    logger.info("User="+request.user.username+" submitted a request to /reports/usagereport/")
 
     if request.method == 'POST':
-	print("POST REQUEST in usage_report_data_ajax_handler")
-	print(request.POST)
         date_since = request.POST['since_1_alt']
         date_until = request.POST['until_1_alt']
         #Changing the time into something that statement can 
@@ -1088,7 +1027,7 @@ def usage_report_data_ajax_handler(request):
                         allusersflag = True
                         users=get_all_students_in_this_organisation(request)
                         if users is None:
-                                print("Something went wrong. No users in school.")
+                                logger.info("Something went wrong. No users in school.")
                         break
                 else:
                         typestring=userjstreefields.split('|')[1]
@@ -1115,7 +1054,7 @@ def usage_report_data_ajax_handler(request):
                             if user not in users:
                                 users.append(user)
                         else:
-                            print("Something went wrong, couldn't judge")
+                            logger.info("Something went wrong, couldn't judge")
 
                         allusersflag = False
 
@@ -1125,7 +1064,7 @@ def usage_report_data_ajax_handler(request):
                 allcoursesflag = True
                 blocks=get_all_blocks_in_this_organisation(request)
                 if blocks is None:
-                        print("Something went wrong")
+                        logger.info("Something went wrong in getting blocks for org")
                 break
             else:
                 allcoursesflag = False
@@ -1144,7 +1083,7 @@ def usage_report_data_ajax_handler(request):
                     if block_block not in blocks:
                         blocks.append(block_block)
                 else:
-                    print("Something went wrong. couldn't judge")
+                    logger.info("Something went wrong. couldn't judge")
 
         #looping over indicators to figure out which all indicators is needed.
         #each indicator will be 'on' or False
@@ -1174,6 +1113,7 @@ def usage_report_data_ajax_handler(request):
         relevant_statements, user_by_duration=calculate_statements(\
                                 users, date_since, date_until, blocks)
 
+	"""
 	print('\n')
         print(date_since)
         print(date_until)
@@ -1185,6 +1125,7 @@ def usage_report_data_ajax_handler(request):
         print(relevant_statements)
         print(len(relevant_statements))
         print(user_by_duration) 
+	"""
 
 	print("\n")
         #Push this to the statement Grouping
@@ -1202,7 +1143,7 @@ def usage_report_data_ajax_handler(request):
 			'children':a}
 	    json_object.append(json_obj)
 	json_object_json=simplejson.dumps(json_object)
-	print(json_object_json)
+	#print(json_object_json)
 
 	#js=root.jdefault()
 	
@@ -1210,7 +1151,7 @@ def usage_report_data_ajax_handler(request):
 
     
     else:
-        print("Not a POST request brah, check your code.")
+        logger.info("Not a POST request brah, check your code.")
 	return HttpResponse(False)
 
 """Internal function, not used in any views or functioning of reporting. 
@@ -1224,10 +1165,6 @@ def generate_statementinfo_existing_statements(request):
     all_org_users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
     all_statements = models.Statement.objects.all()
     all_org_statements = models.Statement.objects.filter(user__in=all_org_users)
-    print(len(all_statements))
-    for a in all_org_statements:
-	print(a.id)
-    print(len(all_org_statements))
     """
     for org_statement in all_org_statements:
 	print(org_statement.id)
@@ -1249,7 +1186,6 @@ def assign_already_stored_statements(request):
     all_org_users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
     all_statements = models.Statement.objects.filter(user__in=all_org_users)
     all_statementinfos = models.StatementInfo.objects.filter(statement__in = all_statements)
-    print(all_statementinfos)
     for every_statement in all_statements:
 	checkFlag=False
 	try:
@@ -1285,19 +1221,15 @@ def assign_already_stored_statements(request):
                                 pk__in=User_Organisations.objects.filter(\
                                     organisation_organisationid=organisation\
                                             ).values_list('user_userid', flat=True)))[0]
-		print("Block is:")
-		print(block)
-
                 statementinfo.block=block;
                 statementinfo.save()
             except:
-                print("EXCEPTION IN ASSIGNING BLOCK")
+                logger.info("EXCEPTION IN ASSIGNING BLOCK")
 
 	    try:
-                print("Starting Course hunt")
+                logger.info("Starting Course hunt")
                 #We have to check if parent is set. If it isn;t, 
                 #We thenget the user's last launched activity.
-		print("Every statement")
 		every_statement_full_statement=str(every_statement.full_statement)
 		statement_json=every_statement.full_statement
 		#statement_json=json.loads(every_statement_full_statement)
@@ -1306,29 +1238,25 @@ def assign_already_stored_statements(request):
                     context_parent = statement_json[u'context'][u'contextActivities'][u'parent']
                 except:
                     #print("Could not determing the context, it is not present.")
-                    print("Finding course by previous launch entry")
+                    logger.info("Finding course by previous launch entry")
 		    try:
                     	last_launched_statement=models.Statement.objects.filter(user=every_statement.user, verb__display__contains='launched').latest("timestamp")
 			last_launched_statementinfo = StatementInfo.objects.get(statement=last_launched_statement)
 		    except:
-			print("No launch query, finding course by assigned blocks")
+			logger.info("No launch query, finding course by assigned blocks")
 			course=Course.objects.get(packages=block)
-			print("Courses:")
-			print(course)
 			statementinfo.course=course
 			statementinfo.save()
 
 		    else:
-		    	print("Course is:")
-		    	print(course)
                     	course=last_launched_statementinfo.course
                     	statementinfo.course=course
                     	statementinfo.save()
 	    except:
-                print("EXCEPTION. COULD NOT FIGURE OUT COURSE")
+                logger.info("EXCEPTION. COULD NOT FIGURE OUT COURSE")
 
 	    try:
-            	print("Trying to assign class and school to statement")
+            	logger.info("Trying to assign class and school to statement")
             	allclasses_from_statement = statementinfo.course.allclasses.all()
             	for allclass in allclasses_from_statement:
                     if every_statement.user in allclass.students.all():
@@ -1337,48 +1265,12 @@ def assign_already_stored_statements(request):
                     	statementinfo.save()
                     	break
             except:
-            	print("EXCEPTION. Could NOT ASSIGN Class or School to Statement")
+            	logger.info("EXCEPTION. Could NOT ASSIGN Class or School to Statement")
 
     statementids=[]
     for statement in all_statements:
 	statementids.append(statement.id)
 
     return HttpResponse(simplejson.dumps(statementids))
-
-"""This ajax fetch internal api is not used.
-"""
-"""
-@login_required(login_url="/login/")
-def super_awesome_ajax_handler(request):
-    try:
-	parent_object_id=request.GET.get('id')
-	print("Parent Object Id:")
-	print(parent_object_id)
-	parent_object_type = request.GET.get('type')
-	print("Parent Object Type:")
-	print(parent_object_type)
-        #json_objects = serializers.serialize("json", student_list)
-        #Not sending complete user object to avoid someone hacking and getting user
-	#information like encrypted password, roles and all other information. 
-	#This only returns id and first and last name which is checked by request.user's 
-	#logged in account anyway.
-
-	
-
-	json_allclasses = simplejson.dumps([ {'id':c.id, 'text':c.allclass_name,
-                                'icon':'/media/images/class.small.png',
-				'type':'class',
-                                'children':[{'id':s.id,'text':s.first_name+" "+s.last_name,\
-					'type':'user',\
-                                        'icon':'/media/images/users.small.png'}\
-                                 for s in c.students.all()]} for c in allclasses ])
-
-        return HttpResponse(json_objects, mimetype="application/json")
-    except:
-        print("Super Awesome Ajax handler did not run. Something is fishy")
-	test=""
-	return HttpResponse(test, mimetype="application/json")
-        return HttpResponse(None)
-"""
 
 # Create your views here.
