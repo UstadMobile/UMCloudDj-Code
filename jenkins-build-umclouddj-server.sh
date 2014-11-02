@@ -3,6 +3,13 @@
 cd $WORKSPACE
 
 git clone https://github.com/varunasingh/ADL_LRS.git ADL_LRS_VS
+if [ "$?" != "0" ]; then
+        echo "Not a new jenkins run"
+	cd ADL_LRS_VS
+	git pull
+	cd ..
+fi
+
 echo "Installing ADL_LRS in the UMCloudDj project.."
 cp -r ADL_LRS_VS/lrs ./
 cp -r ADL_LRS_VS/oauth_provider ./
@@ -26,8 +33,6 @@ pwd
 
 cp UMCloudDj/settings.py.edit UMCloudDj/settings.py
 
-#Build it.
-
 sed -i.backup -e 's/^DEBUG=True/DEBUG = False/' $WORKSPACE/UMCloudDj/settings.py
 sed -i.backup -e 's/^DEBUG = True/DEBUG = False/' $WORKSPACE/UMCloudDj/settings.py
 sed -i.backup -e 's/^DEBUG =True/DEBUG = False/' $WORKSPACE/UMCloudDj/settings.py
@@ -45,14 +50,15 @@ PGCRED=`cat '/opt/UMCloudDj/postgrescred.txt'`
 PGUSER=`echo $PGCRED | awk -F\| '{ print $1 }'`
 PGPASSWORD=`echo $PGCRED | awk -F\| '{ print$2 }'`
 
-sed -i.bak "/^##USER/a \ \ \ \ \ \ \ \ 'USER': '${PGUSER}'" UMCloudDj/UMCloudDj/settings.py
-grep -v "^##USER*" UMCloudDj/UMCloudDj/settings.py UMCloudDj/UMCloudDj/settings.py.2
-mv UMCloudDj/UMCloudDj/settings.py.2 UMCloudDj/UMCloudDj/settings.py
+sed -i.bak "/^##USER/a \ \ \ \ \ \ \ \ 'USER': '${PGUSER}'," $WORKSPACE/UMCloudDj/settings.py
+grep -v "^##USER*" $WORKSPACE/UMCloudDj/settings.py $WORKSPACE/UMCloudDj/settings.py.2
+mv $WORKSPACE/UMCloudDj/settings.py.2 $WORKSPACE/UMCloudDj/settings.py
 
-sed -i.bak "/^##PASSW/a \ \ \ \ \ \ \ \ 'PASSWORD':'${PGPASSWORD}'" UMCloudDj/UMCloudDj/settings.py
-grep -v "^##PASS*" UMCloudDj/UMCloudDj/settings.py UMCloudDj/UMCloudDj/settings.py.2
-mv UMCloudDj/UMCloudDj/settings.py.2 UMCloudDj/UMCloudDj/settings.py
+sed -i.bak "/^##PASSW/a \ \ \ \ \ \ \ \ 'PASSWORD':'${PGPASSWORD}'," $WORKSPACE/UMCloudDj/settings.py
+grep -v "^##PASS*" $WORKSPACE/UMCloudDj/settings.py $WORKSPACE/UMCloudDj/settings.py.2
+mv $WORKSPACE/UMCloudDj/settings.py.2 $WORKSPACE/UMCloudDj/settings.py
 
+python manage.py syncdb
 
 #run tests
 #./unit-test-setup-android.sh emulate
@@ -73,3 +79,5 @@ rm -f build/*tar.gz
 tar -zvcf build/UMCloudDj_${DATE}.tar.gz --exclude='build' *
 coverage report
 coverage report --omit=*lrs*,*oauth*,*django_messages*
+
+

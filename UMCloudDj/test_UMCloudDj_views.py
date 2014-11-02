@@ -563,7 +563,6 @@ class UMCloudDjViewTestCase(TestCase):
         login = self.c.login(username='orgadmin01', password='12345')
 
         response = self.c.get(view_url)
- 	print(response)
 	self.assertContains(response, "Select the filters below to generate a report")
 
     def test_durationreport(self):

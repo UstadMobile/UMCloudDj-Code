@@ -6,6 +6,8 @@ v0.9.2
 - Set logging to include User access to reporting and logging in and logging out.
 - Set up logging such that these request go to the file logs/umclouddj.log
 
+-Removed un needed print statements
+-Fixed jenkins build script to sync db upon git pull and server setup.
 
 v0.9.1
 -Code comment, code clean, security enhancements and bug fixes
