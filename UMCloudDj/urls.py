@@ -45,6 +45,7 @@ urlpatterns = patterns('',
 	url(r'^reports/durationreport/getstatements/(?P<userid>[-\w]+)/$', 'report_statement.views.all_statements_table'), #Get statements by userid
 	url(r'^reports/stmtdb/$','report_statement.views.show_statements_from_db'), #SuperAdmin all statements
         url(r'^reports/allstatements/$','report_statement.views.statements_db_dynatable', name='allstatements'), #All organisation statements
+	url(r'^reports/statements_registration/$','report_statement.views.registration_statements', name='registration_statements'), #All registration statements
         url(r'^reports/mystmtsdynadb/$','report_statement.views.my_statements_db_dynatable'), #Current logged in user's statements
         url(r'^reports/usage_report','report_statement.views.test_usage_report'),  #Usage Report (Testing)
   	url(r'^reports/responsereport_selection/$', 'report_statement.views.response_report_selection', name='response_report_selection'), #Usage Report (Mockups)

@@ -14,6 +14,18 @@
     #ajaxSpinnerImage {display:none;}
 </style>
 <script type="text/javascript">
+    String.prototype.toHHMMSS = function () {
+    var sec_num = parseInt(this, 10); // don't forget the second param
+    var hours   = Math.floor(sec_num / 3600);
+    var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+    var seconds = sec_num - (hours * 3600) - (minutes * 60);
+
+    if (hours   < 10) {hours   = "0"+hours;}
+    if (minutes < 10) {minutes = "0"+minutes;}
+    if (seconds < 10) {seconds = "0"+seconds;}
+    var time    = hours+':'+minutes+':'+seconds;
+    return time;
+}
     function getChildren(obj){
         var getchild_json;
         var getchildren_json=[];
@@ -86,6 +98,7 @@
                     url:  '/fetch/usage_report_data/',
                     success: function(response){
                         var root=response;
+			myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
 			console.log("Main server JSON:");
                         console.log(JSON.stringify(root));
 			console.log("\n");
@@ -147,10 +160,10 @@
 	}); //end of form submit event
 
 	var since = new Date();
-	since.setDate(since.getDate()-31);
+	since.setDate(since.getDate()-7);
 	since = since.getFullYear() + "-" + (since.getMonth() + 1) + "-" + since.getDate();
 	var until = new Date();
-	until.setDate(until.getDate()+31);
+	until.setDate(until.getDate()+7);
 	until = until.getFullYear() + "-" + (until.getMonth() + 1) + "-" + until.getDate();
 	document.getElementById("since_1_alt").value = since; 
         document.getElementById("until_1_alt").value = until;
@@ -168,7 +181,7 @@
 	});
         $('#submit').click(function() {
             $('#ajaxSpinnerImage').show();
-	    myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
+	    //myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
         });
 	$('#allcoursescheckbox').click(function(event) {   
  	    if(this.checked) {
@@ -435,7 +448,7 @@
  <br></br>
 
  <div id="ajaxSpinnerContainer" class="spinner">
-  <div id="ajaxSpinnerImage" title="Loading..">
+  <div id="ajaxSpinnerImage" title="Crunching report..">
    <img src="{{MEDIA_URL}}/spinner.gif" title="working...">
   </div>
  </div>

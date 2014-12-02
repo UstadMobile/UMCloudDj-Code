@@ -107,6 +107,14 @@ def allclass_create(request, template_name='allclass/allclass_create.html'):
 			role_roleid=student_role).values_list(\
 			    'user_userid', flat=True))
 
+    everyone = User.objects.filter(\
+		pk__in=User_Organisations.objects.filter(\
+		    organisation_organisationid=organisation\
+			).values_list('user_userid', flat=True))
+
+    students = everyone #To make sure we don't just have to
+			#have students assigned to class
+
     courses = Course.objects.filter(success="YES",\
 				organisation=organisation)
     

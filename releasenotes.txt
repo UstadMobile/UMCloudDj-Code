@@ -1,3 +1,9 @@
+v0.9.4
+- If elp id is not found in blocks, then the block will be marked as failed (still internally possible to bring it back to life, but to the user, it will fail.)
+- Fixed register bug (template not found, was pointing to old template, updated)
+- Fixed bug that throws 500 when checkeing statements with no School assigned.
+- Fixed speed and Usage report bugs with views and htmls pages.
+
 v0.9.3
 - Updated blocks view to show updated date instead of published date.
 - Fixed statement assignment to courses and blocks for multiple consecutive launched statements.

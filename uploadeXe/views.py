@@ -290,6 +290,8 @@ def list(request, template_name='myapp/list.html'):
 		    	#("ELP LOM ID:")
 		    	#(elplomid)
 		    	setattr(newdoc, 'elpid', elplomid)
+			if not elplomid:
+			    setattr(newdoc, 'elpid', "replacemewithxmldata")
 	    	    except:
 			setattr(newdoc, 'elpid', '-')
                         elpid="replacemewithxmldata"
@@ -322,6 +324,9 @@ def list(request, template_name='myapp/list.html'):
                 setattr(newdoc, 'name', uidwe)
                 setattr(newdoc, 'publisher', request.user)
                 newdoc.save()
+		if newdoc.elpid=='replacemewithxmldata':
+		    newdoc.success="NO"
+		    newdoc.save()
                 
                 """
                 Adding package to course

@@ -32,6 +32,7 @@ from allclass.models import Allclass
 from school.models import School
 from uploadeXe.models import Course
 from uploadeXe.models import Package as Block
+from django.db.models import Q
 
 from django import template
 from django.core import serializers
@@ -42,6 +43,7 @@ from lrs import forms, models, exceptions
 from lrs.util import req_validate, req_parse, req_process, XAPIVersionHeaderMiddleware, accept_middleware, StatementValidator
 from oauth_provider.consts import ACCEPTED, CONSUMER_STATES
 from django.forms.models import model_to_dict
+import os
 
 # This uses the lrs logger for LRS specific information
 logger = logging.getLogger(__name__)
@@ -147,15 +149,16 @@ class StatementGroupEntry():
 	    #We first get all the schools from the statements
 	    schools=all_statementinfo.values('school').distinct()
 	    for schooldict in schools:
-		school_statements=models.Statement.objects.filter(\
+		if schooldict['school'] != None : #Added to ignore statements wihtout School assigned.
+		    school_statements=models.Statement.objects.filter(\
 			id__in=models.StatementInfo.objects.filter(\
 			    statement__in=self.statements,school__id=schooldict['school']).\
 				values_list('statement', flat=True))
-		applicable_stmts.append(school_statements)
-		#subGroup = StatementGroupEntry(school_statements, self.objectVal, self.level+1, self, 'School')
-		school=School.objects.get(id=schooldict['school'])
-		subGroup = StatementGroupEntry(school_statements, self.objectVal, self.level+1, self, school)
-		self.child_groups.append(subGroup)
+		    applicable_stmts.append(school_statements)
+		    #subGroup = StatementGroupEntry(school_statements, self.objectVal, self.level+1, self, 'School')
+		    school=School.objects.get(id=schooldict['school'])
+		    subGroup = StatementGroupEntry(school_statements, self.objectVal, self.level+1, self, school)
+		    self.child_groups.append(subGroup)
 
 	#elif objectType == "Class":
 	if isinstance(objectType, Allclass):
@@ -290,6 +293,78 @@ def statements_db_dynatable(request,template_name='statements_db_02.html'):
     return render(request, template_name,{'object_list':all_statements, 'table_headers_html':table_headers_html, 'pagetitle':pagetitle, 'tabletypeid':tabletypeid, 'logicpopulation':logicpopulation} )
 
 
+""" TEst Registration Grouping of statements
+"""
+
+@login_required(login_url="/login/")    #Added by varuna
+def registration_statements(request,template_name='group_registration_statements.html'):
+    logger.info("User="+request.user.username+" accessed /reports/statements_registration/")
+    organisation = User_Organisations.objects.get(user_userid=request.user).organisation_organisationid;
+    all_org_users= User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True))
+    all_statements = models.Statement.objects.filter(user__in=all_org_users)
+
+    for a in all_org_users:
+	print(a.id)
+
+    dict_reg = dict()
+    #Grop  this by registration id 
+    appLocation=(os.path.dirname(os.path.realpath(__file__)))
+    registrationcodefile = appLocation + '/../UMCloudDj/media/lulregids.txt'
+    f = open(registrationcodefile ,'w')
+
+    for every_statement in all_statements:
+	if every_statement.id > 18402:
+            #print (every_statement.full_statement[u'object'][u'definition'][u'name'][u'en-US'])
+	    pass
+	#statement_json=every_statement.get_statement_text()
+	statement_json=every_statement.full_statement
+	#print(statement_json[u'object'][u'definition'][u'name'][u'en-US'])
+	blockn=models.StatementInfo.objects.get(statement=every_statement).block
+ 	try:
+	    blockname=blockn.name
+	except:
+	    blockname="-"
+        try:
+            context_parent = statement_json[u'context'][u'registration']
+	    user=every_statement.user
+
+	    f.write(str(context_parent) + " " + user.username+ " " + str(blockname) +'\n')
+	
+
+	except:
+	    context_parent = None
+	    pass
+	if context_parent != None:
+ 	    #try:
+	    if True:
+	        activity_name = statement_json[u'object'][u'definition'][u'name'][u'en-US']
+		#print(type(activity_name))
+		#activity_name = every_statement.object_activity.activity_definition_name
+		#print(activity_name)
+	    #except:
+	    else:
+		activity_name = ""
+	    try:
+	        result = statement_json[u'result'][u'response']
+	    except:
+		result = ""
+	    if activity_name != "":
+		#res=str(activity_name) + " " + str(result)
+	        #res = activity_name + {result}
+	        if context_parent in dict_reg:
+	 	    dict_reg[context_parent].append(activity_name + ": " + result)
+	        else:
+		    dict_reg[context_parent] = [activity_name + ": " + result]
+	
+    f.close()
+    print("DONE:")
+    return render(request, template_name,{'object_list':dict_reg} )
+
+
+
+
+
+
 @login_required(login_url="/login/")    #Added by varuna
 def my_statements_db_dynatable(request,template_name='user_statements_report_04.html'):
     user=request.user
@@ -380,7 +455,7 @@ def allcourses_blocks(request):
     	allcourse_course = get_object_or_404(Course, pk=allcourseid)
 	allcourses_organisation = Course.objects.filter(\
 					organisation=organisation)
-	if allcourse_course not in allcourses_organisation:
+	if allcourse_course not in allcourses_organisation and allcourse_course.name != "Afghan-Literacy":
 		return HttpResponse("That course does not exist in your organisation")
     	course_blocks = allcourse_course.packages.all()
     	json_blocks =simplejson.dumps([ {'id': b.id,
@@ -443,7 +518,17 @@ def allcourses(request):
     try:
      	organisation = User_Organisations.objects.get(user_userid=request.user)\
 		.organisation_organisationid
-     	allorgcourses = Course.objects.filter(organisation=organisation)
+     	#allorgcourses = Course.objects.filter(organisation=organisation)
+	if organisation.organisation_name == "ChildFund":
+	    afghancourse = Course.objects.get(name="Afghan-Literacy")
+	    #allorgcourses = Course.objects.filter(organisation=organisation)
+
+	    allorgcourses = Course.objects.filter(Q(organisation=organisation)|Q(name="Afghan-Literacy"))
+	    print(allorgcourses)
+	    
+	else:
+	    allorgcourses = Course.objects.filter(organisation=organisation)
+
    	json_courses = simplejson.dumps([ {'id': c.id, 'text':c.name,
 				'type':'course',
 				'icon':'/media/images/course.small.png',
@@ -639,7 +724,21 @@ def get_all_blocks_in_this_organisation(request):
     organisation = User_Organisations.objects.get(\
                 user_userid=request.user).organisation_organisationid
     try:
-	blocks = Block.objects.filter(success="YES", publisher__in=User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True)))
+	if organisation.organisation_name=="ChildFund":
+		blo = Block.objects.filter(success="YES", publisher__in=User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True)))
+		blocks=[]
+		#print(Course.objects.get(name="Afghan-Literacy").packages.all())
+		ab=Course.objects.get(name="Afghan-Literacy").packages.all()
+		for b in blo:
+		    blocks.append(b)
+		for a in ab:
+		    blocks.append(a)
+		print(type(blocks))
+		    
+	else:
+		blocks = Block.objects.filter(success="YES", publisher__in=User.objects.filter(pk__in=User_Organisations.objects.filter(organisation_organisationid=organisation).values_list('user_userid', flat=True)))
+
+		
         return blocks 
     except:
         logger.info("Something went wrong in getting all blocks in this organisation")
@@ -656,6 +755,31 @@ def calculate_statements(students, date_since, date_until, blocks):
     user_by_duration=[]
     all_statements=[]
     all_statements_blocked=[]
+	
+    print("Blocks (length):")
+    print(len(blocks))
+
+    all_statements=[]
+    all_statements_blocked=[]
+    all_statements=models.Statement.objects.filter(user__in=students, timestamp__range=[date_since, date_until])
+    print("All statement length without block filter:")
+    print(len(all_statements))
+    all_statementsinfo = models.StatementInfo.objects.filter(statement__in=all_statements, block__in=blocks)
+    print("New statemtns length with block filter:")
+    print(len(all_statementsinfo))
+    for asi in all_statementsinfo:
+	all_statements_blocked.append(asi.statement)
+    #all_statements_blocked = models.StatementInfo.objects.filter(statement__in=all_statements, block__in=blocks)
+    
+    
+    """
+    for each_statement in all_statements:
+	try:
+	    q=models.StatementInfo.objects.get(statement=each_statement).block
+	    if q in blocks:
+		rel_statement.append(each_statement)
+    """
+    """
     for student in students:
 	student_statements=[]
 	for i in range(delta.days +1):
@@ -688,8 +812,11 @@ def calculate_statements(students, date_since, date_until, blocks):
 	    #except:
 	    else:
 		pass
-		
-	#To calculate the duration in all of these statements per user
+
+    """
+	
+    #To calculate the duration in all of these statements per user
+    """
         current_duration=0
         for every_statement in student_statements:
                 try:
@@ -699,7 +826,8 @@ def calculate_statements(students, date_since, date_until, blocks):
         user_duration=current_duration
         user_by_duration.append(td(seconds=user_duration))
         total_duration=total_duration+user_duration
-
+    """
+    user_by_duration=None
     return all_statements_blocked, user_by_duration
 
 def get_blocks_courses_by_user(users):
@@ -728,7 +856,7 @@ def get_blocks_courses_by_user(users):
 
 def get_sge_details(obj):
     json_objects = [{'objectName': o.get_objectType_name(),
-                           'total_duration':o.total_duration,
+                           'total_duration':str(td(seconds=o.total_duration)),
 			   'children': get_sge_details(o)}\
 				for o in obj.child_groups]
     return json_objects
@@ -749,6 +877,7 @@ def test_usage_report(request):
 			organisation.organisation_name \
 		        + " organisation."
     if request.method == 'POST':
+	#print("Processing POST request..")
 	date_since = request.POST['since_1_alt']
         date_until = request.POST['until_1_alt']
 	#Changing the time into something that statement can 
@@ -876,16 +1005,18 @@ def test_usage_report(request):
 	#user_by_course_by_duration = [[5,5],[6,5]]
 	#[Bob[Algebra(5),Combustion(5)], Adonbilivit[Combustion(6), Photosynthesis(5)]]
 
-	#print(date_since)
-	#print(date_until)
-	#print(reporttype)
-	#print(users)
-        #print(blocks)
-	#print(indicators)
-	#print("All statements:")
+	"""
+	print(date_since)
+	print(date_until)
+	print(reporttype)
+	print(users)
+        print(blocks)
+	print(indicators)
+	print("All statements:")
 	#print(relevant_statements)
-	#print(len(relevant_statements))
+	print(len(relevant_statements))
 	#print(user_by_duration) 
+	"""
 
 	#Push this to the statement Grouping
 	#		 (Statements, objectVal, level, parent, objectType)
@@ -996,6 +1127,7 @@ def usage_report_data_ajax_handler(request):
     logger.info("User="+request.user.username+" submitted a request to /reports/usagereport/")
 
     if request.method == 'POST':
+	print("Handling POST request..")
         date_since = request.POST['since_1_alt']
         date_until = request.POST['until_1_alt']
         #Changing the time into something that statement can 
@@ -1108,24 +1240,24 @@ def usage_report_data_ajax_handler(request):
         #relevant_statements for all users [statement1, statement2]
         #users = [ Bob, Adonbilivit ] (User)
         #user_by_duration = [ 10, 11 ](TimeDuration)
-        blocks_by_user, courses_by_user = get_blocks_courses_by_user(users)
+        #blocks_by_user, courses_by_user = get_blocks_courses_by_user(users)
         relevant_statements=[]
+	print("Calculating relevant statements..")
         relevant_statements, user_by_duration=calculate_statements(\
                                 users, date_since, date_until, blocks)
 
-	"""
 	print('\n')
         print(date_since)
         print(date_until)
         print(reporttype)
-        print(users)
-        print(blocks)
+	print("No. of users:")
+        print(len(users))
+        print(len(blocks))
         print(indicators)
         print("All statements:")
-        print(relevant_statements)
+        #print(relevant_statements)
         print(len(relevant_statements))
-        print(user_by_duration) 
-	"""
+        #print(user_by_duration) 
 
 	print("\n")
         #Push this to the statement Grouping
@@ -1139,7 +1271,7 @@ def usage_report_data_ajax_handler(request):
 	    a=get_sge_details(child)
 	    json_obj = {
 			'objectName':child.get_objectType_name(),
-			'total_duration':child.total_duration,
+			'total_duration':str(td(seconds=child.total_duration)),
 			'children':a}
 	    json_object.append(json_obj)
 	json_object_json=simplejson.dumps(json_object)
@@ -1212,7 +1344,7 @@ def assign_already_stored_statements(request):
                 st_elpid=activityid.rsplit('/',1)[1]
                 st_tincanid=activityid.rsplit('/',1)[0]
 		again_st_tincanid=st_tincanid.rsplit('/',1)[1]
-		print(again_st_tincanid)
+		#print(again_st_tincanid)
                 #Block only sets block to statement info for blocks within its organisations. A user 
                 #Cannot make statements for other organisations
                 organisation=User_Organisations.objects.get(user_userid=every_statement.user).organisation_organisationid;

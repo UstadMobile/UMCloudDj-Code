@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{pagetitle}}{% endblock %}
+{% block scriptjs %}
+<style>
+</style>
+{% endblock %}
+{% block content %}
+
+
+
+
+
+{% if state %}
+<p class="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+<h3><i>All statements from your organisation</i></h3>
+<p></p>
+<!--
+<table id="{{tabletypeid}}">
+  <thead>
+    {% for d, f in table_headers_html %}
+	<th data-dynatable-column="{{d}}" >{{f}}</th>
+    {% endfor %}
+  </thead>
+  <tbody>
+  </tbody>
+  <tfoot></tfoot>
+</table>
+{% endif %}
+-->
+
+{% for id, statements in object_list.items %}
+ <p></p>
+ <b>{{id}}</b>:<p></p>
+   {% for s in statements %}
+	    {{s}}
+        <p></p>
+   {% endfor %}
+    <br></br>
+{% endfor %}
+<br></br>
+
+
+
+{% endblock %}

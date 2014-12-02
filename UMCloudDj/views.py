@@ -1691,7 +1691,7 @@ def sign_up_in(request):
 		password=None
 		state="The two passwords you gave do not match. Please try again."
                 #return render(request, template_name, data)
-		return render_to_response('user/user_create_website.html',{'state':state,'organisation_list':organisation_list}, context_instance=RequestContext(request))
+		return render_to_response('user/user_create_website_selection.html',{'state':state,'organisation_list':organisation_list}, context_instance=RequestContext(request))
 
 
 		
@@ -1726,11 +1726,11 @@ def sign_up_in(request):
 		return render_to_response('confirmation.html',{'state':'Congratulations, your request has been sent to the organisation manager.You will be emailed when you get approved.'}, context_instance=RequestContext(request))
         	#return auth_and_login(request)
 	else:
-		return render_to_response('user/user_create_website.html',{'state':reason,'organisation_list':organisation_list}, context_instance=RequestContext(request))
+		return render_to_response('user/user_create_website_selection.html',{'state':reason,'organisation_list':organisation_list}, context_instance=RequestContext(request))
     else:
         #Shows message that the username/email address already exists in our database.
         state="The Username already exists.."
-        return render_to_response('user/user_create_website.html',{'state':state,'organisation_list':organisation_list}, context_instance=RequestContext(request))
+        return render_to_response('user/user_create_website_selection.html',{'state':state,'organisation_list':organisation_list}, context_instance=RequestContext(request))
 
 """View to log out existing user and redirect back to login page
 """
