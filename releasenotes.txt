@@ -10,6 +10,8 @@ v0.9.5
 - Fixed a bug in uploadeXe/views.py def list() in finishing elp upload (wasn't redirecting to apt)
 - Improved Code Coverage and bug fixes within. 
 - Fixed get_course_blocks API to account for tincan id as well as Primary key Also Updated the unit tests.
+- Updated build process to directly use exe_do (without installing it on test system) for testing. This is done such that exe doesn't hurt other parts
+  on the test server.
 
 v0.9.4
 - If elp id is not found in blocks, then the block will be marked as failed (still internally possible to bring it back to life, but to the user, it will fail.)

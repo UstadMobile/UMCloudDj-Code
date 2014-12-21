@@ -1,4 +1,6 @@
-RKSPACE
+#!/bin/bash
+
+cd $WORKSPACE
 
 git clone https://github.com/varunasingh/ADL_LRS.git ADL_LRS_VS
 if [ "$?" != "0" ]; then
@@ -59,7 +61,7 @@ mv $WORKSPACE/UMCloudDj/settings.py.2 $WORKSPACE/UMCloudDj/settings.py
 python manage.py syncdb
 
 #We have to get eXe to another directory
-cd /home/ubuntu/
+cd $WORKSPACE
 if [ "$?" != "0" ]; then
     echo "Folder Exists"
     git clone https://github.com/UstadMobile/exelearning-ustadmobile-work.git
@@ -72,7 +74,7 @@ if [ "$?" != "0" ]; then
 fi
 
 if [ "$?" == "0" ]; then
-    echo "The directory /home/ubuntu/ does not exists for eXe to reside. Exiting.."
+    echo "The directory does not exists for eXe to reside. Exiting.."
     exit 1
 fi
 
@@ -101,4 +103,3 @@ rm -f build/*tar.gz
 tar -zvcf build/UMCloudDj_${DATE}.tar.gz --exclude='build' *
 coverage report
 coverage report --omit=*lrs*,*oauth*,*django_messages*
-
