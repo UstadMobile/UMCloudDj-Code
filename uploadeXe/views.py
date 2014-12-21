@@ -441,12 +441,11 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
                         url + '_old')
 
 	if 'test' in sys.argv:
-	    print("NEW UPDATE 1: YOU ARE TESTING: "+ appLocation)
+	    print("NEW UPDATE 2: YOU ARE TESTING: "+ appLocation)
 	    cdto=appLocation+"/../exelearning-ustadmobile-work/"
 	    os.system('cd '+cdto)
-	    os.system('pwd')
 	    print("break")
-	    exe_do_command=appLocation + './exe/exe_do'
+	    exe_do_command='./exe/exe_do'
 	    print(exe_do_command)
 	else:
 	    exe_do_command='exe_do'
@@ -508,11 +507,13 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
 	 ' ' + appLocation + '/../UMCloudDj/media/eXeExport/' + unid )
 
 	if 'test' in sys.argv:
-            print("NEW UPDATE 1: YOU ARE TESTING " + appLocation)
-            exe_do_command=appLocation + '/../exelearning-ustadmobile-work/exe/exe_do --standalone'
-	    cdto=appLocation+"/../exelearning-ustadmobile-work/"
+	    print("NEW UPDATE 3: YOU ARE TESTING: "+ appLocation)
+            cdto=appLocation+"/../exelearning-ustadmobile-work/"
             os.system('cd '+cdto)
-	    print(exe_do_command)
+            print("break")
+            exe_do_command='./exe/exe_do'
+            print(exe_do_command)
+
         else:
             exe_do_command='exe_do'
 
