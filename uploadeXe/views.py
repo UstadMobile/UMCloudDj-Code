@@ -509,9 +509,9 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
 	if 'test' in sys.argv:
 	    print("NEW UPDATE 3: YOU ARE TESTING: "+ appLocation)
             cdto=appLocation+"/../exelearning-ustadmobile-work/"
-            os.system('cd '+cdto)
+            os.system('cd '+ cdto)
             print("break")
-            exe_do_command='./exe/exe_do'
+            exe_do_command='exe/exe_do'
             print(exe_do_command)
 
         else:
