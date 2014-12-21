@@ -67,7 +67,7 @@ class UMCloudDjViewTestCase(TestCase):
 	test_course.students.add(testuser)
 	test_course.save()
 	
-	test_block=Document(name="unittest01", url="//this.is.the/linke/to/the/test/01",uid="123UGOFreei01", success="Yes", publisher=testuser)
+	test_block=Document(name="unittest01", elpid="ThisIsTheUniqueElpID", url="//this.is.the/linke/to/the/test/01",uid="123UGOFreei01", success="Yes", publisher=testuser)
 	test_block.save()
 	test_course.packages.add(test_block)
 	test_course.save()
@@ -197,12 +197,19 @@ class UMCloudDjViewTestCase(TestCase):
 
     def test_sendelpfile(self):
 	"""
+	Not a POST request
+	"""
+	view_url="/sendelpfile/"
+	response=self.client.get(view_url)
+	self.assertEquals(response.status_code, 500)
+
+	
+	"""
 	Tests the file upload  (eXe elp package) block
 	"""
-	print("starting..")
         try:
 		view_url="/sendelpfile/"
-                with open('/opt/UMCloudDj/gt1.elp',"r") as myfile:
+                with open('/opt/UMCloudDj/test.elp',"r") as myfile:
 			print("found file here")
 			post_data={'username':'testuser1', 'password':'12345', 'exeuploadelp': myfile}
                 	response = self.client.post(view_url, post_data)
@@ -347,6 +354,85 @@ class UMCloudDjViewTestCase(TestCase):
         self.assertEquals(response.status_code, 200)
 	self.assertContains(response, "Login", status_code=200)
 
+    def test_register_organisation_view(self):
+	mainorganisation=Organisation.objects.get(pk=1)
+        newcode=Organisation_Code(organisation=mainorganisation,code="COW1234")
+        newcode.save()
+
+	print("Organisational Codes are:")
+	ocs=Organisation_Code.objects.all()
+	for oc in ocs:
+	    print(oc.code)
+	
+
+	"""
+        Tests if the register / signn up for users logged out works.
+        """
+        view_url="/register/start/"
+        self.c = Client()
+        response = self.c.get(view_url)
+        self.assertEquals(response.status_code, 200)
+        self.assertContains(response, "Request my account")
+
+	#Org signup check goes to: /orgsignup/
+	
+	signup_url="/orgsignup/"
+        self.c=Client()
+        response=self.client.get(signup_url)
+        self.assertContains(response, "Not a POST request or invalid code")
+
+	self.c = Client()
+	response=self.client.post(signup_url)
+	self.assertContains(response, "The system could not process this (Request is broken)")
+
+	
+	signup_url="/orgsignup/"
+        self.c=Client()
+        post_data={'organisationalcode':'BADCOW1234'}
+        response=self.client.post(signup_url,post_data)
+	self.assertContains(response, "Invalid code")
+
+
+	signup_url="/orgsignup/"
+	self.c=Client()
+	post_data={'organisationalcode':'COW1234'}
+	response=self.client.post(signup_url,post_data)
+	self.assertRedirects(response, '/register/org/')
+	
+	"""
+	Tests Organisation New
+	"""
+	view_url='/register/org/'
+	self.c=Client()
+	response = self.c.get(view_url)
+	self.assertEquals(response.status_code, 302)
+	self.assertRedirects(response, '/register/start/')
+
+	"""
+	Test with organisationalcode in session
+	"""
+	"""
+	self.client = Client()
+        session = self.client.session
+        session['organisationalcode'] = 'InvalidCode' ## Or any valid siteid.
+        session.save()
+	response=self.c.get(view_url)
+	print(response)
+	self.assertEquals(response.status_code, 200)
+	"""
+	
+   
+    def test_check_invitation_view(self):
+	"""
+	Tests Check Invitation Views
+	register/invitation/
+	"""
+	view_url="/register/invitation/"
+	self.c = Client()
+	response = self.c.get(view_url)
+	self.assertEquals(response.status_code, 302)
+	#self.assertContains(response, "Enter your Organisation's code")
+
     def test_register_start_view(self):
 	"""
 	Tests if the register / signn up for users logged out works.
@@ -385,6 +471,20 @@ class UMCloudDjViewTestCase(TestCase):
 	self.assertEquals(ustadmobile_test.ustad_version, 'umclouddjtestversion')
     """
 	
+    def test_report_pagi_statements_view(self):
+        """
+        Tests that logged in user and not logged in user to get to the Report statement page
+        """
+
+        """
+        Not logged in user will redirect to login page
+        """
+        view_url="/reports/pagi_allstatements/"
+        self.c = Client();
+        response = self.c.get(view_url)
+        self.assertEquals(response.status_code, 302)
+        self.assertRedirects(response, '/login/?next=/reports/pagi_allstatements/')
+
     
     def test_report_statements_view(self):
 	"""
@@ -412,7 +512,7 @@ class UMCloudDjViewTestCase(TestCase):
         self.assertEquals(response.status_code, 200)
         self.assertContains(response, "All statements from your organisation", status_code=200)
 
-    def test_report_selection_view(self):
+    def test_durationreport_selection_view(self):
 	"""
         Tests that logged in user and not logged in user to get to the Report mcq page
         """
@@ -543,6 +643,17 @@ class UMCloudDjViewTestCase(TestCase):
         self.assertRedirects(response, "/userstable/")
         self.assertEquals(True, UserProfile.objects.get(user=userrequest).admin_approved)
 
+    def test_pagi_statements_db_dynatable(self):
+        view_name="pagi_allstatements"
+        view_url="/reports/pagi_allstatements/"
+        self.c = Client();
+        self.user = User.objects.get(username="orgadmin01")
+        self.user = authenticate(username='orgadmin01', password='12345')
+        login = self.c.login(username='orgadmin01', password='12345')
+
+        response = self.c.get(view_url)
+        self.assertContains(response, "All statements from your organisation")
+
     def test_statements_db_dynatable(self):
 	view_name="allstatements"
 	view_url="/reports/allstatements/"
@@ -672,6 +783,24 @@ class UMCloudDjViewTestCase(TestCase):
         self.assertContains(response, "Statements from Databse")
 
 	
+    def test_getblock_view(self):
+	getblock=Document.objects.get(name='unittest01')
+	print(getblock.success)
+	view_url="/getblock/?id="+getblock.elpid
+	#We do not need to be logged in for this.
+	self.c = Client();
+	response = self.c.get(view_url)
+	self.assertContains(response, '{"blockurl": "123UGOFreei01/unittest01"}')
+	
+	"""
+	Invalid ID:
+	"""
+	view_url="/getblock/?id=thisisafalseid"
+        #We do not need to be logged in for this.
+        self.c = Client();
+        response = self.c.get(view_url)
+	self.assertEquals(response.status_code, 403)
+
 	
     def tearDown(self):
 	print("end of UMCloud Views test")

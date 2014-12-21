@@ -112,14 +112,17 @@ class BlockViewTestCase(TestCase):
 	Users NOT logged in cannot upload
 	"""
         #try:
+
+	print("Starting test_list_create..")
 	if True:
 
-                with open('/opt/UMCloudDj/gt1.elp',"r") as myfile:
+                with open('/opt/UMCloudDj/test.elp',"r") as myfile:
 			courselist=[1,2]
                         post_data={'target2':courselist,'exefile': myfile}
                         response = self.client.post(view_url, post_data)
 			self.assertEquals(response.status_code, 302)
         		self.assertRedirects(response, '/login/?next=/uploadeXe/list/')
+		print("Test file found!")
 
         #except:
 	else:
@@ -129,6 +132,7 @@ class BlockViewTestCase(TestCase):
 	Logged in users can upload and create
 	"""
 	#try:
+	print("Logging in user..")
 	if True:
 		self.c = Client();
         	self.user = User.objects.get(username="testuser1")
@@ -137,17 +141,43 @@ class BlockViewTestCase(TestCase):
         	self.user = authenticate(username='testuser1', password='hello')
         	login = self.c.login(username='testuser1', password='hello')
 
-
-                with open('/opt/UMCloudDj/gt1.elp',"r") as myfile:
+		myfiles=[]
+		print("Logged in, now opening file..")
+                with open('/opt/UMCloudDj/test.elp',"r") as myfile:
+			myfiles.append(myfile)
+			print(myfiles)
 			courselist=[1,2]
 			requesturl = reverse("list")
-                        post_data={'target2':courselist,'exefile': myfile}
-                        response = self.client.post(requesturl, post_data)
-			"""
-                        self.assertEquals(response.status_code, 200)
-			self.assertEquals("YES", Document.objects.get(name="gt1").success)
-			self.assertRedirect(response, "/uploadeXe/list/")
-			"""
+			print(requesturl)
+                        post_data={'target2':courselist,'exefile': myfiles}
+                        response = self.c.post(requesturl, post_data)
+			print("-------------------------------------------")
+                        self.assertEquals(response.status_code, 302)
+			#Because gt1.elp is an old elp without elp lom id, we 
+			# fix the successn code manually. 
+			#ToDo: Update gt1.elp from new eXe
+			self.assertEquals("YES", Document.objects.get(name="test").success)
+			self.assertRedirects(response, "/uploadeXe/list/")
+
+		#Select and upload the same file again for update
+		myfiles=[]
+                print("Logged in, now opening file..")
+                with open('/opt/UMCloudDj/test.elp',"r") as myfile:
+                        myfiles.append(myfile)
+                        print(myfiles)
+                        courselist=[1,2]
+                        requesturl = reverse("list")
+                        print(requesturl)
+                        post_data={'target2':courselist,'exefile': myfiles}
+                        response = self.c.post(requesturl, post_data)
+                        print("-------------------------------------------")
+                        self.assertEquals(response.status_code, 302)
+                        #Because gt1.elp is an old elp without elp lom id, we 
+                        # fix the successn code manually. 
+                        #ToDo: Update gt1.elp from new eXe
+                        self.assertEquals("YES", Document.objects.get(name='test').success)
+                        self.assertRedirects(response, "/uploadeXe/list/")
+
 			
 
         #except:
@@ -174,10 +204,10 @@ class BlockViewTestCase(TestCase):
         	self.user = authenticate(username='testuser1', password='hello')
         	login = self.c.login(username='testuser1', password='hello')
 
-                with open('/opt/UMCloudDj/gt1.elp',"r") as myfile:
+                with open('/opt/UMCloudDj/test.elp',"r") as myfile:
                         post_data={'exefile': myfile}
                         response = self.client.post(view_url, post_data)		
-			self.assertEqual("YES", Document.objects.get(name="gt1").success)
+			self.assertEqual("YES", Document.objects.get(name="test").success)
 			
 			
         #except:

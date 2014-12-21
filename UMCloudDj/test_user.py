@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.core.urlresolvers import reverse
 
 from uploadeXe.models import Role, Course, Package as Document
-from uploadeXe.models import User_Roles
+from uploadeXe.models import User_Roles, Invitation
 from allclass.models import Allclass
 from school.models import School
 from django.forms import ModelForm
@@ -30,7 +30,7 @@ class UserViewTestCase(TestCase):
 	adminrole=Role.objects.get(pk=2)
 	user_role = User_Roles(name="test", user_userid=testuser, role_roleid=adminrole)
 	user_role.save()
-	testuser2 = User.objects.create(username="testuser2", password="54321", is_active=True, is_staff=True, is_superuser=True)
+	testuser2 = User.objects.create(username="testuser2", password="54321", is_active=True, is_staff=False, email="testemail@test.com", is_superuser=True)
 	user_role2 = User_Roles(name="test", user_userid=testuser2, role_roleid=adminrole)
 	user_role2.save()
 	mainorganisation = Organisation.objects.get(pk=1)
@@ -38,6 +38,15 @@ class UserViewTestCase(TestCase):
 	user_organisation.save()
 	user_organisation2 = User_Organisations(user_userid=testuser2, organisation_organisationid=mainorganisation)
 	user_organisation2.save()
+
+	testuser3 = User.objects.create(username="testuser3", password="12345", is_active=True, is_staff=False, is_superuser=False)
+	testuser3.save()
+	user_role3=User_Roles(name="test", user_userid=testuser3, role_roleid=adminrole)
+	user_role3.save()
+	neworganisation=Organisation.objects.create(organisation_name="SecondOrg", organisation_desc="test", set_package_id=1)
+	neworganisation.save()
+	user_organisation3=User_Organisations(user_userid=testuser3, organisation_organisationid=neworganisation)
+	user_organisation3.save()
 	
 	school1 = School(school_name="TestSchool", school_desc="This is the desc of the TestSchool",organisation_id=1)
         school1.save()
@@ -57,6 +66,16 @@ class UserViewTestCase(TestCase):
         document1.save()
         document2 = Document(elpid='elpid002', name='TestDocument2', url='/link/to/TestDocument2/',uid='uid002',success='YES',publisher=testuser)
         document2.save()
+
+	document3 = Document(elpid='elpid003', name='TestDocument3', url='/link/to/TestDocument3/',uid='uid003',success='YES',publisher=testuser3)
+        document3.save()
+
+	document4 = Document(elpid='elpid004', name='TestDocument4', url='/link/to/TestDocument4/',uid='uid004',success='YES',publisher=testuser3)
+        document4.save()
+	course4 = Course(name="TestCourse4", description="This is a test Course", category="Tests", publisher=testuser3, organisation=neworganisation, success="YES")
+	course4.save()
+	course4.packages.add(document4)
+	course4.save()
 	
 	course1.packages.add(document1)
 	course1.packages.add(document2)
@@ -290,13 +309,193 @@ class UserViewTestCase(TestCase):
 	self.assertEquals(response.status_code, 500)
 
     def test_invite_to_course(self):
+	print(Invitation.objects.all())
 	view_name="invite_to_course"
 	"""External API, POST parameters: username, password, blockid, emailids, mode"""
 	post_data={'username':'testuser', 'password':'12345', 'blockid':'elpid001', 'emailids':'["varuna.singh@gmail.com", "varuna@ustadmobile.com"]', 'mode':'individual'}
+
+	"""
+	Without POST DATA
+	"""
+	self.c = Client()
+	requesturl=reverse(view_name)
+	response=self.c.get(requesturl)
+	self.assertEquals(response.status_code, 500)
+
+
+	""" Success if proper POST request
+	"""
 	self.c=Client()
 	requesturl = reverse(view_name)
 	response=self.c.post(requesturl, post_data)
 	self.assertEqual(response.status_code, 200)
+	a=Invitation.objects.all()
+	invitationid=None
+	for b in a:
+	    print(b.invitation_id)
+	    invitationid=b.invitation_id
+
+
+	"""For other organisations
+	"""
+        otherorg_post_data={'username':'testuser3', 'password':'12345', 'blockid':'elpid003', 'emailids':'["varuna@otherorg.com"]', 'mode':'organisation'}
+	self.c = Client()
+	requesturl=reverse(view_name)
+	response=self.c.post(requesturl, otherorg_post_data)
+	#Course not published, thats why.
+	self.assertEqual(response.status_code, 504)
+	
+	"""When course is published
+	"""
+
+	otherorg_post_data={'username':'testuser3', 'password':'12345', 'blockid':'elpid004', 'emailids':'["varuna@otherorg.com"]', 'mode':'organisation'}
+        self.c = Client()
+        requesturl=reverse(view_name)
+        response=self.c.post(requesturl, otherorg_post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Invitation.objects.get(email="varuna@otherorg.com").email, "varuna@otherorg.com")
+        otherorginvitationid=Invitation.objects.get(email="varuna@otherorg.com").invitation_id
+        print("Invitation id for other org: " + str(otherorginvitationid))
+
+	"""
+        Check for actual ID
+        """
+        view_url='/register/invitation/?id='+otherorginvitationid
+        response = self.c.get(view_url)
+        self.assertEquals(response.status_code, 200)
+	self.assertContains(response, "Hi varuna@otherorg.com , please fill in the form below to continue to TestCourse4 course")
+
+
+
+	"""Bad mode
+	"""
+	badmode_post_data={'username':'testuser', 'password':'12345', 'blockid':'elpid001', 'emailids':'["varuna.singh@gmail.com", "varuna@ustadmobile.com"]', 'mode':'BADindividual'}
+	self.c=Client()
+        requesturl = reverse(view_name)
+        response=self.c.post(requesturl, badmode_post_data)
+        self.assertEqual(response.status_code, 500)
+
+
+
+	""" Without proper BlocID
+	"""
+	post_data_wrong={'username':'testuser', 'password':'12345', 'blockid':'BADelpid001', 'emailids':'["varuna.singh@gmail.com", "varuna@ustadmobile.com"]', 'mode':'individual'}
+	self.c=Client()
+        requesturl = reverse(view_name)
+        response=self.c.post(requesturl, post_data_wrong)
+	self.assertEquals(response.status_code, 503)
+
+	    
+        """
+        Tests Check Invitation Views
+        register/invitation/
+        """
+        view_url="/register/invitation/"
+        self.c = Client()
+        response = self.c.get(view_url)
+        self.assertEquals(response.status_code, 302)
+        #self.assertContains(response, "Enter your Organisation's code")
+
+	"""
+	Check for actual ID
+	"""
+	view_url='/register/invitation/?id='+invitationid
+	response = self.c.get(view_url)
+        self.assertEquals(response.status_code, 200)
+	self.assertContains(response, "please fill in the form below to continue to TestCourse course")
+	
+	
+	io=Invitation.objects.get(invitation_id=invitationid)
+	io.done=True
+	io.save()
+	"""Again for done invitations
+	"""
+	view_url='/register/invitation/?id='+invitationid
+        response = self.c.get(view_url)
+        self.assertEquals(response.status_code, 200)
+	self.assertContains(response, "Your account is created. Log in to see your course")
+
+
+
+    def test_invite_to_course_existing(self):
+	#testemail@test.com
+	view_name="invite_to_course"
+        """External API, POST parameters: username, password, blockid, emailids, mode"""
+        post_data={'username':'testuser', 'password':'12345', 'blockid':'elpid001', 'emailids':'["testemail@test.com"]', 'mode':'individual'}
+        self.c=Client()
+        requesturl = reverse(view_name)
+        response=self.c.post(requesturl, post_data)
+        self.assertEquals(response.status_code, 200)
+        a=Invitation.objects.all()
+        invitationid=None
+        for b in a:
+            print(b.invitation_id)
+            invitationid=b.invitation_id
+
+        """
+        Check for actual ID
+        """
+	Invitationobject = Invitation.objects.get(invitation_id=invitationid)
+
+        view_url='/register/invitation/?id='+invitationid
+        response = self.c.get(view_url)
+	self.assertEquals(response.status_code, 200)
+	self.assertContains(response, "Log in to Ustad Mobile Cloud")
+	#self.assertEquals(Invitationobject.course.
+	testuser2=User.objects.get(username='testuser2')
+	a=Invitationobject.block.students.all()
+	b=Invitationobject.course.students.all()
+	if testuser2 in a:
+	    self.assertEquals(1,1)
+	else:
+	    self.assertEquals(2,1)
+	if testuser2 in b:
+	    self.assertEquals(1,1)
+	else:
+	    self.assertEquals(2,1)
+	#self.assertContains(a, testuser2)
+	#self.assertContains(b, testuser2)
+
+    def test_invite_to_course_existing_org(self):
+        #testemail@test.com
+        view_name="invite_to_course"
+        """External API, POST parameters: username, password, blockid, emailids, mode"""
+        post_data={'username':'testuser', 'password':'12345', 'blockid':'elpid001', 'emailids':'["testemail@test.com"]', 'mode':'organisation'}
+        self.c=Client()
+        requesturl = reverse(view_name)
+        response=self.c.post(requesturl, post_data)
+        self.assertEquals(response.status_code, 200)
+        a=Invitation.objects.all()
+        invitationid=None
+        for b in a:
+            print(b.invitation_id)
+            invitationid=b.invitation_id
+
+        """
+        Check for actual ID
+        """
+        Invitationobject = Invitation.objects.get(invitation_id=invitationid)
+
+        view_url='/register/invitation/?id='+invitationid
+        response = self.c.get(view_url)
+        self.assertEquals(response.status_code, 200)
+        self.assertContains(response, "Log in to Ustad Mobile Cloud")
+        #self.assertEquals(Invitationobject.course.
+        testuser2=User.objects.get(username='testuser2')
+        a=Invitationobject.block.students.all()
+        b=Invitationobject.course.students.all()
+        if testuser2 in a:
+            self.assertEquals(1,1)
+        else:
+            self.assertEquals(2,1)
+        if testuser2 in b:
+            self.assertEquals(1,1)
+        else:
+            self.assertEquals(2,1)
+        #self.assertContains(a, testuser2)
+        #self.assertContains(b, testuser2)
+
+
 
     def tearDown(self):
-	print("end of User_Delete test")
+	print("end of User test")

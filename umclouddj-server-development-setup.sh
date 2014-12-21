@@ -68,6 +68,7 @@ sudo pip install jsonfield==0.9.19
 sudo pip install pygraphviz==1.2
 sudo pip install graphviz
 sudo pip install simplejson
+sudo pip install pytz
 
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8

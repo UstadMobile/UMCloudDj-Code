@@ -18,7 +18,14 @@
                         //"label" : "{{package.name}}({{package.url}})"
                         },
                 {% endfor %}];
-
+          $(function() {
+              var txt = $("input#username");
+              var func = function() {
+                  txt.val(txt.val().replace(/\s/g, ''));
+  		  document.getElementById("spaceprompt").style.visibility = "visible";
+              }
+              txt.keyup(func).blur(func);
+          }); 
           $(function() { 
 			$('#allclasspicklist').puipicklist();
                         $('#username').puiinputtext();
@@ -80,6 +87,7 @@
     <div data-role="fieldcontain" style="padding-bottom:5px">
         <!--<label for="username">Username: &nbsp  </label>-->
         <input type="text" name="username" id="username" placeholder="Username" style="height: 30px; width: 250px;" value="" required/>
+	<i id="spaceprompt" style="visibility:hidden;">Spaces are not allowed in usernames</i>
     </div>
     <div data-role="fieldcontain" style="padding-bottom:5px">
         <!--<label for="email">Email:  &nbsp&nbsp</label>-->

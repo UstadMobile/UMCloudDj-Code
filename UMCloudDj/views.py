@@ -24,7 +24,7 @@ from allclass.models import Allclass
 from school.models import School
 from django import forms
 from uploadeXe.views import ustadmobile_export
-from uploadeXe.views import grunt_course
+#from uploadeXe.views import grunt_course
 
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -49,6 +49,8 @@ import zipfile
 from django.core.mail import send_mail
 import socket
 import logging
+from django.utils.datastructures import MultiValueDictKeyError
+from random import randrange
 
 logger = logging.getLogger(__name__)
 ###################################
@@ -1331,8 +1333,22 @@ def check_invitation_view(request):
 	    elif invitation.organisation:
 		logger.info("This invitation is for " + \
 			invitation.organisation.organisation_name + " organisation.")
-		organisationalcode = Organisation_Code.objects.get(\
+		print("This invitation is for:"+\
+		    invitation.organisation.organisation_name)
+		try:
+		    organisationalcode = Organisation_Code.objects.get(\
 					organisation=invitation.organisation).code
+		except Organisation_Code.DoesNotExist, e:
+		    oc=Organisation_Code.objects.create(organisation=invitation.organisation)
+		    random_code=randrange(1000000)
+		    random_org_code=str(invitation.organisation.id)+\
+                                        str(random_code)
+		    oc.code=random_org_code
+		    oc.save()
+		    organisationalcode=Organisation_Code.objects.get(\
+			organisation=invitation.organisation).code
+		    
+		    
 		organisation_name = invitation.organisation.organisation_name
 		state="Valid code"
 		
@@ -1453,6 +1469,7 @@ def register_organisation_view(request,):
 	try:
 		if 'organisationalcode' in request.session:
 			organisationalcode=request.session['organisationalcode']
+			print(organisationalcode)
 			request.session.flush();
         		organisation_requested = Organisation_Code.objects.get(\
 			    code=organisationalcode).organisation
@@ -1663,26 +1680,46 @@ register view"""
 def organisation_sign_up_in(request):
     logger.info("Checking organisation code")
     post=request.POST
+    if request.method != 'POST':
+	print("Not a post request. Are you testing?")
+	state="Not a POST request or invalid code"
+	return render_to_response('user/user_create_website_selection.html'\
+	    ,{'state':state}, \
+		context_instance=RequestContext(request))
     try:
+	if 'organisationalcode' in request.POST:
+	    organisation_request=post['organisationalcode']
+	else:
+	    state="The system could not process this (Request is broken)"
+            return render_to_response('user/user_create_website_selection.html',\
+		{'state':state},\
+		    context_instance=RequestContext(request))
 	organisation_request=post['organisationalcode']
 	logger.info("Code given:")
 	logger.info(organisation_request)
-	organisation_requested = Organisation_Code.objects.get(code=organisation_request).organisation
+	organisation_requested = Organisation_Code.objects.get(\
+	    code=organisation_request).organisation
 	state="Valid code"
 	request.session['organisationalcode']=organisation_request
 	return redirect('register_organisation')
-	#return render_to_response('user/user_create_website_selection.html',{'state':state},context_instance=RequestContext(request))
     except Organisation_Code.DoesNotExist, e:
 	state="Invalid code"
-	return render_to_response('user/user_create_website_selection.html',{'state':state},context_instance=RequestContext(request))
+	return render_to_response('user/user_create_website_selection.html',\
+	    {'state':state},\
+		context_instance=RequestContext(request))
     state="Nothing has happened"
-    return render_to_response('user/user_create_website_selection.html',{'state':state}, context_instance=RequestContext(request))
+    return render_to_response('user/user_create_website_selection.html',\
+	{'state':state}, context_instance=RequestContext(request))
 
 """submit link that handles user creation from website. 
 """
 def sign_up_in(request):
     logger.info("Creating new user from website..")
     organisation_list=Organisation.objects.all()
+    if request.method !='POST':
+	return redirect('login')
+	return redirect('register_selection')
+	
     post = request.POST
     if not user_exists(post['username']): 
 	password=post['password']

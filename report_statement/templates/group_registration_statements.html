@@ -13,7 +13,7 @@
 {% if state %}
 <p class="error" style="color:red;"><i>{{state}}</i></p>
 {% else %}
-<h3><i>All statements from your organisation</i></h3>
+<!--<h3><i>All statements from your organisation</i></h3>-->
 <p></p>
 <!--
 <table id="{{tabletypeid}}">
@@ -28,7 +28,7 @@
 </table>
 {% endif %}
 -->
-
+<!--
 {% for id, statements in object_list.items %}
  <p></p>
  <b>{{id}}</b>:<p></p>
@@ -39,6 +39,14 @@
     <br></br>
 {% endfor %}
 <br></br>
+-->
+
+<h2>Registration report file</h2>
+{% if result == "success" %}
+    <p>Click <a href="http://umcloud1.ustadmobile.com/media/cfregdump/newreport.csv">here</a> to download your report</p>
+{% else %}
+    <p>Something went wrong in fetching the report numbers. Please email us and we will fix this.</p>
+{% endif %}
 
 
 

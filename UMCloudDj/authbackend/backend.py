@@ -35,7 +35,7 @@ class MyCustomBackend:
 
         except User.DoesNotExist:
             # No user was found, return None - triggers default login failed
-	    print("User Does Not Exists")
+	    print("User: " + username + " Does Not Exists")
 
 	    #Check user credentials
 

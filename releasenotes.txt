@@ -1,3 +1,15 @@
+v0.9.5
+- Fixed improper redirect in /signup/
+- Spaces not allowed to be entered in html user create forms. 
+- Updated lrs statement info models to account for timestamp of the original statement
+- Performance upgrade to Usage reports. Statement Group Info objects now work with Statement Info directly improving performance. 
+- All statements report for each organisations is now paginated to improve performance Reports view updated with new link as well. 
+- Changed USE_TZ from False to True in UMCloudDj/settings.py for test modes
+- Fixed bug in determining Course (if not afghan literacy, variable becomes None.
+- Installed pytz because of Django 1.6 release notes: you must now install pytz to work with Sqlite3 if USE_TZ=True in your settings.py.
+- Fixed a bug in uploadeXe/views.py def list() in finishing elp upload (wasn't redirecting to apt)
+- Improved Code Coverage and bug fixes within. 
+
 v0.9.4
 - If elp id is not found in blocks, then the block will be marked as failed (still internally possible to bring it back to life, but to the user, it will fail.)
 - Fixed register bug (template not found, was pointing to old template, updated)

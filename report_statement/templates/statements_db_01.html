@@ -37,7 +37,67 @@ $(function() {
   ); 
 
 </script>
-<div id="dbstatements"></div>
+<!--<div id="dbstatements"></div>-->
+
+<div class="pagination">
+    <span class="step-links">
+        {% if all_statements.has_previous %}
+            <a href="?page={{ all_statements.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ all_statements.number }} of {{ all_statements.paginator.num_pages }}.
+        </span>
+
+        {% if all_statements.has_next %}
+            <a href="?page={{ all_statements.next_page_number }}">next</a>
+        {% endif %}
+    </span>
+</div>
+
+<table id="SomeRandomID">
+  <thead>
+    {% for d, f in table_headers_html %}
+        <th data-dynatable-column="{{d}}" >{{f}}</th>
+    {% endfor %}
+  </thead>
+  <tbody>
+        {% for c in all_statements %}
+        <tr>
+            <td>{{c.user.first_name}} {{c.user.last_name}}</td>
+            <td>{{c.verb.get_display}}</td>
+            <td>{{c.object_activity.get_a_name|safe}}</td>
+            <td>{{c.get_course}}</td>
+            <td>{{c.get_block}}</td>
+            <td>{{c.get_r_duration}}</td>
+            <td>{{c.timestamp}}</td>
+        </tr>
+        {% endfor %}
+  </tbody>
+  <tfoot></tfoot>
+</table>
+
+
+
+
+<div class="pagination">
+    <span class="step-links">
+        {% if all_statements.has_previous %}
+            <a href="?page={{ all_statements.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ all_statements.number }} of {{ all_statements.paginator.num_pages }}.
+        </span>
+
+        {% if all_statements.has_next %}
+            <a href="?page={{ all_statements.next_page_number }}">next</a>
+        {% endif %}
+    </span>
+</div>
+<br></br>
+
+
 
 
 

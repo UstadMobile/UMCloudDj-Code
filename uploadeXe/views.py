@@ -192,6 +192,7 @@ def list(request, template_name='myapp/list.html'):
     data['student_list'] = students
 
     if request.method == 'POST':
+	print("Handling elp file upload..")
 	#If method is POST, a new elp file is being
 	#uploaded
         post = request.POST;
@@ -378,8 +379,8 @@ def list(request, template_name='myapp/list.html'):
             return HttpResponseRedirect(reverse(\
                                         'uploadeXe.views.new'))
           else:
-            return HttpResponseRedirect(reverse('\
-                                        uploadeXe.views.list'))
+            return HttpResponseRedirect(reverse(\
+                                        'uploadeXe.views.list'))
 
 	else:
 	    print("Form is not valid")
@@ -523,6 +524,7 @@ can be loaded and would result in success for that course exproted.
 Process involved getting and setting up grunt for every course exported. Resulted in big folders.
 Direction of test changed to being on eXe instead of UMCloud.
 """ 
+"""
 def grunt_course(unid, uidwe):
     appLocation= (os.path.dirname(os.path.realpath(__file__)))
     print("Starting grunt process..")
@@ -554,7 +556,7 @@ def grunt_course(unid, uidwe):
         #else:
         #    print("Unable to install grunt for this course.. Fail.")
         #    os.system('mv ' + appLocation + '/../UMCloudDj/media/eXeExport/' + unid + '/' + uidwe + '/ustadmobile-settings.js.origi ' +  appLocation + '/../UMCloudDj/media/eXeExport/' + unid + '/' + uidwe + '/ustadmobile-settings.js')
-
+"""
 
 
 ###################################################################################

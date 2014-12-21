@@ -174,6 +174,9 @@ class CourseViewTestCase(TestCase):
         requesturl = reverse(view_name, kwargs={'pk':testcoursecreateid})
         response = self.c.post(requesturl, post_data_update)
 
+	"""
+	ToDo: This has to be fixed.
+	"""
         changedvalue=Course.objects.get(name='TestCourse').description
         self.assertEqual('This is a test Course', changedvalue) #need to fix this.
 
@@ -193,10 +196,11 @@ class CourseViewTestCase(TestCase):
 
 	testcoursecreate = Course.objects.get(name='TestCourse2')
         testcoursecreateid = testcoursecreate.id;
-
+	print(Course.objects.all())
         requesturl = reverse(view_name, kwargs={'pk':testcoursecreateid})
-        response = self.c.get(requesturl)
-        self.assertEquals(response.status_code,200)
+        response = self.c.post(requesturl)
+	print(Course.objects.all())
+        self.assertEquals(response.status_code,302)
 
         """
         Logged in user deleting unknown user: 4040
@@ -210,7 +214,7 @@ class CourseViewTestCase(TestCase):
         login = self.c.login(username='testuser1', password='hello')
 
         requesturl = reverse(view_name, kwargs={'pk':42})
-        response = self.c.get(requesturl)
+        response = self.c.post(requesturl)
         self.assertEqual(response.status_code, 404)
 
     def test_table(self):

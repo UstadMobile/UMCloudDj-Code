@@ -42,16 +42,17 @@ urlpatterns = patterns('',
 
 	url(r'^reports/durationreport_selection/$', 'report_statement.views.durationreport_selection', name='durationreport_selection'), #duration report selection
 	url(r'^reports/durationreport/$', 'report_statement.views.durationreport', name='durationreport'), #duration report 
-	url(r'^reports/durationreport/getstatements/(?P<userid>[-\w]+)/$', 'report_statement.views.all_statements_table'), #Get statements by userid
+	url(r'^reports/durationreport/getstatements/(?P<userid>[-\w]+)/$', 'report_statement.views.user_statements_table'), #Get statements by userid
 	url(r'^reports/stmtdb/$','report_statement.views.show_statements_from_db'), #SuperAdmin all statements
         url(r'^reports/allstatements/$','report_statement.views.statements_db_dynatable', name='allstatements'), #All organisation statements
+	url(r'^reports/pagi_allstatements/$','report_statement.views.pagi_statements_db_dynatable', name='pagi_allstatements'), #All organisation statements
+	#url(r'^reports/update_all_statementinfo/$', 'report_statement.views.update_all_statementinfo', name='update_all_statementinfo'), #SU SI update
+	#url(r'^reports/check_statementinfos/$', 'report_statement.views.check_statementinfos', name='check_statementinfos'),#Check si info
 	url(r'^reports/statements_registration/$','report_statement.views.registration_statements', name='registration_statements'), #All registration statements
         url(r'^reports/mystmtsdynadb/$','report_statement.views.my_statements_db_dynatable'), #Current logged in user's statements
         url(r'^reports/usage_report','report_statement.views.test_usage_report'),  #Usage Report (Testing)
   	url(r'^reports/responsereport_selection/$', 'report_statement.views.response_report_selection', name='response_report_selection'), #Usage Report (Mockups)
 	url(r'^reports/breakdown_report/$', 'report_statement.views.test_heather_report', name='heather_report'), #Breakdown report
-	url(r'^reports/assign_already_stored_statements/$', 'report_statement.views.assign_already_stored_statements', name='assign_already_stored_statements'), #To sort already
-	url(r'^reports/generate_statementinfo_existing_statements/$', 'report_statement.views.generate_statementinfo_existing_statements', name='generate_statementinfo_existing_statements'),
 
 	#For ajax fetchings
 	url(r'^fetch/allclass/(?P<allclassid>[-\w]+)/allclasse_students/$', 'report_statement.views.allclasse_students'),
