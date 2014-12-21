@@ -35,6 +35,7 @@ from xml.dom import minidom
 from lxml import etree
 import xml.etree.ElementTree as ET
 import commands #Added for obtaining the elp hash
+import sys
 
 
 ######################################################################
@@ -439,8 +440,13 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
 	    print(appLocation + '/../UMCloudDj' +\
                         url + '_old')
 
+	if 'test' in sys.argv:
+	    print("NEW UPDATE 1: YOU ARE TESTING")
+	    exe_do_command='/home/ubuntu/exelearning-ustadmobile-work/exe/exe_do'
+	else:
+	    exe_do_command='exe_do'
 
-        if os.system('exe_do -s ustadMobileTestMode=True -x ustadmobile ' +\
+        if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
                	"\"" + appLocation + '/../UMCloudDj/media/' + uid + "\"" + \
                 	' ' + appLocation + '/../UMCloudDj' +\
                          	url+'' ) == 0: # If command ran successfully,
@@ -495,7 +501,14 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
         print('exe_do -s ustadMobileTestMode=True -x ustadmobile ' +\
 	 "\"" +appLocation + '/../UMCloudDj/media/' + uid + "\"" +\
 	 ' ' + appLocation + '/../UMCloudDj/media/eXeExport/' + unid )
-        if os.system('exe_do -s ustadMobileTestMode=True -x ustadmobile ' +\
+
+	if 'test' in sys.argv:
+            print("NEW UPDATE 1: YOU ARE TESTING")
+            exe_do_command='/home/ubuntu/exelearning-ustadmobile-work/exe/exe_do'
+        else:
+            exe_do_command='exe_do'
+
+        if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
 	  "\"" + appLocation + '/../UMCloudDj/media/' + uid + "\"" + \
 		' ' + appLocation + '/../UMCloudDj/media/eXeExport/' +\
 			 unid ) == 0: # If command ran successfully,

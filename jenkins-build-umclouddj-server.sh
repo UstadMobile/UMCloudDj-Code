@@ -1,6 +1,4 @@
-#!/bin/bash
-
-cd $WORKSPACE
+RKSPACE
 
 git clone https://github.com/varunasingh/ADL_LRS.git ADL_LRS_VS
 if [ "$?" != "0" ]; then
@@ -60,6 +58,30 @@ mv $WORKSPACE/UMCloudDj/settings.py.2 $WORKSPACE/UMCloudDj/settings.py
 
 python manage.py syncdb
 
+#We have to get eXe to another directory
+cd /home/ubuntu/
+if [ "$?" != "0" ]; then
+    echo "Folder Exists"
+    git clone https://github.com/UstadMobile/exelearning-ustadmobile-work.git
+    if [ "$?" != "0" ]; then
+        echo "Not a new exepull run"
+        cd exelearning-ustadmobile-work
+        git pull
+        cd ..
+    fi
+fi
+
+if [ "$?" == "0" ]; then
+    echo "The directory /home/ubuntu/ does not exists for eXe to reside. Exiting.."
+    exit 1
+fi
+
+cd exelearning-ustadmobile-work
+git checkout 8bfa72500c103a05514b2757c2bc915a31172b1c
+
+cd $WORKSPACE
+
+
 #run tests
 #./unit-test-setup-android.sh emulate
 coverage run --source='.' manage.py test
@@ -79,5 +101,4 @@ rm -f build/*tar.gz
 tar -zvcf build/UMCloudDj_${DATE}.tar.gz --exclude='build' *
 coverage report
 coverage report --omit=*lrs*,*oauth*,*django_messages*
-
 

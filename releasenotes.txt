@@ -9,6 +9,7 @@ v0.9.5
 - Installed pytz because of Django 1.6 release notes: you must now install pytz to work with Sqlite3 if USE_TZ=True in your settings.py.
 - Fixed a bug in uploadeXe/views.py def list() in finishing elp upload (wasn't redirecting to apt)
 - Improved Code Coverage and bug fixes within. 
+- Fixed get_course_blocks API to account for tincan id as well as Primary key Also Updated the unit tests.
 
 v0.9.4
 - If elp id is not found in blocks, then the block will be marked as failed (still internally possible to bring it back to life, but to the user, it will fail.)

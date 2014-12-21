@@ -292,13 +292,13 @@ class UserViewTestCase(TestCase):
     def test_get_course_blocks(self):
 	view_name="get_course_blocks"
 	"""External API, POST parameters, username, passwordi, courseid"""
-	post_data={'username':'testuser', 'password':'12345', "courseid":1}
+	post_data={'username':'testuser', 'password':'12345', "courseid":'http://www.ustadmobile.com/um-tincan/course/1'}
         self.c = Client()
         requesturl = reverse(view_name)
         response = self.c.post(requesturl, post_data)
         self.assertContains(response, '{"id": "http://www.ustadmobile.com/um-tincan/course/1", "blocks": [{"id": "/elpid001", "title": "TestDocument1"}, {"id": "/elpid002", "title": "TestDocument2"}], "description": "This is a test Course", "title": "TestCourse"}')
 
-	post_data={'username':'testuser','password':'12345','courseid':42}
+	post_data={'username':'testuser','password':'12345','courseid':'http://www.ustadmobile.com/um-tincan/course/42'}
 	self.c=Client()
 	response = self.c.post(requesturl, post_data)
 	self.assertEquals(response.status_code, 500)

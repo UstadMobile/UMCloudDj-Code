@@ -776,7 +776,15 @@ def get_course_blocks(request):
                         outside (UstadMobile?)")
             username = request.POST.get('username', False)
             password = request.POST.get('password', False)
-	    courseid = request.POST.get('courseid', False)
+	    try:
+	        courseid = request.POST.get('courseid', False)
+	        coursetincanprefix=courseid.rsplit('/',1)[0]
+	        coursepk=courseid.rsplit('/',1)[1]
+	    except:
+		authresponse=HttpResponse(status=500)
+                authresponse.write("The course ID is either not given or improper. It should be like: http:/a.b.c/d/e/42")
+		return authresponse
+		
             logger.info("For user: " + username)
             #Authenticate the user
             user = authenticate(username=\
@@ -793,10 +801,10 @@ def get_course_blocks(request):
                             Q(organisation=organisation, \
                                 allclasses__in=alluserclasses))
 		try:
-		    course=Course.objects.get(id=courseid, organisation=organisation)
+		    course=Course.objects.get(id=coursepk, organisation=organisation, tincanid=coursetincanprefix)
 		except:
 		    authresponse=HttpResponse(status=500)
-		    authresponse.write("Course does not exist or does not belong to your organisation")
+		    authresponse.write("Course id does not exist (Is your tincanprefix and pk right?) or does not belong to your organisation")
 		    return authresponse
 		else:
 		    all_blocks_in_course=course.packages.all()
