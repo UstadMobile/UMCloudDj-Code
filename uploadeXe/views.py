@@ -444,7 +444,9 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
 	    print("NEW UPDATE 1: YOU ARE TESTING: "+ appLocation)
 	    cdto=appLocation+"/../exelearning-ustadmobile-work/"
 	    os.system('cd '+cdto)
-	    exe_do_command=appLocation + '/../exelearning-ustadmobile-work/exe/exe_do --standalone'
+	    os.system('pwd')
+	    print("break")
+	    exe_do_command=appLocation + './exe/exe_do'
 	    print(exe_do_command)
 	else:
 	    exe_do_command='exe_do'
