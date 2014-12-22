@@ -670,6 +670,11 @@ def getassignedecourses_json(request):
 	    user = authenticate(username=\
 			request.POST['username'],\
 		 password=request.POST['password'])
+	    if user is None:
+		authresponse = HttpResponse(status=401)
+                authresponse.write("Authentication failed for user: " + str(username))
+                return authresponse
+		
 	    if user is not None:
 		organisation = User_Organisations.objects.get(\
 				user_userid=user)\
