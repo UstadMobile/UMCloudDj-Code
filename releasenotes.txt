@@ -3,6 +3,7 @@ v0.9.6
 - Fixed issue #1
 - Fixed issue #2 https://github.com/UstadMobile/UMCloudDj-Code/issues/2
 - Fixed issue #3 for assigned_courses that returns 401 for unauthorised requests: https://github.com/UstadMobile/UMCloudDj-Code/issues/3
+- Added 401 responses for other APIs
 
 
 v0.9.5

@@ -795,6 +795,12 @@ def get_course_blocks(request):
             user = authenticate(username=\
                         request.POST['username'],\
                  password=request.POST['password'])
+	    if user is None:
+		authresponse=HttpResponse(status=401)
+                authresponse.write("Unable to authorise user: " + str(username))
+                return authresponse
+
+		
             if user is not None:
                 organisation = User_Organisations.objects.get(\
                                 user_userid=user)\
@@ -866,8 +872,9 @@ def invite_to_course(request):
                         request.POST['username'],\
                  password=request.POST['password'])
             if user is None:
-		authresponse = HttpResponse(status=403)
-                authresponse.write("Not a POST request. Invitation set up failed.")
+		authresponse = HttpResponse(status=401)
+		username=request.POST['username']
+                authresponse.write("Authorisation failed for user: " + str(username))
                 return authresponse
 	    else:
 		
