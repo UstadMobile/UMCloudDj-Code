@@ -12,11 +12,13 @@
 <script type="text/javascript">
 	  $(function() {
               var txt = $("input#username");
-              var func = function(e) {
+              var func = function(evt) {
                   //txt.val(txt.val().replace(/\s/g, ''));
-		  if(e.keyCode != "37" && e.keyCode != "38" && e.keyCode != "39" && e.keyCode != "40"){
-        	      txt.val(txt.val().replace(/\s/g, ''));
-		      if(e.keyCode == "32"){
+		  e = evt || window.event; // compliant with ie6
+		  var key = e.keyCode || e.charCode;
+		  if(key != 37 && key != 38 && key != 39 && key != 40){
+		      if(key == "32"){
+			  txt.val(txt.val().replace(/\s/g, ''));
 		          document.getElementById("spaceprompt").style.visibility = "visible";
 		      }else{
 		  	  document.getElementById("spaceprompt").style.visibility = "hidden";

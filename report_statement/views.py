@@ -408,7 +408,6 @@ def update_all_statementinfo(request, template_name='check_statementinfos.html')
 Internal Fix: Quick fix for organisation statements for
  which statement info hasnt been generated
 """
-"""
 @login_required(login_url="/login/")
 def check_statementinfos(request, template_name='check_statementinfos.html'):
     logger.info("User="+request.user.username+\
@@ -420,6 +419,38 @@ def check_statementinfos(request, template_name='check_statementinfos.html'):
 	    organisation_organisationid=organisation\
 	 	).values_list('user_userid', flat=True))
     nosilist=[]
+    if request.user.is_staff == False:
+	return redirect('reports')
+
+    sifixed = models.StatementInfo.objects.get(statement=models.Statement.objects.get(id=1913))
+    print("Duration was at: " + str(sifixed.duration))
+		
+    allCF136statements=models.Statement.objects.filter(user=User.objects.get(pk=238))
+    total_duration=0
+    for es in allCF136statements:
+	esd=es.get_r_duration();
+	if esd != '-':
+	    total_duration=total_duration+int(esd.seconds)
+    
+    print("Total Duration:")
+    print(total_duration)
+    print("-----------------------------------------------")
+    allCF136si = models.StatementInfo.objects.filter(user=User.objects.get(pk=238))
+    total_durationsi=0
+    tdi =  td(minutes=0)
+    for esi in allCF136si:
+	if True:
+	    tdi=tdi+esi.duration
+	    esid=esi.duration.total_seconds()
+	    if esid != "-" and esid != None:
+		total_durationsi=total_durationsi + esid
+
+    print("Total SI Duration:")
+    print(total_durationsi)
+    print("tdi:")
+    print(tdi)
+    
+    """
     all_statements = models.Statement.objects.filter(user__in=all_org_users)
     for a in all_statements:
 	try:
@@ -429,11 +460,11 @@ def check_statementinfos(request, template_name='check_statementinfos.html'):
 	    nosilist.append(a.id)
 	    #Saving the statement again will generate the Statement Info entry.
 	    a.save()
+    """
 	
     result="test"
     return render(request, template_name,{'object_list':nosilist, \
 					  'result':result} )
-"""
 
 """Report: Registration Report (with unicode mapping script call)
    This report will be made for registration event statements 

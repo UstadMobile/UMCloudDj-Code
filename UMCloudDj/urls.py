@@ -47,7 +47,7 @@ urlpatterns = patterns('',
         url(r'^reports/allstatements/$','report_statement.views.statements_db_dynatable', name='allstatements'), #All organisation statements
 	url(r'^reports/pagi_allstatements/$','report_statement.views.pagi_statements_db_dynatable', name='pagi_allstatements'), #All organisation statements
 	#url(r'^reports/update_all_statementinfo/$', 'report_statement.views.update_all_statementinfo', name='update_all_statementinfo'), #SU SI update
-	#url(r'^reports/check_statementinfos/$', 'report_statement.views.check_statementinfos', name='check_statementinfos'),#Check si info
+	url(r'^reports/check_statementinfos/$', 'report_statement.views.check_statementinfos', name='check_statementinfos'),#Check si info
 	url(r'^reports/statements_registration/$','report_statement.views.registration_statements', name='registration_statements'), #All registration statements
         url(r'^reports/mystmtsdynadb/$','report_statement.views.my_statements_db_dynatable'), #Current logged in user's statements
         url(r'^reports/usage_report','report_statement.views.test_usage_report'),  #Usage Report (Testing)
