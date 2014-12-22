@@ -23,8 +23,9 @@ if [ ! -f $inputelp ];then
 fi
 
 echo "Running the export"
+cd ./exelearning-ustadmobile-work/
 
-./exelearning-ustadmobile-work/exe/exe_do $1 $2 $3 $4 $5 $6 
+./exe/exe_do $1 $2 $3 $4 $5 $6 
 
 if [ "$?" != "0" ]; then
     echo"Did Not export well."
