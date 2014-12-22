@@ -12,9 +12,16 @@
 <script type="text/javascript">
 	  $(function() {
               var txt = $("input#username");
-              var func = function() {
-                  txt.val(txt.val().replace(/\s/g, ''));
-                  document.getElementById("spaceprompt").style.visibility = "visible";
+              var func = function(e) {
+		if(e.keyCode != "37" && e.keyCode != "38" && e.keyCode != "39" && e.keyCode != "40"){
+                      txt.val(txt.val().replace(/\s/g, ''));
+                      if(e.keyCode == "32"){
+                          document.getElementById("spaceprompt").style.visibility = "visible";
+                      }else{
+                          document.getElementById("spaceprompt").style.visibility = "hidden";
+                      }
+                  }
+
               }
               txt.keyup(func).blur(func);
           }); 

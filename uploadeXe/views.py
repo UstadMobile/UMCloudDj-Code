@@ -442,11 +442,10 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
 
 	if 'test' in sys.argv:
 	    print("NEW UPDATE 2: YOU ARE TESTING: "+ appLocation)
-	    cdto=appLocation+"/../exelearning-ustadmobile-work/"
-	    os.system('cd '+cdto)
-	    print("break")
-	    exe_do_command='./exe/exe_do'
-	    print(exe_do_command)
+	    exe_do_command = appLocation + '/../run_exe_testing.sh'
+            print(exe_do_command)
+	    #We need to set the working directory
+
 	else:
 	    exe_do_command='exe_do'
 
@@ -508,10 +507,7 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
 
 	if 'test' in sys.argv:
 	    print("NEW UPDATE 3: YOU ARE TESTING: "+ appLocation)
-            cdto=appLocation+"/../exelearning-ustadmobile-work/"
-            os.system('cd '+ cdto)
-            print("break")
-            exe_do_command='exe/exe_do'
+	    exe_do_command = appLocation + '/../run_exe_testing.sh'
             print(exe_do_command)
 
         else:

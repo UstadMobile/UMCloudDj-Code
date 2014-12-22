@@ -1,3 +1,6 @@
+v0.9.6
+- Fixed UMCloudDj issue #1 on spaces in usernames: https://github.com/UstadMobile/UMCloudDj-Code/issues/1
+
 v0.9.5
 - Fixed improper redirect in /signup/
 - Spaces not allowed to be entered in html user create forms. 
