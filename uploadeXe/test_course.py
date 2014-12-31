@@ -129,7 +129,7 @@ class CourseViewTestCase(TestCase):
 
     def test_update(self):
         view_name='courseedit'
-	post_data_update={'id_name':'TestCourse','id_description':'This is an update to TestCourse', 'id_category':'EditCategory'}
+	post_data_update={'name':'TestCourse','description':'This is an update to TestCourse', 'category':'EditCategory', 'target':[1],'target2':[1],'target3':[1]}
 
         """
         Login required
@@ -178,7 +178,47 @@ class CourseViewTestCase(TestCase):
 	ToDo: This has to be fixed.
 	"""
         changedvalue=Course.objects.get(name='TestCourse').description
-        self.assertEqual('This is a test Course', changedvalue) #need to fix this.
+	self.assertEqual('This is an update to TestCourse', changedvalue)
+
+    def test_delete_not_the_publisher(self):
+	view_name='coursedelete'
+        """
+        User logged in should be able to delete Course
+        uploadeXe.views.course_delete
+        """
+        self.c = Client();
+        self.user = User.objects.get(username="testuser2")
+        self.user.set_password('hello')
+        self.user.save()
+        self.user = authenticate(username='testuser2', password='hello')
+        login = self.c.login(username='testuser2', password='hello')
+
+        testcoursecreate = Course.objects.get(name='TestCourse2')
+        testcoursecreateid = testcoursecreate.id;
+        requesturl = reverse(view_name, kwargs={'pk':testcoursecreateid})
+        response = self.c.post(requesturl)
+        self.assertEquals('TestCourse2', Course.objects.get(name='TestCourse2').name)
+	self.assertRedirects(response,'/uploadeXe/managecourses/')
+
+    @unittest.expectedFailure
+    def test_delete_course(self):
+	view_name='coursedelete'
+        """
+        User logged in should be able to delete Course
+        uploadeXe.views.course_delete
+        """
+        self.c = Client();
+        self.user = User.objects.get(username="testuser1")
+        self.user.set_password('hello')
+        self.user.save()
+        self.user = authenticate(username='testuser1', password='hello')
+        login = self.c.login(username='testuser1', password='hello')
+
+        testcoursecreate = Course.objects.get(name='TestCourse2')
+        testcoursecreateid = testcoursecreate.id;
+        requesturl = reverse(view_name, kwargs={'pk':testcoursecreateid})
+        response = self.c.post(requesturl)
+	self.assertEquals('TestCourse2', Course.objects.get(name='TestCourse2').name)
 
 
     def test_delete(self):

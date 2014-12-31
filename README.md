@@ -9,20 +9,10 @@ To run the server,
 
 There is a build script within this main repository called: umclouddj-server-development-setup.sh  
 
-If you clone this project to a folder: UMCloudDj,
+1. Get this script to a location where you want the server folder contents to reside :
+ wget https://raw.githubusercontent.com/UstadMobile/UMCloudDj-Code/master/umclouddj-server-development-setup.sh
 
-copy this script one folder above UMCloudDj, ie:
-
-git clone https://github.com/UstadMobile/UMCloudDj-Code.git UMCloudDj
-
-cd UMCloudDj
-
-cp umclouddj-server-development-setup.sh ../
-
-cd ../
-
-
-You might need to make this script executable:
+2. You might need to make this script executable:
 
 chmod a+x umclouddj-server-development-setup.sh
 
@@ -40,11 +30,11 @@ The usage for this script is:
 
 Super username> This will be the super admin of the django projet.
 
-passwordr> Super admin's password
+password> Super admin's password
 
-wordpress pass> Internal usage. Set to "blah"
+wordpress pass> Internal usage. Set to "blah" (Will be depriciated)
 
-um pass> Internal usage. Set to "blah" or anything else.
+um pass> Internal usage. Set to "blah" or anything else. (Will be depriciated)
 
 secret key> This is a random key that should be secret only to you. Can be long and have special characters. Make sure it is in quotes. This is a django specific secret key. Read more about secret keys in Django's docs.
 
@@ -68,6 +58,9 @@ The server will run on 127.0.0.1 over port 8000 or you can specify the port and 
 or:
 
 $ python manage.py runserver 0:8004 # runs in 8004 port
+
+
+The above steps starts the server in development mode (ie: it basically runs over the python command. The ideal way to run a server would be behind apache and wsgi. Steps for this and updates to the build script will be added next.
 
 
 

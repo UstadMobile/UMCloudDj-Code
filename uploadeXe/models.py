@@ -36,7 +36,7 @@ tin can id is set as well
 """
 class Package(models.Model):
    elpid = models.CharField(max_length=200)
-   exefile = models.FileField(upload_to=get_file_path) #saves as a unique id.
+   exefile = models.FileField(upload_to=get_file_path, max_length=500) #saves as a unique id.
    name = models.CharField(max_length=200)
    #elpname = models.CharField(max_length=200)
    pub_date = models.DateTimeField(auto_now_add=True) #added by Varuna Singh
@@ -48,7 +48,8 @@ class Package(models.Model):
    students = models.ManyToManyField(User, related_name='packagestudents')
    active = models.BooleanField(default = True)
    elphash = models.CharField(max_length=80)
-   tincanid = models.CharField(max_length=200)
+   tincanid = models.CharField(max_length=200,\
+		default="http://www.ustadmobile.com/um-tincan/activities")
 
    def __unicode__(self):
         return u'%s' % (self.name)

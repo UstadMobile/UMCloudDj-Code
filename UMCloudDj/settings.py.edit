@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 import os
 import sys
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-
+TEST_BLOCK_DIR='/mnt/jenkins/test-elps/'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
@@ -103,12 +103,11 @@ DATABASES = {
         'PORT': '',
     }
 }
-
 if 'test' in sys.argv:
     USE_TZ = True
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
-	'NAME': os.path.join(PROJECT_ROOT, 'database/umcloud.sqlite3'),
+        'NAME': os.path.join(PROJECT_ROOT, 'database/umcloud.sqlite3'),
     }
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
@@ -162,7 +161,6 @@ USE_L10N = True
 
 # If you set this to False, Django will not use timezone-aware datetimes.
 USE_TZ = False
-#USE_TZ = True
 if 'test' in sys.argv:
     USE_TZ = True
 
@@ -186,6 +184,13 @@ STATICFILES_DIRS = (
 # URL of the login page
 LOGIN_URL = '/login/'
 
+#Added UstadMobile TinCan LRS 
+UMLRS = "http://svr2.ustadmobile.com:8001/xAPI/statements"
+##
+
+# Where to be redirected after logging in
+LOGIN_REDIRECT_URL = '/login/'
+
 # Email info
 ###EMAIL_HOST=''
 
@@ -195,12 +200,6 @@ LOGIN_URL = '/login/'
 
 ###EMAIL_HOST_PASSWORD=''
 
-#Added UstadMobile TinCan LRS 
-UMLRS = "http://svr2.ustadmobile.com:8001/xAPI/statements"
-##
-
-# Where to be redirected after logging in
-LOGIN_REDIRECT_URL = '/login/'
 
 # Me view has a tab of user's statements
 STMTS_PER_PAGE = 10
@@ -231,6 +230,7 @@ REQUEST_HANDLER_LOG_DIR = os.path.join(BASE_DIR, 'logs/django_request.log')
 DEFAULT_LOG_DIR = os.path.join(BASE_DIR, 'logs/lrs.log')
 REQUEST_HANDLER_UMCLOUDJ = os.path.join(BASE_DIR, 'logs/umclouddj.log')
 
+
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
 # lrs logger is used in views.py for LRS specific logging
@@ -257,7 +257,7 @@ LOGGING = {
             'maxBytes': 1024*1024*5, # 5 MB
             'backupCount': 5,
             'formatter':'standard',
-        },  
+        },
         'request_handler': {
                 'level':'DEBUG',
                 'class':'logging.handlers.RotatingFileHandler',
@@ -266,7 +266,7 @@ LOGGING = {
                 'backupCount': 5,
                 'formatter':'standard',
         },
-	 'umclouddj_handler': {
+         'umclouddj_handler': {
                 'level':'DEBUG',
                 'class':'logging.handlers.RotatingFileHandler',
                 'filename': REQUEST_HANDLER_UMCLOUDJ,
@@ -286,12 +286,12 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': False
         },
-	'UMCloudDj':{
-	    'handlers':['umclouddj_handler'],
-	    'level':'DEBUG',
-	    'propagate':False
-	},
-	'report_statement':{
+        'UMCloudDj':{
+            'handlers':['umclouddj_handler'],
+            'level':'DEBUG',
+            'propagate':False
+        },
+        'report_statement':{
             'handlers':['umclouddj_handler'],
             'level':'DEBUG',
             'propagate':False
@@ -300,6 +300,7 @@ LOGGING = {
     }
 }
 
-
+##
+##="ChangeMeLikeYouChange"
 ##
 SECRET_KEY="ChangeMeLikeYouChange"

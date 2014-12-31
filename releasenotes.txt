@@ -1,3 +1,15 @@
+v0.9.7
+- Removed git_pull.sh (Will be auto generated from build script.
+- Added exefile max_lenth to 500 (models)
+- Updated Package models for tincanid field to have default value.
+- Updated export for epub and elp 
+- Tested.
+- Bug fixes and made block export modular.
+- Updated REAM ME script
+- Added dist-upgrate to development script.
+- Updated block upload script to export handle epub files as well.
+- Updated export to export using exe's source that will get pulled and installed as per script.
+
 v0.9.6
 - Fixed UMCloudDj issue #1 on spaces in usernames: https://github.com/UstadMobile/UMCloudDj-Code/issues/1
 - Fixed issue #1

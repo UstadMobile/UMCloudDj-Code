@@ -1190,8 +1190,9 @@ def sendelpfile_view(request):
 			  	#newdoc.save()
 			#rete=ustadmobile_export(uid, unid, uidwe)
 		 	logger.info("Going to export 2..")
-			rete = ustadmobile_export(uid, unid, elpiname, elplomid, forceNew)
+			rete, elpepubid = ustadmobile_export(uid, unid, elpiname, elplomid, forceNew)
             		if rete=="newsuccess":
+			  	print("A success export")
                 		courseURL = '/media/eXeExport' + '/' + unid + '/' + elpiname + '/' + 'deviceframe.html'
                 		setattr(newdoc, 'url', "cow")
                 		newdoc.save()
@@ -1212,6 +1213,21 @@ def sendelpfile_view(request):
 				"""
 
                 		newdoc.save()
+				print("Existing Id: " + str(newdoc.elpid))
+				if newdoc.elpid=='replacemewithxmldatas':
+                    		    if elpepubid != None:
+                        		setattr(newdoc, 'elpid', elpepubid)
+                        		newdoc.save()
+                    		    else:
+                        		newdoc.success="NO"
+                        		state="Couldn't get block's Unique ID. Please check."
+                        		newdoc.save()
+                        		print("!!No Block ID got from Block file uploaded!!")
+					uploadresponse=HttpResponse(status=500)
+                                	uploadresponse.write("Failed to create and export")
+                                	uploadresponse['error'] = "Exe failed to export"
+                                      	return uploadresponse
+
 				logger.info("Going to create the course...")
 				#Update  14th October 2014: We want blocks coming from eXe to be created as single courses.
 				blockcourse = Course(name=newdoc.name, category="-",\

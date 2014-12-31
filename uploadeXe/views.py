@@ -171,11 +171,160 @@ def new(request, template_name='myapp/new.html'):
         context_instance=RequestContext(request)
     )
 
+"""Common function to get block if and name from epub
+   file
+"""
+def get_epub_blockid_name(epubpath):
+    print("Starting..")
+    try:
+        epubfilehandle = open(epubpath, 'rb')
+        epubasazip = zipfile.ZipFile(epubfilehandle)
+    except:
+        print("!!Could Not open epub file")
+        state="Unable to upload. Unable to retrieve epub file"
+        return None, None, state
+
+    #try:
+    if True:
+	foundFlag = False
+        data={}
+        for name in epubasazip.namelist():
+            #As per EPUB standard, META-INF/container.xml (the
+            #container file) must be present and includes the 
+            #directory of assets and package file.
+            if name.find('META-INF/container.xml') != -1:
+                foundFlag=True
+                #Container File: cf
+                cf=epubasazip.open(name)
+                cfc=cf.read() #Container file contents
+                root=ET.fromstring(cfc)
+                packagepage=None
+                for child in root:
+                    for chi in child:
+                        if "package.opf" in chi.attrib['full-path']:
+                            packagepath=chi.attrib['full-path']
+                            break #We got the package file..
+                packageFound=False
+                if packagepath != None:
+                    epubassetfolder=packagepath.rsplit('/',1)[0]
+                    #package File: pf
+                    try:
+                        pf=epubasazip.open(packagepath)
+                    except:
+                        packageFound=False
+                    else:
+                        packageFound=True
+                        pfc=pf.read()
+                        pfcroot=ET.fromstring(pfc)
+                        title=None
+                        identifier=None
+                        for child in pfcroot:
+                            for chi in child:
+                                if "}title" in chi.tag:
+                                    title=chi.text
+                                if "}identifier" in chi.tag:
+                                    identifier=chi.text
+
+                        if title != None and identifier != None:
+                            elplomid=identifier
+                            elpiname=title
+			    #Get TinCan Prefix:
+                            tincanprefix=get_prefix_from_tincanxml(epubpath)
+                            return elplomid, elpiname, tincanprefix
+
+                        else:
+                            elpiname=None
+                            elplomid=None
+                            print("!!ERROR in getting title and BlockID!!")
+                            elpid="replacemewithxmldata"
+                            state="Upload Failed. A valid title and ID was not found"
+                            data['state']=state
+                            data['statesuccess']=0
+                            return None, None, state
+
+                if packageFound == False:
+                        print("!!ERROR in getting package file from EPUB!!")
+                        state="Failed to upload block. No package file as per container xml."
+                        statesuccess=0
+                        data['state']=state
+                        data['statesuccess']=statesuccess
+                        return None, None, state
+
+        if foundFlag==False:
+            print("!!Unable to find the container xml file in epub!!")
+            state="Failed to upload block. Not a valid epub (no container xml)"
+            statesuccess=0
+            data['state']=state
+            data['statesuccess']=statesuccess
+            return None, None, state
+    #except:
+    else:
+        state="Something went wrong in file upload. Contact us."
+        epubfilehandle.close();
+        return None, None, state
+    epubfilehandle.close();
+    return None, None, "Something went wrong in the upload. Please contact us."
+
+"""Common function: To figure out what the prefix is from the tincan.xml file.
+   this tincan.xml file is generated as per export in epub.
+"""
+def get_prefix_from_tincanxml(epubpath):
+    try:
+        epubfilehandler = open(epubpath, 'rb')
+        epubasazip = zipfile.ZipFile(epubfilehandler)
+    except:
+	print("!!Unable to open epub file for tincan xml extraction")
+	return None
+    #try:
+    if True:
+        foundPrefix = False
+        foundTinCanFile = False
+        for eachfile in epubasazip.namelist():
+	    if eachfile.find('tincan.xml') != -1:
+	        foundTinCanFile = True
+	        tincanxmlfile = epubasazip.open(eachfile)
+	        tincanxmlfilecontents = tincanxmlfile.read()
+	        root = ET.fromstring(tincanxmlfilecontents)
+	        for tincanelement in root:
+		    for activitieselement in tincanelement:
+			    try:
+			        activityid = activitieselement.attrib['id']
+			    except:
+			        print("Could not get activity id from tincan.xml")
+				epubfilehandler.close()
+			        return None
+   			    else:
+			        if activityid != "" and activityid != None:
+				    tincanprefix = activityid.rsplit('/',1)[0]
+			            if tincanprefix != "":
+				        epubfilehandler.close()
+					print("Found prefix!")
+				        return tincanprefix
+				    else:
+				        epubfilehandler.close()
+				        return None
+			        else:
+				    epubfilehandler.close()
+				    return None
+	if foundPrefix == False or foundTinCanFile == False:
+	    return None
+    #except:
+    else:
+	print("!!Something went wrong in epub tincanxml extraction!!")
+        epubfilehandler.close()
+    epubfilehandler.close()
+    return None
+				 
+
+    
+
 """View and method to handle block/elp file uploads.
 """
 @login_required(login_url='/login/')
 def list(request, template_name='myapp/list.html'):
     # Handle file upload
+
+    state=""
 
     teacher_role = Role.objects.get(pk=5)
     student_role = Role.objects.get(pk=6)
@@ -192,8 +341,18 @@ def list(request, template_name='myapp/list.html'):
     data['teacher_list'] = teachers
     data['student_list'] = students
 
+    form = ExeUploadForm() # A empty, unbound form
+    documents = Document.objects.filter(\
+                 publisher=request.user, success="YES", active=True)
+    current_user = request.user.username
+    data['documents']=documents
+    data['form']=form
+    data['current_user']=current_user
+
     if request.method == 'POST':
-	print("Handling elp file upload..")
+	elpiname=None
+	elplomid = None
+	print("Handling Block file upload..")
 	#If method is POST, a new elp file is being
 	#uploaded
         post = request.POST;
@@ -201,9 +360,10 @@ def list(request, template_name='myapp/list.html'):
 	forceNew     = request.POST.get('forceNew')
 	#noAutoassign = request.POST.get('noAutoassign')
         if form.is_valid():
+          #For Every file uploaded
 	  for exefile in request.FILES.getlist('exefile'):
 	    newdoc = Document(exefile=exefile)
-            print("NEW elp file being uploaded by: " + \
+            print("NEW Block file being uploaded by: " + \
 				request.user.username)
             teacher_role = Role.objects.get(pk=5)
             student_role = Role.objects.get(pk=6)
@@ -213,15 +373,12 @@ def list(request, template_name='myapp/list.html'):
             students = User.objects.filter(pk__in=User_Roles.objects.\
 			filter(role_roleid=student_role).values_list(\
 					'user_userid', flat=True))
-            data = {}
             data['teacher_list'] = teachers
             data['student_list'] = students
             studentidspicklist=post.getlist('target')
-            #("students selected from picklist:")
 
             uid = str(getattr(newdoc, 'exefile'))
             appLocation = (os.path.dirname(os.path.realpath(__file__)))
-            #Get url / path
             setattr (newdoc, 'url', 'bull')
             setattr (newdoc, 'publisher', request.user)
 	    setattr (newdoc, 'elphash','-')
@@ -234,101 +391,162 @@ def list(request, template_name='myapp/list.html'):
                 newdoc.students.add(currentstudent)
                 newdoc.save()
 
-            serverlocation=os.system("pwd")
+            #Getting elp md5sum
 	    status, serverlocation = commands.getstatusoutput("pwd")
             mainappstring = "/UMCloudDj/"
             uid = str(getattr(newdoc, 'exefile'))
-            #t("File saved as: ")
             elphash = hashlib.md5(open(serverlocation + mainappstring \
 			+ settings.MEDIA_URL + uid).read()).hexdigest()	
 	    hashlist=Document.objects.all().values_list('elphash')
 	    if str(elphash) in hashlist:
-		print("Elp already uploaded. Do we want to upload it again?")
+		print("ELP/EPUB already uploaded. Do we want to upload it again?")
 		#Put action here for future logic for existing files.
 	    setattr(newdoc, 'elphash', elphash)
+
+	    #Unique Upload ID.
             unid = uid.split('.um.')[-2]
             unid = unid.split('/')[-1]  #Unique id here.
             setattr(newdoc, 'uid', unid)
             
+            #EPUB/ELP is technically a ZIP file.
             elpfile=appLocation + '/../UMCloudDj/media/' + uid
             elpfilehandle = open(elpfile, 'rb')
             elpzipfile = zipfile.ZipFile(elpfilehandle)
-            for name in elpzipfile.namelist():
-                if name.find('contentv3.xml') != -1:
-                    elpxmlfile=elpzipfile.open(name)
-                    elpxmlfilecontents=elpxmlfile.read()
-		    #Using minidom
-                    elpxml=minidom.parseString(elpxmlfilecontents)
-			
-		    #using ET
-		    root = ET.fromstring(elpxmlfilecontents)
-		    for child in root:
-			foundFlag=False
-			for chi in child:
-			    
-			    if foundFlag == True:
-				tincanprefix=chi.attrib['value']
-			    if "}string" in chi.tag:
-				if "xapi_prefix" in chi.attrib['value']:
-				    foundFlag=True
-		    try:
-		     	if not tincanprefix:
-			    tincanprefix="-"
-		    except:
-			tincanprefix=""
-		    setattr(newdoc, 'tincanid', tincanprefix)
-		    try:
-                    	dictionarylist=elpxml.getElementsByTagName('dictionary')
-                    	stringlist=elpxml.getElementsByTagName('instance')
-		    	lomemtry=None
-		        for x in stringlist:
-			    if x.getAttribute('class') == "exe.engine.lom.lomsubs.entrySub":
-				lomentry=x
-				break
-		        elplomidobject=lomentry.getElementsByTagName('unicode')
-		        elplomid=None
-		        for e in elplomidobject:
-			    elplomid=e.getAttribute('value')
-		    	#("ELP LOM ID:")
-		    	#(elplomid)
-		    	setattr(newdoc, 'elpid', elplomid)
-			if not elplomid:
-			    setattr(newdoc, 'elpid', "replacemewithxmldata")
-	    	    except:
-			setattr(newdoc, 'elpid', '-')
-                        elpid="replacemewithxmldata"
-                        setattr(newdoc, 'elpid', elpid)
 
-              	    root = ET.fromstring(elpxmlfilecontents)
-                    for child in root:
-                        elpfoundFlag=False
-                        for chi in child:
-                            if elpfoundFlag == True:
-                                elpiname=chi.attrib['value']
-				break
-                            if "}string" in chi.tag:
-                                if "_name" in chi.attrib['value']:
-                                    elpfoundFlag=True
-                    if not elpiname:
-                       	elpiname="-"
-		    
-            uidwe = uid.split('.um.')[-1]
-            uidwe = uidwe.split('.elp')[-2]
-            uidwe=uidwe.replace(" ", "_")
-	    
-	    rete = ustadmobile_export(uid, unid, elpiname, elplomid, forceNew)
+            #If it is an epub file:
+            if uid.lower().endswith('.epub'):
+		print("An EPUB File has been uploaded.." + uid)
+		elplomid, elpiname, tincanprefix = get_epub_blockid_name(elpfile)
+		if elplomid == None and elpiname == None :
+		    setattr(newdoc, 'success', 'NO')
+		    setattr(newdoc, 'tincanid', '-')
+		    newdoc.save()
+		    state= tincanprefix
+		    statesuccess=0
+		    data['state']=state
+		    data['statesuccess']=statesuccess
+		    return render(request, template_name, data)
+		else:
+		    setattr(newdoc, 'elpid', elplomid)
+		    setattr(newdoc, 'name', elpiname)
+		    if tincanprefix == None:
+			tincanprefix = "/"
+		    setattr(newdoc, 'tincanid', tincanprefix)
+		    newdoc.save()
+
+            #If it is an elp file:
+            elif uid.lower().endswith('.elp'):
+            	print("An eXe ELP file has been uploaded..")
+            	foundFlag=False
+            	for name in elpzipfile.namelist():
+                    if name.find('contentv3.xml') != -1:
+                    	foundFlag=True
+                        elpxmlfile=elpzipfile.open(name)
+                        elpxmlfilecontents=elpxmlfile.read()
+                        #Using minidom
+                        elpxml=minidom.parseString(elpxmlfilecontents)
+
+                        #using ET
+                        root = ET.fromstring(elpxmlfilecontents)
+                        for child in root:
+                            foundFlag2=False
+                            for chi in child:
+                                if foundFlag2 == True:
+                                    tincanprefix=chi.attrib['value']
+                                if "}string" in chi.tag:
+                                    if "xapi_prefix" in chi.attrib['value']:
+                                        foundFlag2=True
+                        try:
+                            if not tincanprefix:
+                                tincanprefix="-"
+                        except:
+                            tincanprefix=""
+                        setattr(newdoc, 'tincanid', tincanprefix)
+                        try:
+                            dictionarylist=elpxml.getElementsByTagName('dictionary')
+                            stringlist=elpxml.getElementsByTagName('instance')
+                            lomemtry=None
+                            for x in stringlist:
+                                if x.getAttribute('class') == "exe.engine.lom.lomsubs.entrySub":
+                                    lomentry=x
+                                    break
+                            elplomidobject=lomentry.getElementsByTagName('unicode')
+                            elplomid=None
+                            for e in elplomidobject:
+                                elplomid=e.getAttribute('value')
+                            setattr(newdoc, 'elpid', elplomid)
+                            if not elplomid:
+                                setattr(newdoc, 'elpid', "replacemewithxmldata")
+                        except:
+                            setattr(newdoc, 'elpid', '-')
+                            elpid="replacemewithxmldata"
+                            setattr(newdoc, 'elpid', elpid)
+
+                        root = ET.fromstring(elpxmlfilecontents)
+                        for child in root:
+                            elpfoundFlag=False
+                            for chi in child:
+                                if elpfoundFlag == True:
+                                    elpiname=chi.attrib['value']
+                                    break
+                                if "}string" in chi.tag:
+                                    if "_name" in chi.attrib['value']:
+                                        elpfoundFlag=True
+                        if not elpiname:
+                            elpiname="-"
+            	if foundFlag==False:
+            	    print("!!Unable to find the container xml file in elp!!")
+            	    setattr(newdoc, 'success', 'NO')
+		    newdoc.save()
+		    #return HttpResponseRedirect(reverse(\
+                    #            'uploadeXe.views.list'))
+
+            else:
+            	print("!!Unable to determine what file you have upload (elp/epub)!!")	
+		setattr(newdoc, 'success', 'NO')
+		newdoc.save()
+		state="Unable to determine the file type. File is not a .epub or .elp file"
+		statesuccess=0
+		data['state']=state
+		data['statesuccess']=statesuccess
+		return render(request, template_name, data)
+
+	    if elpiname == None:
+		blockname="-"
+	    else:
+		blockname=elpiname
+	    if elplomid == None:
+		blockid="-"
+	    else:
+		blockid=elplomid
+	    print(uid + "|" + unid + "|" + str(blockname) + "|" + str(blockid) + "|")
+	    rete, elpepubid = ustadmobile_export(uid, unid, elpiname, elplomid, forceNew)
 	 	
             if rete =="newsuccess":
 		print("True, this block will be newly created.")
                 courseURL = '/media/eXeExport' + '/' + unid + '/' + elpiname + '/' + 'deviceframe.html'
                 setattr(newdoc, 'success', "YES")
                 setattr(newdoc, 'url', courseURL)
-                setattr(newdoc, 'name', uidwe)
+                setattr(newdoc, 'name', elpiname)
                 setattr(newdoc, 'publisher', request.user)
                 newdoc.save()
+		state="Your Block: " + newdoc.name + "  has been uploaded."
+		statesuccess=1
+		data['state']=state
+		data['statesuccess']=statesuccess
 		if newdoc.elpid=='replacemewithxmldata':
-		    newdoc.success="NO"
-		    newdoc.save()
+		    if elpepubid != None:
+			setattr(newdoc, 'elpid', elpepubid)
+			newdoc.save()
+		    else:
+		        newdoc.success="NO"
+			state="Couldn't get block's Unique ID. Please check."
+		        newdoc.save()
+			print("!!No Block ID got from Block file uploaded!!")
+			data['state']=state
+            		data['statesuccess']=0
+            		return render(request, template_name, data)
+			#return message
                 
                 """
                 Adding package to course
@@ -349,22 +567,40 @@ def list(request, template_name='myapp/list.html'):
 		"""
 		#just to be sure..
                 newdoc.save()
-		# Redirect to the document list after POST
-		#("Going to check next file..")
 
 	    elif rete=="newfail":
+		state="Failed to upload block. Something is wrong with the file. Please contact us."
+		statesuccess=0
+		data['state']=state
+		data['statesuccess']=statesuccess
 	 	print("Failed to create and start process for new course and export")
 
 	    elif rete=="newfailcopy":
+		state="Failed to upload the new block. Failed to verify export process. Please contact us."
+                statesuccess=0
+                data['state']=state
+                data['statesuccess']=statesuccess
 		print("Exported but Failed to verify the export process")
 
 	    elif rete=="updatefail":
+		state="Failed to update block. Failed to start export process. Please contact us."
+                statesuccess=0
+                data['state']=state
+                data['statesuccess']=statesuccess
 		print("Failed to start export process.")
 
 	    elif rete=="updatefailcopy":
+		state="Failed to update block. Failed to verify export. Please contact us."
+                statesuccess=0
+                data['state']=state
+                data['statesuccess']=statesuccess
 		print("Failed to verify export. Exported however.")
                     
             elif rete=="updatesuccess":
+		state="This block: " + newdoc.name + " has been updated."
+                statesuccess=1
+                data['state']=state
+                data['statesuccess']=statesuccess
 		print("This block is going to be an update and has been updated.")
                 setattr(newdoc, 'success', "NO")
 		setattr(newdoc, 'active', False)
@@ -374,15 +610,15 @@ def list(request, template_name='myapp/list.html'):
                 return HttpResponseRedirect(reverse(\
 					'uploadeXe.views.list'))
 	  if 'submittotable' in request.POST:
-            return HttpResponseRedirect(reverse(\
-                                        'uploadeXe.views.list'))
+	    data['state']=state
+            return render(request, template_name, data)
+            #return HttpResponseRedirect(reverse('uploadeXe.views.list'))
           if 'submittonew' in request.POST:
-            return HttpResponseRedirect(reverse(\
-                                        'uploadeXe.views.new'))
+	    data['state']=state
+	    return render(request, 'myapp/new.html', data)
           else:
-            return HttpResponseRedirect(reverse(\
-                                        'uploadeXe.views.list'))
-
+	    data['state']=state
+            return render(request, template_name, data)
 	else:
 	    print("Form is not valid")
                 
@@ -402,9 +638,16 @@ def list(request, template_name='myapp/list.html'):
         context_instance=RequestContext(request)
     )
 
+
 """
 Common function to export an elp file and depending on the success, 
 return options
+eXeUpload/fe714086-e886-40c0-b472-3bf29db5211d.um.test.elp|fe714086-e886-40c0-b472-3bf29db5211d|lul-boys|4a711fd1-3c80-4c75-b55c-cb77e4b4a070|
+uid/uurl: Uploaded Url : Uploaded File's url (elp/epub file)
+unid Unique ID of the uploaded file.
+uidwe/name: Name of the block (folder) as per uploaded file.
+elplomid: block id of the creation in eXe. 
+
 newsuccess for block is newly created and successfully expoorted.
 newfail for blocks to be newly created but export process failed.
 newfailcopy : elp exported but failed to verify the export process.
@@ -412,53 +655,49 @@ updatefail: Failed to start export process for updating a block(elp)
 updatefailcopy: elp updated and exported but failed to verify the update
 updatesuccess: elp file updated and exported successfully. All good.
 """
-def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
+def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
     appLocation = (os.path.dirname(os.path.realpath(__file__)))
-    #try:
-    print("Checking elp id..")
+    print("Checking block id..")
     found=Document.objects.filter(elpid=elplomid, success="YES", active=True)
+    elplomid=None
     if found and not forceNew:
-        print("elp ID EXISTS!")
-        url=found[0].url.rsplit('/',2)[0]
-	"""
-	for f in found:
-	    print(f.id)
-	"""
+        print("Block ID already exists in the system." + \
+        	"This export is going to be an update.")
+        #To get the folder of previous export:
+        folder_url=found[0].url.rsplit('/',2)[0]
 	
-	print("Command is:")
+	print("Moving previous export. Command is:")
 	print('mv ' + appLocation + '/../UMCloudDj' +\
-                    url + ' ' + appLocation + '/../UMCloudDj' +\
-                        url + '_old')
+                    folder_url + ' ' + appLocation + '/../UMCloudDj' +\
+                        folder_url + '_old')
         if os.system('mv ' + appLocation + '/../UMCloudDj' +\
-           	    url + ' ' + appLocation + '/../UMCloudDj' +\
-			url + '_old'):
+           	    folder_url + ' ' + appLocation + '/../UMCloudDj' +\
+			folder_url + '_old'):
 	    print("moved successfuilly to: " + appLocation + '/../UMCloudDj' +\
-			url+'_old')
+			folder_url+'_old')
 	else:
 	    print("Error in moving " + appLocation + '/../UMCloudDj' +\
-                    url)
-	    print(appLocation + '/../UMCloudDj' +\
-                        url + '_old')
+                    folder_url + " to " + appLocation + '/../UMCloudDj' +\
+                        folder_url + '_old')
 
 	if 'test' in sys.argv:
-	    print("NEW UPDATE 2: YOU ARE TESTING: "+ appLocation)
-	    exe_do_command = appLocation + '/../run_exe_testing.sh'
-            print(exe_do_command)
-	    #We need to set the working directory
+	    print("Unit Testing in Block Update ")
+	    exe_do_command = appLocation + '/../exelearning-ustadmobile-work/exe/exe_do --standalone'
 
 	else:
-	    exe_do_command='exe_do'
+	    exe_do_command = appLocation + '/../exelearning-ustadmobile-work/exe/exe_do --standalone'
 
+	print("Starting the export..")
         if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
-               	"\"" + appLocation + '/../UMCloudDj/media/' + uid + "\"" + \
+               	"\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + \
                 	' ' + appLocation + '/../UMCloudDj' +\
-                         	url+'' ) == 0: # If command ran successfully,
+                         	folder_url+'' ) == 0: # If command ran successfully,
      	    print("1. Exported success")
-            #("Folder name: " + uidwe)
+            #("Folder name: " + name)
             if os.system('cp ' + appLocation + '/../UMCloudDj'\
-                     + url + '/' + uidwe + '/ustadpkg_html5.xml ' +\
+                     + folder_url + '/' + name + '/ustadpkg_html5.xml ' +\
                          "\"" + appLocation + '/../UMCloudDj'\
-                             + url + '/' + uidwe + '_ustadpkg_html5.xml' +\
+                             + folder_url + '/' + name + '_ustadpkg_html5.xml' +\
                                  "\"" ) == 0: #ie if command got executed in success
 		print("2. UstadMobile course exported successfully.")
 		#("a success, trying to update date and stuff")
@@ -466,11 +705,11 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
                 found[0].save()
 
 		if os.system('rm -rf ' + appLocation + '/../UMCloudDj'+\
-			url + '_old'):
+			folder_url + '_old'):
 		    print("old folder deleted")
 	 	else:
 		    print("Unable to delete old folder")
-		return "updatesuccess"
+		return "updatesuccess", None
 
 		"""
 	        if os.system('rm -rf ' + appLocation + '/../UMCloudDj'\
@@ -492,49 +731,209 @@ def ustadmobile_export(uid, unid, uidwe, elplomid, forceNew):
                	#Something went wrong in the exe export
                	print("!!Couldn't copy html file xml to main directoy. \
                       Something went wrong in the exe export!!")
-		return "updatefailcopy"
+		return "updatefailcopy", None
 	else:
 	    print("YOU SHOULDNT EVEN BE SEEING THIS..:")
-	    return "updatefail"
+	    return "updatefail", None
 
     else:
-	print("Continuing as normal or ForceNew selected")
+	print("This export is going to be a new block or ForceNew selected")
 	none="none"
-        print("Possible command: ")
-        print('exe_do -s ustadMobileTestMode=True -x ustadmobile ' +\
-	 "\"" +appLocation + '/../UMCloudDj/media/' + uid + "\"" +\
-	 ' ' + appLocation + '/../UMCloudDj/media/eXeExport/' + unid )
 
 	if 'test' in sys.argv:
-	    print("NEW UPDATE 3: YOU ARE TESTING: "+ appLocation)
-	    exe_do_command = appLocation + '/../run_exe_testing.sh'
-            print(exe_do_command)
+	    print("NEW UPDATE 3: YOU ARE TESTING: ")
+	    exe_do_command = appLocation + '/../exelearning-ustadmobile-work/exe/exe_do --standalone'
 
         else:
-            exe_do_command='exe_do'
+            exe_do_command = appLocation + '/../exelearning-ustadmobile-work/exe/exe_do --standalone'
 
-        if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
-	  "\"" + appLocation + '/../UMCloudDj/media/' + uid + "\"" + \
-		' ' + appLocation + '/../UMCloudDj/media/eXeExport/' +\
-			 unid ) == 0: # If command ran successfully,
-            print("1. Exported success")
-            if os.system('cp ' + appLocation + '/../UMCloudDj/media/eXeExport/'\
-			 + unid + '/' + uidwe + '/ustadpkg_html5.xml ' +\
-			 "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
-			 + unid + '/' + uidwe + '_ustadpkg_html5.xml' +\
-			 "\"" ) == 0: #ie if command got executed in success
-                print("2. UstadMobile course exported successfully.")
-		return "newsuccess"
-            else:
-                #Couldn't copy html file xml to main directoy. 
-	        #Something went wrong in the exe export
-                print("!!Couldn't copy html file xml to main directoy. \
-			Something went wrong in the exe export!!")
-		return "newfailcopy"
-        else:
-            #Exe didn't run. exe_do : something went wrong in eXe.
-            print("!!Exe didn't run. exe_do : something went wrong in eXe!!")
-	    return "newfail"
+        #1. Check if it is an .elp file or .epub file that is being uploaded. 
+        #2. Export to epub
+        #3. Unzip it, get details
+
+        if uurl.lower().endswith('.epub'):
+            print("Going to export an EPUB file..")
+            #epub file is: \"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" 
+	    print("Possible command:")
+	    print('unzip -q ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + " -d " +\
+                "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+                          unid + "/" + "\"")
+	    if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile '+ "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" +\
+		' ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + ".new\"") == 0:
+		
+		print("0. Epub re exported.")
+	    else:
+		print("!!Unable to re export epub file!!")
+		return "newfail", None
+		
+            if os.system('unzip -q ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + " -d " +\
+            	"\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+			 unid + "/" + "\"") == 0:
+
+		try:
+		    epubfile=appLocation + '/../UMCloudDj/media/' + uurl
+                    epubfilehandle = open(epubfile, 'rb')
+                    epubzipfile = zipfile.ZipFile(epubfilehandle)
+                except:
+                    print("!!Unable to open the epub file for getting block info!!")
+                    return "newfail", None
+
+		foundFlag=False
+                for filename in epubzipfile.namelist():
+                    #As per EPUB standard, META-INF/container.xml (the
+                    #container file) must be present and includes the 
+                    #directory of assets and package file.
+                    if filename.find('META-INF/container.xml') != -1:
+                        foundFlag=True
+                        print("found cf")
+                        #Container File: cf
+                        cf=epubzipfile.open(filename)
+                        cfc=cf.read() #Container file contents
+                        root=ET.fromstring(cfc)
+                        packagepage=None
+                        for child in root:
+                            for chi in child:
+                                if "package.opf" in chi.attrib['full-path']:
+                                    packagepath=chi.attrib['full-path']
+                                    break #We got the package file..
+
+                print("1. Exported to folder.")
+                #Get Folder name  from : META-INF/container.xml
+
+		if packagepath != None:
+                    epubassetfolder=packagepath.rsplit('/',1)[0]
+		else:
+		  return "newfail", None
+            	if (os.system('mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+	    	    unid+"/"+epubassetfolder+"\"" + " " + appLocation+'/../UMCloudDj/media/eXeExport/'+\
+	    	    	    unid + "/" + name)) == 0:
+            	    print("2. Unzipped and verified.")
+            	    if os.system('cp ' + appLocation + '/../UMCloudDj/media/eXeExport/'\
+			    + unid + '/' + name + '/ustadpkg_html5.xml ' +\
+			 	"\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
+			 	    + unid + '/' + name + '_ustadpkg_html5.xml' +\
+			 		"\"" ) == 0: #ie if command got executed in success
+	    	    	print("3. Export process completed.")
+	    	    	return "newsuccess", None
+	    	    else:
+	    	    	print("!!Couldn't copy html file xml to main directoy."+\
+			    "Something went wrong in the exe export!!")
+			return "newfailcopy", None
+		else:
+		    print("!!Couldn't rename EPUB folder to Block name!!")
+		    return "newfailcopy", None
+	    else:
+	    	print("!!EPUB failed to extract.!!")
+	    	return "newfail", None
+
+	elif uurl.lower().endswith('.elp'):
+	    print("Going to export an eXe ELP file..")
+	    if os.system('mkdir ' + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+                         unid + "/") == 0:
+		print("Directory prepared..")
+	    else:
+		print("!!Couldn't mkdir (make directory) for export!!")
+                return "newfail", None
+	    if name == None:
+	  	name=""
+	    if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
+	  	"\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + \
+		    ' ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+			 unid + "/" + name + ".epub" + "\"" ) == 0: # If command ran successfully,
+	    	print("1. Exported to epub")
+		#Get the elpid:
+		
+
+		try:
+		    epubfile=appLocation + '/../UMCloudDj/media/eXeExport/' +\
+                         unid + "/" + name + ".epub"
+                    epubfilehandle = open(epubfile, 'rb')
+                    epubzipfile = zipfile.ZipFile(epubfilehandle)
+		except:
+		    print("!!Unable to open the epub file for getting block info!!")
+		    return "newfail", None
+
+		foundFlag=False
+                for filename in epubzipfile.namelist():
+                    #As per EPUB standard, META-INF/container.xml (the
+                    #container file) must be present and includes the 
+                    #directory of assets and package file.
+                    if filename.find('META-INF/container.xml') != -1:
+                        foundFlag=True
+                        print("found cf")
+                        #Container File: cf
+                        cf=epubzipfile.open(filename)
+                        cfc=cf.read() #Container file contents
+                        root=ET.fromstring(cfc)
+                        packagepage=None
+                        for child in root:
+                            for chi in child:
+                                if "package.opf" in chi.attrib['full-path']:
+                                    packagepath=chi.attrib['full-path']
+                                    break #We got the package file..
+                        if packagepath != None:
+                            epubassetfolder=packagepath.rsplit('/',1)[0]
+                            #package File: pf
+                            pf=epubzipfile.open(packagepath)
+                            pfc=pf.read()
+                            pfcroot=ET.fromstring(pfc)
+                            title=None
+                            identifier=None
+                            for child in pfcroot:
+                                for chi in child:
+                                    if "}title" in chi.tag:
+                                        title=chi.text
+                                    if "}identifier" in chi.tag:
+                                        identifier=chi.text
+			    if identifier == None:
+				print("!!Could Not get the Block Unique ID")
+				elpepubid="replacemewithxmldata"
+				return "newfail", None
+			    else:
+				if title == None:
+				    print("!Could Not get title from the elp exported to epub!")
+				    title="-"
+                                print("Title and Block ID obtained.")
+                                elpepubid=identifier
+                                elpepubname=title
+                        else:
+                            print("!!ERROR in getting package file from EPUB!!")
+			    return "newfail", None
+                if foundFlag==False:
+                    print("!!Unable to find the package.opf file in epub!!")
+		    return "newfail", None
+		
+		if name == "":
+		    name=elpepubname
+
+
+	    	if (os.system('unzip -q ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+	    	    	unid + "/" + name + ".epub" + "\"" + " -d " + appLocation + \
+			    '/../UMCloudDj/media/eXeExport/' + unid + "/"  )) == 0: # If unzip-ed successfully.
+	    	    #Get epub asset folder name from META-INF/container.xml
+	    	    epubassetfolder = "EPUB"
+	    	    if (os.system('mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+	    	        unid+"/"+epubassetfolder+"\""+ " " +appLocation+'/../UMCloudDj/media/eXeExport/'+\
+	    	    	    unid + "/" + name)) == 0:
+	    	    	print("2. Unzipped and verified.")
+	    	    	if os.system('cp ' + appLocation + '/../UMCloudDj/media/eXeExport/'\
+			    + unid + '/' + name + '/ustadpkg_html5.xml ' +\
+			 	"\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
+			 	    + unid + '/' + name + '_ustadpkg_html5.xml' +\
+			 		"\"" ) == 0: #ie if command got executed in success
+	    	    	    print("3. Export process completed..")
+			    print(elpepubid)
+	    	    	    return "newsuccess", elpepubid
+	    	    	else:
+	    	    	    print("!!Couldn't copy html file xml to main directoy."+\
+			        "Something went wrong in the exe export!!")
+			    return "newfailcopy", None
+		    else:
+		    	print("!!Couldn't rename EPUB folder to Block name!!")
+		    	return "newfail", None
+	    else:
+	    	print("!!Exe didn't run. exe_do : something went wrong in eXe!!")
+	    	return "newfail", None
       
 """Currently disabled and depricated. Grunt course function was used to run the exported
 unit tests and go through a couese using grunt and webkit.This would validate if all the pages 

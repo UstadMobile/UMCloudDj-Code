@@ -1,30 +1,33 @@
+#!/bin/bash
+echo "Starting UMCloudDj deployment.."
+
 if [ $# -eq 0 ]; then
     echo "No arguments provided"
-    echo "Usage: .sh <Super username> <password> <wordpress pass> <um pass> <secret key> <postgres user> <postgres password>"
-    echo "Ex:    .sh adminusername adminpassword worddpass umtestpass secretkey_10212wdsda><?:<>!@%*%$ umcloudadmin umcloudpassword"
+    echo "Usage: .sh <Super username> <password> <secret key> <postgres user> <postgres password> <host url>"
+    echo "Ex:    .sh adminusername adminpassword secretkey_10212wdsda><?:<>!@%*%$ umcloudadmin umcloudpassword umcloud4.ustadmobile.com"
     exit 1
 fi
 
-if [ $# -ne 7 ]; then
-    echo "You need to give 7 arguments"
-    echo "Usage: .sh <Super username> <password> <wordpress pass> <um pass> <secret key> <postgres user> <postgres password>"
-    echo "Ex:    .sh adminusername adminpassword worddpass umtestpass secretkey_10212wdsda><?:<>!@%*%$ umcloudadmin umcloudpassword"
+if [ $# -ne 6 ]; then
+    echo "You need to give 6 arguments"
+    echo "Usage: .sh <Super username> <password> <wordpress pass> <um pass> <secret key> <postgres user> <postgres password> <host url>"
+    echo "Ex:    .sh adminusername adminpassword worddpass umtestpass secretkey_10212wdsda><?:<>!@%*%$ umcloudadmin umcloudpassword umcloud4.ustadmobile.com"
     exit 1
 fi
 
 
 SUPERUSERNAME=${1}
 SUPERPASSWORD=${2}
-WORDPRESSPASS=${3}
-UMPASS=${4}
-SECRET_KEY=${5}
-PGUSER=${6}
-PGPASSWORD=${7}
+#WORDPRESSPASS=${3}
+#UMPASS=${4}
+SECRET_KEY=${3}
+PGUSER=${4}
+PGPASSWORD=${5}
+HOSTURL=${6}
 
 DATE=`date +%Y-%m-%d-%H-%M-%S`
 echo "Starting installation of UMCDjCloud."
 echo "Sorting and installing dependencies.."
-sudo apt-get -y dist-upgrade #Added 31/12/2014 to make sure every distribution gets updated
 sudo apt-get -y update
 sudo apt-get -y upgrade
 sudo apt-get -y install apache2
@@ -96,9 +99,6 @@ echo "  echo \"finished.\"" >> git_pull.sh
 echo "  else" >> git_pull.sh
 echo "   echo \"settings.py file already exists.\"" >> git_pull.sh
 echo " fi" >> git_pull.sh
-echo "echo \"Pulling from exelearning-ustadmobile-work..\"" >> git_pull.sh
-echo "cd exelearning-ustadmobile-work/" >> git_pull.sh
-echo "git pull" >> git_pull.sh
 
 chmod a+x git_pull.sh
 
@@ -116,8 +116,8 @@ rm -rf ADL_LRS_VS
 
 > UMCloudDj/UMCloudDj/wordpresscred.txt
 > UMCloudDj/UMCloudDj/media/gruntConfig/umpassword.txt
-echo "${WORDPRESSPASS}" > UMCloudDj/UMCloudDj/wordpresscred.txt		#Soon to be deprecated. Was used for authenticting wordpress users. 
-echo "${UMPASS}" > UMCloudDj/UMCloudDj/media/gruntConfig/umpassword.txt #Soon to be deprecated . Was used for testing course pass/fail when sent to server
+#echo "${WORDPRESSPASS}" > UMCloudDj/UMCloudDj/wordpresscred.txt		#Soon to be deprecated. Was used for authenticting wordpress users. 
+#echo "${UMPASS}" > UMCloudDj/UMCloudDj/media/gruntConfig/umpassword.txt #Soon to be deprecated . Was used for testing course pass/fail when sent to server
 
 cd UMCloudDj
 mkdir logs #needed for ADL_LRS and UMCloud logs
@@ -127,6 +127,10 @@ cp UMCloudDj/settings.py.edit UMCloudDj/settings.py
 #Need to update the secret key
 sed -i.bak -e 's/^SECRET_KEY/##/' UMCloudDj/settings.py
 echo "SECRET_KEY=\"${SECRET_KEY}\"" >> UMCloudDj/settings.py
+
+#Need to add the HOST URL
+ALLOWED_HOSTS="ALLOWED_HOSTS=['${HOSTURL}']"
+sed -i.backup -e 's/^ALLOWED_HOSTS.*/'${ALLOWED_HOSTS}'/' UMCloudDj/settings.py
 
 echo "Configuing postgres in your system.."
 sudo pg_createcluster 9.3 main --start
@@ -188,6 +192,69 @@ mkdir test
 mkdir eXeTestElp
 mkdir eXeTestExport
 
-cd ../
-git clone https://github.com/UstadMobile/exelearning-ustadmobile-work.git
+#Copying the code to apache's html folder.
+cd ../../../
+cp -r UMCloudDj /var/www/
+
+cd /var/www/UMCloudDj
+
+if [ "$?" != "0" ]; then
+    echo "Something went wrong in copying assets to /var/www/"
+    exit 1;
+fi
+echo "Installing mod-wsgi.."
+sudo apt-get -y install libapache2-mod-wsgi
+
+echo "Configuring django entry for apache.."
+apache2ver=`apache2 -v`
+apache2verno=`echo $apache2ver | awk -F\/ '{ print $2 }' | awk -F' ' '{print $1 }'`
+apache2comparison='2.4.0'
+
+djangospecificaccess=`echo $apache2verno $apache2comparison |awk '{ split($1, a, ".");
+       split($2, b, ".");
+       for (i = 1; i <= 4; i++)
+           if (a[i] < b[i]) {
+         x = "Allow from all";
+               break;
+           } else if (a[i] > b[i]) {
+         x ="Require all granted";
+               break;
+           }
+       print x;
+     }'`
+
+
+#edit: sudo vi /etc/apache2/sites-enabled/000-default.conf 
+        echo "    WSGIDaemonProcess UMCloudDj python-path=/var/www/UMCloudDj" >add.txt
+        echo "    WSGIProcessGroup UMCloudDj" >>add.txt
+        echo "    WSGIScriptAlias / /var/www/UMCloudDj/UMCloudDj/wsgi.py" >> add.txt
+
+        echo "    AliasMatch ^/([^/]*\.css) /var/www/UMCloudDj/uploadeXe/static/css/\$1" >>add.txt
+
+        echo "    Alias /media/ /var/www/UMCloudDj/UMCloudDj/media/" >>add.txt
+        echo "    Alias /static/ /var/www/UMCloudDj/uploadeXe/static/" >>add.txt
+
+
+        echo "    <Directory /var/www/UMCloudDj/UMCloudDj>" >>add.txt
+        echo "      <Files wsgi.py>" >>add.txt
+  echo $djangospecificaccess >> add.txt
+        echo "      </Files>" >> add.txt
+        echo "      </Directory>" >> add.txt
+
+#sed '/^<VirtualHost \*\:80/r add.txt' /etc/apache2/sites-enabled/000-default.conf > /etc/apache2/sites-enabled/000-default.conf
+
+echo "Adding django entry to sites-available.."
+sudo sed '/^<VirtualHost \*\:80/r add.txt' /etc/apache2/sites-available/000-default.conf > 000-default.conf.new
+cat 000-default.conf.new
+cp 000-default.conf.new /etc/apache2/sites-available/000-default.conf
+
+
+echo "Here is a look at the final 000-default.conf in apache2's site-enabled folder:"
+cat /etc/apache2/sites-enabled/000-default.conf
+
+echo "Restarting apache2 to initiate the server."
+service apache2 restart
+echo "Done."
+
+
 

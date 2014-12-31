@@ -25,6 +25,15 @@
 {% endblock %}
 
 {% block content %}
+
+	{% if state %}
+                {% if statesuccess == 1 %}
+                        <p style="color:green;"><i><img src="/media/images/tick.png" alt="">{{state}}<i></p>
+                {% else %}
+                        <p cass="error" style="color:red;"><i>{{state}}</i></p>
+                {% endif %}
+        {% endif %}
+
 		
 		<script type="text/JavaScript">
 		function TestFileType( fileName, fileTypes ) {

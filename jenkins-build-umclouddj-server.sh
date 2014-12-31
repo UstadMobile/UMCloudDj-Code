@@ -16,7 +16,7 @@ cp -r ADL_LRS_VS/oauth_provider ./
 cp -r ADL_LRS_VS/adl_lrs ./
 rm -f adl_lrs/settings.py
 
-rm -rf ADL+LRS_VS
+rm -rf ADL_LRS_VS
 mkdir logs
 > logs/lrs.log
 > logs/django.log
@@ -50,39 +50,30 @@ PGCRED=`cat '/opt/UMCloudDj/postgrescred.txt'`
 PGUSER=`echo $PGCRED | awk -F\| '{ print $1 }'`
 PGPASSWORD=`echo $PGCRED | awk -F\| '{ print$2 }'`
 
+echo "Starting sed stuff.."
 sed -i.bak "/^##USER/a \ \ \ \ \ \ \ \ 'USER': '${PGUSER}'," $WORKSPACE/UMCloudDj/settings.py
-grep -v "^##USER*" $WORKSPACE/UMCloudDj/settings.py $WORKSPACE/UMCloudDj/settings.py.2
+grep -v "^##USER*" $WORKSPACE/UMCloudDj/settings.py > $WORKSPACE/UMCloudDj/settings.py.2
 mv $WORKSPACE/UMCloudDj/settings.py.2 $WORKSPACE/UMCloudDj/settings.py
-
 sed -i.bak "/^##PASSW/a \ \ \ \ \ \ \ \ 'PASSWORD':'${PGPASSWORD}'," $WORKSPACE/UMCloudDj/settings.py
-grep -v "^##PASS*" $WORKSPACE/UMCloudDj/settings.py $WORKSPACE/UMCloudDj/settings.py.2
+grep -v "^##PASS*" $WORKSPACE/UMCloudDj/settings.py > $WORKSPACE/UMCloudDj/settings.py.2
 mv $WORKSPACE/UMCloudDj/settings.py.2 $WORKSPACE/UMCloudDj/settings.py
 
 python manage.py syncdb
 
 #We have to get eXe to another directory
 cd $WORKSPACE
-if [ "$?" != "0" ]; then
-    echo "Folder Exists"
-    git clone https://github.com/UstadMobile/exelearning-ustadmobile-work.git
+git clone https://github.com/UstadMobile/exelearning-ustadmobile-work.git
     if [ "$?" != "0" ]; then
         echo "Not a new exepull run"
         cd exelearning-ustadmobile-work
         git pull
         cd ..
     fi
-fi
-
-if [ "$?" == "0" ]; then
-    echo "The directory does not exists for eXe to reside. Exiting.."
-    exit 1
-fi
-
 cd exelearning-ustadmobile-work
 git checkout 8bfa72500c103a05514b2757c2bc915a31172b1c
 
 cd $WORKSPACE
-
+chmod a+x run_exe_testing.sh
 
 #run tests
 #./unit-test-setup-android.sh emulate

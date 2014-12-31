@@ -296,7 +296,8 @@ class UserViewTestCase(TestCase):
         self.c = Client()
         requesturl = reverse(view_name)
         response = self.c.post(requesturl, post_data)
-        self.assertContains(response, '{"id": "http://www.ustadmobile.com/um-tincan/course/1", "blocks": [{"id": "/elpid001", "title": "TestDocument1"}, {"id": "/elpid002", "title": "TestDocument2"}], "description": "This is a test Course", "title": "TestCourse"}')
+	print(response)
+        self.assertContains(response, '{"id": "http://www.ustadmobile.com/um-tincan/course/1", "blocks": [{"id": "http://www.ustadmobile.com/um-tincan/activities/elpid001", "title": "TestDocument1"}, {"id": "http://www.ustadmobile.com/um-tincan/activities/elpid002", "title": "TestDocument2"}], "description": "This is a test Course", "title": "TestCourse"}')
 
 	post_data={'username':'testuser','password':'12345','courseid':'http://www.ustadmobile.com/um-tincan/course/42'}
 	self.c=Client()

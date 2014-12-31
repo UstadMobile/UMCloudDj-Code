@@ -24,3 +24,7 @@ cd UMCloudDj/
  fi
 echo "finished"
 
+echo "Pulling from exelearning-ustadmobile-work.."
+cd exelearning-ustadmobile-work/
+git pull
+
