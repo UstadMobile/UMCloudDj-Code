@@ -69,11 +69,8 @@ git clone https://github.com/UstadMobile/exelearning-ustadmobile-work.git
         git pull
         cd ..
     fi
-cd exelearning-ustadmobile-work
-git checkout 8bfa72500c103a05514b2757c2bc915a31172b1c
 
 cd $WORKSPACE
-chmod a+x run_exe_testing.sh
 
 #run tests
 #./unit-test-setup-android.sh emulate

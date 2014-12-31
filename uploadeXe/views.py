@@ -688,6 +688,10 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 	    exe_do_command = appLocation + '/../exelearning-ustadmobile-work/exe/exe_do --standalone'
 
 	print("Starting the export..")
+	print("Possible command: " + exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
+                "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + \
+                        ' ' + appLocation + '/../UMCloudDj' +\
+                                folder_url+'' )
         if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
                	"\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + \
                 	' ' + appLocation + '/../UMCloudDj' +\
@@ -758,6 +762,7 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 	    print('unzip -q ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + " -d " +\
                 "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
                           unid + "/" + "\"")
+	    """
 	    if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile '+ "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" +\
 		' ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + ".new\"") == 0:
 		
@@ -765,7 +770,8 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 	    else:
 		print("!!Unable to re export epub file!!")
 		return "newfail", None
-		
+	    """
+	
             if os.system('unzip -q ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + " -d " +\
             	"\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
 			 unid + "/" + "\"") == 0:
@@ -836,6 +842,10 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
                 return "newfail", None
 	    if name == None:
 	  	name=""
+	    print("Possible command: " + exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
+                "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + \
+                    ' ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+                         unid + "/" + name + ".epub" + "\"" ) 
 	    if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
 	  	"\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + \
 		    ' ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\

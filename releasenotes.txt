@@ -9,6 +9,7 @@ v0.9.7
 - Added dist-upgrate to development script.
 - Updated block upload script to export handle epub files as well.
 - Updated export to export using exe's source that will get pulled and installed as per script.
+- Testing exe command standalone
 
 v0.9.6
 - Fixed UMCloudDj issue #1 on spaces in usernames: https://github.com/UstadMobile/UMCloudDj-Code/issues/1
