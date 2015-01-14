@@ -15,12 +15,12 @@
           $(function() { 
                 var all_packages = [{% for package in all_packages %}
                         { "value" : "{{ package.id }}",
-			"label":"<a href=\"{{package.url}}\" target=\"_blank\">{{package.name}} (ID: {{package.id}})</a>"
+			"label":"<a target=\"_blank\">{{package.name}} (ID: {{package.id}})</a>"
                         },
                 {% endfor %}];  
                 var assigned_packages = [{% for package in assigned_packages %}
                         { "value" : "{{package.id }}",
-			"label":"<a href=\"{{package.url}}\" target=\"_blank\">{{package.name}}(ID: {{package.id}})</a>"
+			"label":"<a target=\"_blank\">{{package.name}}(ID: {{package.id}})</a>"
                         },
                 {% endfor %}];
 

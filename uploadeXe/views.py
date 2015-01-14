@@ -996,6 +996,8 @@ Course Model Form that would expose name, category and description
 for edits and creation forms.
 """
 class CourseForm(ModelForm):
+    category = forms.CharField(required = False)
+    description = forms.CharField(required = False)
     class Meta:
         model = Course
         fields = ('name', 'category','description')

@@ -173,7 +173,8 @@ class BlockEpubViewTestCase(TestCase):
                         response = self.c.post(requesturl, post_data)
                         print("-------------------------------------------")
                         self.assertEquals(response.status_code, 200)
-			self.assertContains(response, "Failed to update block. Failed to verify export.")
+			self.assertContains(response, "Failed to update block.")
+			#"Failed to update block. Failed to start export process. Please contact us."
 			#self.assertContains(response, " has been uploaded.")
                         #Because gt1.elp is an old elp without elp lom id, we 
                         # fix the successn code manually. 

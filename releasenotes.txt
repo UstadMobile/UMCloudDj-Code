@@ -1,3 +1,7 @@
+v0.9.8
+- Updated CourseForm to account for correct pick list values when submitting form as well as making other fields un-mandatory. Fixes issue #4 https://github.com/UstadMobile/UMCloudDj-Code/issues/4
+- Disabled link in picklist. Fixes enhancement issue #5 https://github.com/UstadMobile/UMCloudDj-Code/issues/5
+
 v0.9.7
 - Removed git_pull.sh (Will be auto generated from build script.
 - Added exefile max_lenth to 500 (models)

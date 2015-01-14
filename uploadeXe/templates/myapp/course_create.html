@@ -23,7 +23,7 @@
 
 	var package_map = [{% for package in package_list %}
 			{ "value" : "{{ package.id }}",
-			"label":"<a href=\"{{package.url}}\" target=\"_blank\">{{package.name}}(ID: {{package.id}})</a>"
+			"label":"<a target=\"_blank\">{{package.name}}(ID: {{package.id}})</a>"
 			//"label" : "{{package.name}}({{package.url}})"
 			},
 		{% endfor %}];
