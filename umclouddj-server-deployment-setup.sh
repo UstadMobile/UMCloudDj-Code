@@ -28,6 +28,7 @@ HOSTURL=${6}
 DATE=`date +%Y-%m-%d-%H-%M-%S`
 echo "Starting installation of UMCDjCloud."
 echo "Sorting and installing dependencies.."
+sudo apt-get -y dist-upgrade #Added 31/12/2014 to make sure every distribution gets updated
 sudo apt-get -y update
 sudo apt-get -y upgrade
 sudo apt-get -y install apache2
@@ -99,6 +100,10 @@ echo "  echo \"finished.\"" >> git_pull.sh
 echo "  else" >> git_pull.sh
 echo "   echo \"settings.py file already exists.\"" >> git_pull.sh
 echo " fi" >> git_pull.sh
+echo "echo \"Pulling from exelearning-ustadmobile-work..\"" >> git_pull.sh
+echo "cd exelearning-ustadmobile-work/" >> git_pull.sh
+echo "git pull" >> git_pull.sh
+
 
 chmod a+x git_pull.sh
 
@@ -120,6 +125,9 @@ rm -rf ADL_LRS_VS
 #echo "${UMPASS}" > UMCloudDj/UMCloudDj/media/gruntConfig/umpassword.txt #Soon to be deprecated . Was used for testing course pass/fail when sent to server
 
 cd UMCloudDj
+
+git clone https://github.com/UstadMobile/exelearning-ustadmobile-work.git
+
 mkdir logs #needed for ADL_LRS and UMCloud logs
 
 cp UMCloudDj/settings.py.edit UMCloudDj/settings.py
@@ -194,7 +202,7 @@ mkdir eXeTestExport
 
 #Copying the code to apache's html folder.
 cd ../../../
-cp -r UMCloudDj /var/www/
+sudo cp -r UMCloudDj /var/www/
 
 cd /var/www/UMCloudDj
 
@@ -204,6 +212,8 @@ if [ "$?" != "0" ]; then
 fi
 echo "Installing mod-wsgi.."
 sudo apt-get -y install libapache2-mod-wsgi
+
+sudo chown -R www-data:nogroup /var/www/UMCloudDj
 
 echo "Configuring django entry for apache.."
 apache2ver=`apache2 -v`
@@ -225,35 +235,35 @@ djangospecificaccess=`echo $apache2verno $apache2comparison |awk '{ split($1, a,
 
 
 #edit: sudo vi /etc/apache2/sites-enabled/000-default.conf 
-        echo "    WSGIDaemonProcess UMCloudDj python-path=/var/www/UMCloudDj" >add.txt
-        echo "    WSGIProcessGroup UMCloudDj" >>add.txt
-        echo "    WSGIScriptAlias / /var/www/UMCloudDj/UMCloudDj/wsgi.py" >> add.txt
+        sudo echo "    WSGIDaemonProcess UMCloudDj python-path=/var/www/UMCloudDj" >add.txt
+        sudo echo "    WSGIProcessGroup UMCloudDj" >>add.txt
+        sudo echo "    WSGIScriptAlias / /var/www/UMCloudDj/UMCloudDj/wsgi.py" >> add.txt
 
-        echo "    AliasMatch ^/([^/]*\.css) /var/www/UMCloudDj/uploadeXe/static/css/\$1" >>add.txt
+        sudo echo "    AliasMatch ^/([^/]*\.css) /var/www/UMCloudDj/uploadeXe/static/css/\$1" >>add.txt
 
-        echo "    Alias /media/ /var/www/UMCloudDj/UMCloudDj/media/" >>add.txt
-        echo "    Alias /static/ /var/www/UMCloudDj/uploadeXe/static/" >>add.txt
+        sudo echo "    Alias /media/ /var/www/UMCloudDj/UMCloudDj/media/" >>add.txt
+        sudo echo "    Alias /static/ /var/www/UMCloudDj/uploadeXe/static/" >>add.txt
 
 
-        echo "    <Directory /var/www/UMCloudDj/UMCloudDj>" >>add.txt
-        echo "      <Files wsgi.py>" >>add.txt
-  echo $djangospecificaccess >> add.txt
-        echo "      </Files>" >> add.txt
-        echo "      </Directory>" >> add.txt
+        sudo echo "    <Directory /var/www/UMCloudDj/UMCloudDj>" >>add.txt
+        sudo echo "      <Files wsgi.py>" >>add.txt
+  	sudo echo $djangospecificaccess >> add.txt
+        sudo echo "      </Files>" >> add.txt
+        sudo echo "      </Directory>" >> add.txt
 
 #sed '/^<VirtualHost \*\:80/r add.txt' /etc/apache2/sites-enabled/000-default.conf > /etc/apache2/sites-enabled/000-default.conf
 
 echo "Adding django entry to sites-available.."
 sudo sed '/^<VirtualHost \*\:80/r add.txt' /etc/apache2/sites-available/000-default.conf > 000-default.conf.new
 cat 000-default.conf.new
-cp 000-default.conf.new /etc/apache2/sites-available/000-default.conf
+sudo cp 000-default.conf.new /etc/apache2/sites-available/000-default.conf
 
 
 echo "Here is a look at the final 000-default.conf in apache2's site-enabled folder:"
 cat /etc/apache2/sites-enabled/000-default.conf
 
 echo "Restarting apache2 to initiate the server."
-service apache2 restart
+sudo service apache2 restart
 echo "Done."
 
 

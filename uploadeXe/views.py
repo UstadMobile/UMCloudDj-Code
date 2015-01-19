@@ -36,6 +36,7 @@ from lxml import etree
 import xml.etree.ElementTree as ET
 import commands #Added for obtaining the elp hash
 import sys
+from subprocess import call
 
 
 ######################################################################
@@ -688,11 +689,11 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 	    exe_do_command = appLocation + '/../exelearning-ustadmobile-work/exe/exe_do --standalone'
 
 	print("Starting the export..")
-	print("Possible command: " + exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
+	print("Possible command: " + exe_do_command + ' -x ustadmobile ' +\
                 "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + \
                         ' ' + appLocation + '/../UMCloudDj' +\
                                 folder_url+'' )
-        if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
+        if os.system(exe_do_command + ' -x ustadmobile ' +\
                	"\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + \
                 	' ' + appLocation + '/../UMCloudDj' +\
                          	folder_url+'' ) == 0: # If command ran successfully,
@@ -763,7 +764,7 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
                 "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
                           unid + "/" + "\"")
 	    """
-	    if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile '+ "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" +\
+	    if os.system(exe_do_command + ' -x ustadmobile '+ "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" +\
 		' ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + ".new\"") == 0:
 		
 		print("0. Epub re exported.")
@@ -842,14 +843,21 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
                 return "newfail", None
 	    if name == None:
 	  	name=""
-	    print("Possible command: " + exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
+	    print("Possible command : " + exe_do_command + ' -x ustadmobile ' +\
                 "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + \
                     ' ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
                          unid + "/" + name + ".epub" + "\"" ) 
-	    if os.system(exe_do_command + ' -s ustadMobileTestMode=True -x ustadmobile ' +\
+	    if call([appLocation + "/../exelearning-ustadmobile-work/exe/exe_do",\
+		"--standalone", "-x","ustadmobile", \
+		    appLocation + "/../UMCloudDj/media/" + uurl, \
+			appLocation + "/../UMCloudDj/media/eXeExport/"+unid + "/" + name + ".epub"],\
+			    shell=False) == 0:
+	        """
+	        if os.system(exe_do_command + ' -x ustadmobile ' +\
 	  	"\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + \
 		    ' ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
 			 unid + "/" + name + ".epub" + "\"" ) == 0: # If command ran successfully,
+		"""
 	    	print("1. Exported to epub")
 		#Get the elpid:
 		
