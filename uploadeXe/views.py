@@ -394,6 +394,7 @@ def list(request, template_name='myapp/list.html'):
 
             #Getting elp md5sum
 	    status, serverlocation = commands.getstatusoutput("pwd")
+	    serverlocation=appLocation+'/../'
             mainappstring = "/UMCloudDj/"
             uid = str(getattr(newdoc, 'exefile'))
             elphash = hashlib.md5(open(serverlocation + mainappstring \
