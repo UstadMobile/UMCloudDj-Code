@@ -665,7 +665,7 @@ def getassignedecourses_json(request):
 			outside (UstadMobile?)")
 	    username = request.POST.get('username', False)
 	    password = request.POST.get('password', False)
-            logger.info("For user: " + username)
+            logger.info("For user: " + str(username))
 	    #Authenticate the user
 	    user = authenticate(username=\
 			request.POST['username'],\

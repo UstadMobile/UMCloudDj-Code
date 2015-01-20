@@ -9,16 +9,40 @@ def login(l):
 def index(l):
     l.client.get("/")
 
+def assigned_courses(l):
+    #response = l.client.get("/assigned_courses/")
+    response = l.client.post("/assigned_courses/", {"username":"ram.narayan", "password":"varuna"})
+
+def getepubfile(l):
+    l.client.get("/media/eXeExport/elps/test.epub")
+
+def dump_statement(l):
+    statement1=json.dumps({"actor":{"mbox":"mailto:student1@ustadmobile.com","name":"Student One","objectType":"Agent"},"verb":{"id":"http://adlnet.gov/expapi/verbs/launched","display":{"en-US":"launched"}},"object":{"id":"http://www.ustadmobile.com/um-tincan/activities/ThisIsTheUniqueElpID","objectType":"Activity","definition":{"name":{"en-US":"Course Title"},"description":{"en-US":"Example activity definition"}}},"context":{"contextActivities":{"parent":[{"id":"http://www.ustadmobile.com/um-tincan/course/1"}]}}})
+    statement2=json.dumps({"actor":{"mbox":"mailto:student1@ustadmobile.com","name":"Student One","objectType":"Agent"},"object":{"definition":{"description":{"en-US":"Motivational"},"name":{"en-US":"Motivational"},"type":"http://adlnet.gov/expapi/activities/module"},"id":"http://www.ustadmobile.com/um-tincan/activities/ThisIsTheUniqueElpID/Motivational","objectType":"Activity"},"result":{"duration":"PT0H0M2S"},"verb":{"display":{"en-US":"experienced"},"id":"http://adlnet.gov/expapi/verbs/experienced"}})
+
+
+    l.username = "ram.narayan"
+    l.email = "student1@ustadmobile.com"
+    l.password = "varuna"
+    l.auth = "Basic %s" % base64.b64encode("%s:%s" % (self.username, self.password))
+
+    view_url="/umlrs/statements"
+    response = l.client.post(view_url, statement1, content_type="application/json",
+        Authorization=self.auth, X_Experience_API_Version="1.0.0")
+
+def logout(l):
+    l.client.get("/logout")
+
 def usertable(l):
     l.client.get("/userstable/")
 
-class UserBehavior(TaskSet):
-    tasks = {index:1, usertable:2}
+class StudentBehavior(TaskSet):
+    tasks = {index:1, usertable:2, assigned_courses:2, getepubfile:2, logout:1}
 
     def on_start(self):
         login(self)
 
-class WebsiteUser(HttpLocust):
-    task_set = UserBehavior
-    min_wait=5000
-    max_wait=9000
+class StudentUser(HttpLocust):
+    task_set = StudentBehavior
+    min_wait=50
+    max_wait=90

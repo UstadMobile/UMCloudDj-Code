@@ -1,6 +1,8 @@
 v0.9.92
 - Updated deployment script to set up the server to run under wsgi and apache2
 - Fixed a bug in block upload when run under apache2.
+- Fixed logging bug in assigned_courses
+- Updated locust for student user case.
 
 v0.9.8
 - Updated CourseForm to account for correct pick list values when submitting form as well as making other fields un-mandatory. Fixes issue #4 https://github.com/UstadMobile/UMCloudDj-Code/issues/4
