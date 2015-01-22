@@ -1,3 +1,7 @@
+v0.9.93
+- Fix for issue #10: https://github.com/UstadMobile/UMCloudDj-Code/issues/10
+- Fix for issue #6: https://github.com/UstadMobile/UMCloudDj-Code/issues/6
+
 v0.9.92
 - Updated deployment script to set up the server to run under wsgi and apache2
 - Fixed a bug in block upload when run under apache2.

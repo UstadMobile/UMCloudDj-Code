@@ -411,60 +411,56 @@ Internal Fix: Quick fix for organisation statements for
 @login_required(login_url="/login/")
 def check_statementinfos(request, template_name='check_statementinfos.html'):
     logger.info("User="+request.user.username+\
-	" accessed /reports/check_statementinfos/")
+        " accessed /reports/check_statementinfos/")
+    cforg = Organisation.objects.get(organisation_name="UNICEF AF LUL")
     organisation = User_Organisations.objects.get(\
-	user_userid=request.user).organisation_organisationid;
+        user_userid=request.user).organisation_organisationid;
+    organisation = cforg
     all_org_users= User.objects.filter(pk__in=\
-	User_Organisations.objects.filter(\
-	    organisation_organisationid=organisation\
-	 	).values_list('user_userid', flat=True))
+        User_Organisations.objects.filter(\
+            organisation_organisationid=organisation\
+                ).values_list('user_userid', flat=True))
     nosilist=[]
     if request.user.is_staff == False:
-	return redirect('reports')
+        return redirect('reports')
 
-    sifixed = models.StatementInfo.objects.get(statement=models.Statement.objects.get(id=1913))
-    print("Duration was at: " + str(sifixed.duration))
-		
-    allCF136statements=models.Statement.objects.filter(user=User.objects.get(pk=238))
+    allCF106statements=models.Statement.objects.filter(user__in = all_org_users)
+    #allCF106statements = models.Statement.objects.filter(user_id = 208)
+    print(len(allCF106statements))
+    print("-----------------------------------------------------------------")
     total_duration=0
-    for es in allCF136statements:
-	esd=es.get_r_duration();
-	if esd != '-':
-	    total_duration=total_duration+int(esd.seconds)
-    
-    print("Total Duration:")
-    print(total_duration)
-    print("-----------------------------------------------")
-    allCF136si = models.StatementInfo.objects.filter(user=User.objects.get(pk=238))
-    total_durationsi=0
-    tdi =  td(minutes=0)
-    for esi in allCF136si:
-	if True:
-	    tdi=tdi+esi.duration
-	    esid=esi.duration.total_seconds()
-	    if esid != "-" and esid != None:
-		total_durationsi=total_durationsi + esid
-
-    print("Total SI Duration:")
-    print(total_durationsi)
-    print("tdi:")
-    print(tdi)
-    
+    for es in allCF106statements:
+        try:
+            esi = models.StatementInfo.objects.get(statement = es)
+            if esi.allclass == None or esi.allclass == "-":
+                print("No class generated for " + str(esi.id) + " Generating it..")
+                es.save()
+            else:
+                print("Already assigned class for " + str(esi.id))
+            if esi.school == None or esi.school == "-":
+                print("No school generated for " + str(esi.id) + " Generating it..")
+                #es.save()
+            else:
+                print("Already assigned school for " + str(esi.id))
+        except:
+            print("Could not find Statement info for this statement " + str(es.id) + ". Saving it again will regenerate it.")
+            es.save()
+    print(len(allCF106statements))
     """
     all_statements = models.Statement.objects.filter(user__in=all_org_users)
     for a in all_statements:
-	try:
-	    asi = models.StatementInfo.objects.get(statement=a)
-	except:
-	    print("No SI for statement id: " + str(a.id))
-	    nosilist.append(a.id)
-	    #Saving the statement again will generate the Statement Info entry.
-	    a.save()
+        try:
+            asi = models.StatementInfo.objects.get(statement=a)
+        except:
+            print("No SI for statement id: " + str(a.id))
+            nosilist.append(a.id)
+            #Saving the statement again will generate the Statement Info entry.
+            a.save()
     """
-	
+
     result="test"
     return render(request, template_name,{'object_list':nosilist, \
-					  'result':result} )
+                                          'result':result} )
 
 """Report: Registration Report (with unicode mapping script call)
    This report will be made for registration event statements 
@@ -574,9 +570,6 @@ def registration_statements(request,\
     f = open(registrationcodefile ,'w')
 
     for every_statement in all_statements:
-	if every_statement.id > 18402:
-            #print (every_statement.full_statement[u'object'][u'definition'][u'name'][u'en-US'])
-	    pass
 	statement_json=every_statement.full_statement
 	blockn=models.StatementInfo.objects.get(statement=\
 					every_statement).block
@@ -623,7 +616,7 @@ def registration_statements(request,\
     regidsalldone=[]
     regidsdone=[]
     for schoolid, regids in school_dict.iteritems():
-	regidsdone=[]
+	#regidsdone=[] Commented to fix issue #10
 	if schoolid.encode('utf8') == "":
 	    schoolid="(Blank)"
 	g.write('\n'+"School ID:"+schoolid.encode('utf8')+":"+'\n')
@@ -647,7 +640,7 @@ def registration_statements(request,\
     #Code to append missed registrations.
     unassigned_reg_ids=list(set(all_reg_ids) - set(regidsdone))
     g.write('\n'+"Registrations without School IDs:"+'\n')
-    print(unassigned_reg_ids)
+    #print(unassigned_reg_ids)
     for regid in unassigned_reg_ids:
 	statements = dict_reg.get(regid.encode('utf8'))
         temp_statement=dict_reg.get(regid)[0]
@@ -659,11 +652,12 @@ def registration_statements(request,\
 	g.write('\n')
 
 
-
+    """
     for iid, statements in dict_reg.iteritems():
         f.write('\n'+"New Registration:"+iid+":"+'\n')
 	for s in statements:
 	    f.write(s.encode('utf8').replace('\n', '')+'\n')
+    """
     f.close()
     g.close()
     script=appLocation+'/../UMCloudDj/media/cfregdump/run.sh'

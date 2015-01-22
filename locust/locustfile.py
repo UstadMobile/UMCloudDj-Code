@@ -46,3 +46,29 @@ class StudentUser(HttpLocust):
     task_set = StudentBehavior
     min_wait=50
     max_wait=90
+
+class BasicBehaviour(TaskSet):
+    tasks = { index:1}
+    def on_start(self):
+        login(self)
+
+class BasicUser(HttpLocust):
+    task_set = BasicBehaviour
+
+def access_report_page(l):
+    l.client.get("/reports/")
+
+def allstatements(l):
+    l.client.get("/reports/pagi_allstatements/")
+    l.client.get("/reports/pagi_allstatements/?page=2")
+
+def usage_report(l):
+    pass
+
+class TeacherBehaviour(TaskSet):
+    tasks = { index:1, usertable:2, access_report_page:2, allstatements:4, usage_report:2 }
+    def on_start(self):
+        login(self):
+
+class TeacherUser(HttpLocust):
+    task_set = TeacherBehaviour
