@@ -510,14 +510,15 @@ def registration_statements(request,\
 	
         except: #If no block is assigned to this statementinfo
             #("Trying for Statement: " + str(every_statement.id))
+	    #("Statement id: " + str(every_statement.id))
             try:
                 context_parent = statement_json[u'context'][u'registration']
                 #("Reg id:" + str(context_parent))
                 activity_id=statement_json[u'object']['id']
                 elpid=activity_id.rsplit('/',1)[1]
-                print("Elp id:" + str(elpid))
+		#("Statement id: " + str(every_statement.id))
                 try:
-                    if "um_assessment" in elpid:
+                    if "um_assessment" in elpid or unicode("um_assessment") in elpid:
                         elpid=elpid[:-13]
                         block = Block.objects.get(elpid=elpid, success="YES",\
 			  publisher__in=User.objects.filter(\
@@ -549,16 +550,19 @@ def registration_statements(request,\
 							 block.name)
                                             esi.save()
                                 except:
-                                    pass
+				    print("Unable to assign")
+			else:
+			    print("elp id unmatch..")
 		except:
-			pass
+			print("Unable to fix that.")
 
             except:
-	        print("Something went wrong in getting activity id" +\
-			"and or context parent")
+		pass
+	        print("Something went wrong in getting activity id " +\
+			"and or context parent " + str(every_statement.id))
 
-    dict_reg = dict()
-    school_dict = dict()
+    dict_reg = dict() #This is all the registration statements grouped by red id.
+    school_dict = dict() #These are all the registration ids grouped by school id.
     #Group this by registration id 
     appLocation=(os.path.dirname(os.path.realpath(__file__)))
     timestamp=time.strftime("%Y%m%d%H%M%S")
@@ -567,8 +571,9 @@ def registration_statements(request,\
     sorted_registrationcodefile = appLocation + \
 	'/../UMCloudDj/media/cfregdump/sorted_lulregids_'+timestamp+'.txt'
     g = open(sorted_registrationcodefile, 'w')
-    f = open(registrationcodefile ,'w')
-
+    now = time.strftime("%c")
+    g.write("Registration Report (UNICEF AF LUL)"+'\n')
+    g.write('\n'+"Item|Value|User|Date"+'\n');
     for every_statement in all_statements:
 	statement_json=every_statement.full_statement
 	blockn=models.StatementInfo.objects.get(statement=\
@@ -601,7 +606,9 @@ def registration_statements(request,\
 		        "|"+username+"|" + blockname+"|"+\
 			    every_statement.timestamp.strftime(\
 				"%B %d %Y %H:%M"))
-		    if activity_name == "Please enter school ID":
+		   
+		    if activity_name == "Please enter school ID" or\
+			 activity_name == unicode("Please enter the school ID"):
 			school_id=result
 			if result in school_dict:
 			    school_dict[result].append(context_parent)
@@ -612,24 +619,33 @@ def registration_statements(request,\
 			result + "|" + activity_id +"|"+username+"|" + \
 			    blockname+"|"+every_statement.timestamp.strftime(\
 				"%B %d, %Y %H:%M")]
+
+		    if activity_name == "Please enter school ID" or\
+			activity_name == unicode("Please enter the school ID"):
+                        school_id=result
+                        if result in school_dict:
+                            school_dict[result].append(context_parent)
+                        else:
+                            school_dict[result]=[context_parent]
+
     all_reg_ids=dict_reg.keys()
     regidsalldone=[]
     regidsdone=[]
+    print(school_dict)
     for schoolid, regids in school_dict.iteritems():
 	#regidsdone=[] Commented to fix issue #10
 	if schoolid.encode('utf8') == "":
 	    schoolid="(Blank)"
-	g.write('\n'+"School ID:"+schoolid.encode('utf8')+":"+'\n')
+	g.write('\n'+"School ID:"+schoolid.encode('utf8')+""+'\n')
 	for regid in regids:
 	    if regid not in regidsdone:
-	        print("statements:")
 	        statements = dict_reg.get(regid.encode('utf8'))
 		temp_statement=dict_reg.get(regid)[0]
 		temp_statement_split=temp_statement.split('|');
-		user_time=temp_statement_split[3]+ " at: "+\
+		user_time=temp_statement_split[3]+ "|"+\
 			temp_statement_split[5]
-	        g.write("New Registration: ("+regid+") by: " + user_time +\
-			 " :"+'\n')
+	        g.write("New Registration|("+regid+")|" + user_time +\
+			 ""+'\n')
 	        for s in statements:
 	            g.write(s.encode('utf8').replace('\n', '')+'\n')
 	        g.write('\n')
@@ -639,26 +655,19 @@ def registration_statements(request,\
 
     #Code to append missed registrations.
     unassigned_reg_ids=list(set(all_reg_ids) - set(regidsdone))
-    g.write('\n'+"Registrations without School IDs:"+'\n')
-    #print(unassigned_reg_ids)
+    g.write('\n'+"Registrations without School IDs:"+'\n'+ '\n')
+    #(unassigned_reg_ids)
     for regid in unassigned_reg_ids:
 	statements = dict_reg.get(regid.encode('utf8'))
         temp_statement=dict_reg.get(regid)[0]
         temp_statement_split=temp_statement.split('|');
-        user_time=temp_statement_split[3]+ " at: "+temp_statement_split[5]
-	g.write("New Registration: ("+regid+") by: " + user_time + " :" +'\n')
+        user_time=temp_statement_split[3]+ "|"+temp_statement_split[5]
+	g.write("New Registration|("+regid+")|" + user_time + "" +'\n')
 	for s in statements:
 	    g.write(s.encode('utf8').replace('\n', '')+'\n')
 	g.write('\n')
 
 
-    """
-    for iid, statements in dict_reg.iteritems():
-        f.write('\n'+"New Registration:"+iid+":"+'\n')
-	for s in statements:
-	    f.write(s.encode('utf8').replace('\n', '')+'\n')
-    """
-    f.close()
     g.close()
     script=appLocation+'/../UMCloudDj/media/cfregdump/run.sh'
     scriptruncommand=script+' '+ sorted_registrationcodefile
