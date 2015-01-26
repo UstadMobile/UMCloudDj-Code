@@ -1,5 +1,6 @@
 v0.9.94
 - Fixes to Registration report and formatting.
+- Updated report to throw more information on activity ids to help with question mapping.
 
 v0.9.93
 - Fix for issue #10: https://github.com/UstadMobile/UMCloudDj-Code/issues/10

@@ -573,7 +573,7 @@ def registration_statements(request,\
     g = open(sorted_registrationcodefile, 'w')
     now = time.strftime("%c")
     g.write("Registration Report (UNICEF AF LUL)"+'\n')
-    g.write('\n'+"Item|Value|User|Date"+'\n');
+    g.write('\n'+"ID|Item|Value|User|Block|Date"+'\n');
     for every_statement in all_statements:
 	statement_json=every_statement.full_statement
 	blockn=models.StatementInfo.objects.get(statement=\
@@ -643,6 +643,7 @@ def registration_statements(request,\
 		temp_statement=dict_reg.get(regid)[0]
 		temp_statement_split=temp_statement.split('|');
 		user_time=temp_statement_split[3]+ "|"+\
+			temp_statement_split[4]+"|"+\
 			temp_statement_split[5]
 	        g.write("New Registration|("+regid+")|" + user_time +\
 			 ""+'\n')
@@ -661,7 +662,9 @@ def registration_statements(request,\
 	statements = dict_reg.get(regid.encode('utf8'))
         temp_statement=dict_reg.get(regid)[0]
         temp_statement_split=temp_statement.split('|');
-        user_time=temp_statement_split[3]+ "|"+temp_statement_split[5]
+        user_time=temp_statement_split[3]+ "|"+\
+	    	temp_statement_split[4]+"|"+ \
+			temp_statement_split[5]
 	g.write("New Registration|("+regid+")|" + user_time + "" +'\n')
 	for s in statements:
 	    g.write(s.encode('utf8').replace('\n', '')+'\n')
