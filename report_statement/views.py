@@ -484,6 +484,11 @@ def registration_statements(request,\
 		).values_list('user_userid', flat=True))
     all_statements = models.Statement.objects.filter(user__in=all_org_users)
 
+    #Rendering success till it fastens.
+    result="success"
+    return render(request, template_name,{'result':result} )
+
+
     """
     Fix for statements (new) that don't get assigned to any block. 
     """
@@ -631,7 +636,7 @@ def registration_statements(request,\
     all_reg_ids=dict_reg.keys()
     regidsalldone=[]
     regidsdone=[]
-    print(school_dict)
+    #(school_dict)
     for schoolid, regids in school_dict.iteritems():
 	#regidsdone=[] Commented to fix issue #10
 	if schoolid.encode('utf8') == "":
@@ -675,7 +680,7 @@ def registration_statements(request,\
     script=appLocation+'/../UMCloudDj/media/cfregdump/run.sh'
     scriptruncommand=script+' '+ sorted_registrationcodefile
     if os.system(scriptruncommand) == 0:
-	print("Success")
+	print("A Success")
 	result="success"
 	return render(request, template_name,{'object_list':dict_reg,\
  	    'result':result} )
@@ -687,7 +692,6 @@ def registration_statements(request,\
     result="fail"
     return render(request, template_name,{'object_list':dict_reg, \
 	'result':result} )
-
 
 """ Report: My Statements Report
 This report just shows the current logged in user's statements
