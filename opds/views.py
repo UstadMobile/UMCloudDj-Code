@@ -84,6 +84,52 @@ def get_author_xml_snippet(user):
 	</author>"
     return author_opds_xml_snippet
 
+def login_basic_auth(req):
+    print("Checking..")
+    if 'HTTP_AUTHORIZATION' in req.META:
+        #auth = request['headers']['Authorization'].split()
+        auth = req.META['HTTP_AUTHORIZATION'].split()
+        if len(auth) == 2:
+            if auth[0].lower() == 'basic':
+                # Currently, only basic http auth is used.
+                uname, passwd = base64.b64decode(auth[1]).split(':')
+                user = authenticate(username=uname, password=passwd)
+                logger.info('OPDS Login request coming from outside ()')
+                logger.info("Username;")
+                logger.info(uname)
+		print("Checking..")
+                if user is None:
+                    authresponse = HttpResponse(status=401)
+                    authresponse.write("Authentication failed for user: " + str(uname))
+                    return False, authresponse
+		else:
+		    authresponse = HttpResponse(status=200)
+		    authresponse.write("Success in login." + str(uname))
+		    return True, user
+		    #return True, authresponse
+		    
+            else:
+                logger.info("Something wrong with basic authentication")
+                authresponse = HttpResponse(status=401)
+                authresponse.write("Something wrong with basic authentication")
+                return False, authresponse
+        else:
+            logger.info("Something wrong with getting basic authentication")
+            authresponse = HttpResponse(status=401)
+            authresponse.write("Something wrong with getting basic authentication")
+            return False, authresponse
+    else:
+	logger.info("Basic Authentication not presen in request.")
+	authresponse = HttpResponse(status=401)
+	authresponse.write("No Http Basic Authentication found in the request. Please check the request. Your app might be faulty.")
+	return False, authresponse
+
+    logger.info("No idea, something went wrong. Couldnt even scan the request. Check the code.")
+    authresponse = HttpResponse(status=500)
+    authresponse.write("Something went wrong, not too sure. Check logs..")
+    return False, authresponse
+
+
 """
 The opds root view. 
 """
@@ -159,8 +205,14 @@ def root_view(request):
 	authresponse.write("Basic Authentication not present in request.")
 	return authresponse
 
-@login_required(login_url='/opds/')
+#@login_required(login_url='/opds/')
 def assigned_courses(request):
+    state, authresponse = login_basic_auth(request)
+    print(state)
+    if state == False:
+	return authresponse
+    if state == True:
+	request.user = authresponse
     try:
         user=request.user
     except:
@@ -231,77 +283,15 @@ def assigned_courses(request):
                 #authresponse.write("No courses found for username: " + username)
 	    
 
-@csrf_exempt
-def get_course_blocks(request):
-        if request.method == "POST":
-            logger.info("Course list request coming from \
-                        outside (UstadMobile?)")
-            username = request.POST.get('username', False)
-            password = request.POST.get('password', False)
-            try:
-                courseid = request.POST.get('courseid', False)
-                coursetincanprefix=courseid.rsplit('/',1)[0]
-                coursepk=courseid.rsplit('/',1)[1]
-            except:
-                authresponse=HttpResponse(status=500)
-                authresponse.write("The course ID is either not given or improper. It should be like: http:/a.b.c/d/e/42")
-                return authresponse
-
-            logger.info("For user: " + username)
-            #Authenticate the user
-            user = authenticate(username=\
-                        request.POST['username'],\
-                 password=request.POST['password'])
-            if user is None:
-                authresponse=HttpResponse(status=401)
-                authresponse.write("Unable to authorise user: " + str(username))
-                return authresponse
-
-
-            if user is not None:
-                organisation = User_Organisations.objects.get(\
-                                user_userid=user)\
-                                .organisation_organisationid;
-                allorgcourses = Course.objects.filter(organisation=organisation)
-                alluserclasses = Allclass.objects.filter(students__in=[user])
-                matched_courses=Course.objects.filter(Q(organisation=\
-                        organisation, students__in=[user]) | \
-                            Q(organisation=organisation, \
-                                allclasses__in=alluserclasses))
-                try:
-                    course=Course.objects.get(id=coursepk, organisation=organisation, tincanid=coursetincanprefix)
-                except:
-                    authresponse=HttpResponse(status=500)
-                    authresponse.write("Course id does not exist (Is your tincanprefix and pk right?) or does not belong to your organisation")
-                    return authresponse
-                else:
-                    all_blocks_in_course=course.packages.all()
-                    json_blocks = simplejson.dumps([
-                        {
-                          o.id:{
-                            'title':o.name
-                              }
-                        }for o in all_blocks_in_course])
-                    json_blocks = simplejson.dumps({
-                        "title":course.name,
-                        "description":course.description,
-                        "id":str(course.tincanid)+'/'+str(course.id),
-                        "blocks":[
-                        {
-                          "id":o.tincanid+'/'+o.elpid,
-                          "title":o.name
-                        }for o in all_blocks_in_course]})
-
-                    return HttpResponse(json_blocks, mimetype="application/json")
-
-        else:
-            authresponse = HttpResponse(status=500)
-            authresponse.write("Not a POST request. Assigned Block retrival for course failed.")
-            return authresponse
-
-
-@login_required(login_url='/opds/')
+#@login_required(login_url='/opds/')
 def get_course(request):
+    state, authresponse = login_basic_auth(request)
+    print(state)
+    if state == False:
+        return authresponse
+    if state == True:
+        request.user = authresponse
+
     try:
         user=request.user
     except:
