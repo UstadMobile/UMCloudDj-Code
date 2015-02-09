@@ -1,3 +1,8 @@
+v0.9.96
+- Fixed issue #12 : https://github.com/UstadMobile/UMCloudDj-Code/issues/12
+  Issue was Django forms needed to be stated which fields were mandatory or not in the forms.
+- Ignoring .coverage file
+
 v0.9.95
 - Added database backup script and steps
 - initial opds testing and output for opds root, assigned_courses, course's blocks acquisition feed

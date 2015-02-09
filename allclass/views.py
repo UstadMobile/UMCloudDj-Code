@@ -28,6 +28,7 @@ import time
 import os
 import urllib
 import urllib2, base64, json
+from django import forms #To fix issue #12
 
 ###################################
 # Allclass CRUD
@@ -36,6 +37,8 @@ import urllib2, base64, json
 Model Form for Allclass that shows only Name, Desc and Location
 """
 class AllclassForm(ModelForm):
+    allclass_desc = forms.CharField(required = False) #To fix issue #12
+    allclass_location = forms.CharField(required = False) #To fix issue #12
     class Meta:
         model = Allclass
 	fields = ('allclass_name','allclass_desc','allclass_location')
