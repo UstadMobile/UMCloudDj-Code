@@ -206,13 +206,13 @@ class UMCloudDjViewTestCase(TestCase):
 	Tests if OPDS assigned course for same request gives the required 
 	OPDS output
 	"""
-	root_view_url="/opds/"
+	#root_view_url="/opds/"
 	view_url="/opds/assigned_courses/"
 	auth_headers = {
             'HTTP_AUTHORIZATION': 'Basic ' + base64.b64encode('testuser1:12345'),
         }
-	response = self.client.get(root_view_url, **auth_headers)
-	response = self.client.get(view_url)
+	#response = self.client.get(root_view_url, **auth_headers)
+	response = self.client.get(view_url, **auth_headers)
 	self.assertEquals(response.status_code, 200)
 	self.assertContains(response, "<title> 's (testuser1) assigned courses</title>")
 	self.assertContains(response, "<title>TestCourse</title>")
@@ -224,13 +224,16 @@ class UMCloudDjViewTestCase(TestCase):
 	Tests if OPDS course fetch for the same request and user gives 
 	the required OPDS output
 	"""
-	root_view_url="/opds/"
-        view_url="/opds/course/"
+	#root_view_url="/opds/"
+        view_url="/opds/course/?id=http://www.ustadmobile.com/um-tincan/course/1"
+	#view_url = "/opds/course/"
         auth_headers = {
             'HTTP_AUTHORIZATION': 'Basic ' + base64.b64encode('testuser1:12345'),
+	    #'id':'http://www.ustadmobile.com/um-tincan/course/1',
         }
-        response = self.client.get(root_view_url, **auth_headers)
-        response = self.client.get(view_url, {'id':'http://www.ustadmobile.com/um-tincan/course/1'})
+        #response = self.client.get(root_view_url, **auth_headers)
+        #response = self.client.get(view_url, {'id':'http://www.ustadmobile.com/um-tincan/course/1'})
+	response = self.client.get(view_url, **auth_headers)
 	self.assertEquals(response.status_code, 200)
 	self.assertContains(response, "href=\"//this.is.the/linke/to/the/test/01\"")
 	self.assertContains(response,"<summary>unittest01's description</summary>")
