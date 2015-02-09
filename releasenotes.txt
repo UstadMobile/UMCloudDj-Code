@@ -1,3 +1,8 @@
+v0.9.95
+- Added database backup script and steps
+- initial opds testing and output for opds root, assigned_courses, course's blocks acquisition feed
+- Updated server setup script to install ant
+
 v0.9.94
 - Fixes to Registration report and formatting.
 - Updated report to throw more information on activity ids to help with question mapping.

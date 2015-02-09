@@ -23,6 +23,7 @@ from uploadeXe.models import Ustadmobiletest
 from users.models import UserProfile
 import os 
 from django.conf import settings
+import base64
 
 class UMCloudDjViewTestCase(TestCase):
     fixtures = ['uploadeXe/fixtures/initial-model-data.json']
@@ -183,7 +184,59 @@ class UMCloudDjViewTestCase(TestCase):
 	response = self.client.post(view_url, post_data)
 	cow=User.objects.get(username="cowsaysmoo")
 	self.assertEqual(cow.last_name, 'Moo')
+
+
+    def test_opds_root(self):
+	"""
+	Tests if OPDS root gives OPDS root feed over HTTP Basic Authentication.
+	"""
+	view_url="/opds/"
+	auth_headers = {
+	    'HTTP_AUTHORIZATION': 'Basic ' + base64.b64encode('testuser1:12345'),
+	}
 	
+	response = self.client.get(view_url, **auth_headers)
+	self.assertEquals(response.status_code, 200)
+	self.assertContains(response, "<title>OPDS Catalog Root</title>")
+	self.assertContains(response, "<title> 's Assigned Courses</title>")
+	self.assertContains(response, "<title>Public Library</title>")
+	
+    def test_opds_assigned_courses(self):
+	"""
+	Tests if OPDS assigned course for same request gives the required 
+	OPDS output
+	"""
+	root_view_url="/opds/"
+	view_url="/opds/assigned_courses/"
+	auth_headers = {
+            'HTTP_AUTHORIZATION': 'Basic ' + base64.b64encode('testuser1:12345'),
+        }
+	response = self.client.get(root_view_url, **auth_headers)
+	response = self.client.get(view_url)
+	self.assertEquals(response.status_code, 200)
+	self.assertContains(response, "<title> 's (testuser1) assigned courses</title>")
+	self.assertContains(response, "<title>TestCourse</title>")
+	self.assertContains(response, "<id>http://www.ustadmobile.com/um-tincan/course/1</id>")
+
+    
+    def test_opds_course_acquisition_feed(self):
+	"""
+	Tests if OPDS course fetch for the same request and user gives 
+	the required OPDS output
+	"""
+	root_view_url="/opds/"
+        view_url="/opds/course/"
+        auth_headers = {
+            'HTTP_AUTHORIZATION': 'Basic ' + base64.b64encode('testuser1:12345'),
+        }
+        response = self.client.get(root_view_url, **auth_headers)
+        response = self.client.get(view_url, {'id':'http://www.ustadmobile.com/um-tincan/course/1'})
+	self.assertEquals(response.status_code, 200)
+	self.assertContains(response, "href=\"//this.is.the/linke/to/the/test/01\"")
+	self.assertContains(response,"<summary>unittest01's description</summary>")
+	self.assertContains(response, "<title>unittest01</title>")
+	self.assertContains(response, "<id>http://www.ustadmobile.com/um-tincan/activities/ThisIsTheUniqueElpID</id>")
+
     def test_getassignedcourseids(self):
 	"""
         Test if getassignedcourseids returns users's course ids with block ids and details as an xml in the body

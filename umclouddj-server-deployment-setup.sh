@@ -40,6 +40,7 @@ sudo apt-get -f install
 sudo apt-get -y install sqlite3
 sudo apt-get -y install build-essential
 sudo apt-get -y install unzip
+sudo apt-get -y install ant
 
 sudo apt-get install -y git 
 sudo apt-get install -y fabric

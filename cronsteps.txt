@@ -1,0 +1,27 @@
+
+Make sure you know your db name, db post gres admin for umclouddj and password.
+
+Make a .pgaccess file in (ubuntu) ~/.pgpass with the line:
+
+localhost:*:umcdj:pgadmin:pgadminpassword
+
+Where it is of the order:
+hostname:port number:database name:postgres user:postgres password
+If you want access to all, you can replace everything (but password) with *
+
+You may need to restart postgres and/or the server for this to take effect.
+
+Add this to cron tab (crontab -e):
+42 03 * * * /home/ubuntu/srv/UMCloudDj/umcdj_db_backup.sh umcdj umcdjpgsu "/home/ubuntu/srv/dump" >> "/home/ubuntu/srv/dump/UMCloudDj-db-backup.log" 2>&1
+
+This will run every day at 3:42 . The script is:
+/home/ubuntu/srv/UMCloudDj/umcdj_db_backup.sh
+The parameters (3) are:
+.sh <database name> <UMCloud postgres admin's username> <UMCloud postgres admin's password> <Directory where the dump file is to be stored>
+
+The last bit: >> "/home/ubuntu/srv/dump/UMCloudDj-db-backup.log" 2>&1 
+Is the log file that you can set to, well, log it.
+Obviously you should edit the above to where your script is located and where you want the dump files to go. (Just make sure it isn't accessable to anyone but you).
+
+More info on pgpass: 
+http://www.postgresql.org/docs/9.3/static/libpq-pgpass.html

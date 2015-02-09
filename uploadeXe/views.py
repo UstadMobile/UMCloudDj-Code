@@ -1073,10 +1073,6 @@ def course_create(request, template_name='myapp/course_create.html'):
     teacher_role = Role.objects.get(pk=5)
     student_role = Role.objects.get(pk=6)
 
-    students = User.objects.filter(pk__in=User_Roles.objects.filter(\
-				role_roleid=student_role).values_list(\
-					'user_userid', flat=True))
-
     students = User.objects.filter(pk__in=User_Organisations.objects.\
 			filter(organisation_organisationid=organisation).\
 			values_list('user_userid', flat=True)).filter(\
@@ -1084,6 +1080,10 @@ def course_create(request, template_name='myapp/course_create.html'):
 					role_roleid=student_role).\
 					values_list('user_userid',\
 							 flat=True))
+
+    students = User.objects.filter(pk__in=User_Organisations.objects.\
+                        filter(organisation_organisationid=organisation).\
+                        values_list('user_userid', flat=True))
 
     #allclasses=Allclass.objects.all()
     allclasses = Allclass.objects.filter(\

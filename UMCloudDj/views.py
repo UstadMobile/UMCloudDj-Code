@@ -558,6 +558,24 @@ def user_create(request, template_name='user/user_create.html'):
 
     return render(request, template_name, data)
 
+"""View to render user profile (basic information)
+Only user logged in is part of the same organisation can view
+"""
+"""
+@login_required(login_url='/login/')
+def user_profile(request, pk, template_name='user/user_profile.html'):
+    user = get_object_or_404(User, pk=pk)
+    organisation = User_Organisations.objects.get(\
+                user_userid=request.user).organisation_organisationid;
+    users= User.objects.filter(\
+        pk__in=User_Organisations.objects.filter(\
+            organisation_organisationid=organisation\
+                ).values_list('user_userid', flat=True))
+    if request.user.is_staff == False:
+        if user not in users:
+  	    return redirect('user_table')
+"""
+
 
 """View to render edit form for particular user
 Only user in organisation can edit.

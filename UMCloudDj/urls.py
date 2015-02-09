@@ -22,6 +22,7 @@ from django.contrib import admin
 
 urlpatterns = patterns('',
         (r'^umlrs/', include('lrs.urls')),
+  	(r'^opds/', include('opds.urls')),
 	url(r'^$', RedirectView.as_view(url='/userstable/')), # Just for ease of use.
 	url(r'^upload/', 'UMCloudDj.views.upload_view', name='oldcoursesview'),
 	url(r'^management/', 'UMCloudDj.views.management_view', name='management'),
@@ -95,6 +96,7 @@ urlpatterns = patterns('',
  	#url(r'^userapprove/(?P<pk>\d+)$', 'UMCloudDj.views.user_approve_request', name='user_approve'),
         url(r'^usernew/$', 'UMCloudDj.views.user_create', name='user_new'),
         url(r'^useredit/(?P<pk>\d+)$', 'UMCloudDj.views.user_update', name='user_edit'),
+        #url(r'^user/(?P<pk>\d+)$', 'UMCloudDj.views.user_profile', name='user_profile'),
         url(r'^userdelete/(?P<pk>\d+)$', 'UMCloudDj.views.user_delete', name='user_delete'),
   	#url(r'^upload_avatar/$', 'UMCloudDj.views.upload_avatar', name='upload_avatar'),
 
