@@ -258,7 +258,7 @@ def assigned_courses(request):
                     xmlreturn += "<entry>"
 		    xmlreturn += "<title>"+everycourse.name+"</title>"
 
-		    xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n\
+		    xmlreturn += "<link rel=\"subsection\"\n\
 			href=\"/opds/course/?id=" + str(everycourse.tincanid) +'/'+ str(everycourse.id) + "\" \n\
 			type=\"application/atom+xml;profile=opds-catalog;kind=acquisition\"/>"
 
@@ -295,7 +295,7 @@ def get_course(request):
     try:
         user=request.user
     except:
-        print("Not loggedn in or unknown user")
+        logger.info("Not loggedn in or unknown user")
         authresponse = HttpResponse(status=401)
         authresponse.write("Not logged in or unknown user.")
         return authresponse
@@ -324,12 +324,13 @@ def get_course(request):
                 type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>\n"
 
             xmlreturn += "<link rel=\"self\"\n\
-                href=\"/opds/assigned_courses/\"\n\
-                type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
-	    
+                href=\"/opds/course/?id="+str(courseid)+"\"\n\
+                type=\"application/atom+xml;profile=opds-catalog;kind=acquisition\"/>"
+	    """
 	    xmlreturn += "<link rel=\"http://umcloud1.ustadmobile.com/opds/\"\n\
                 href=\"/course/?id="+str(courseid)+"\"\n\
                 type=\"application/atom+xml;profile=opds-catalog;kind=acquisition\"/>"
+	    """
 
 	    """
 	    Course details 

@@ -1,3 +1,7 @@
+v0.9.98
+- Fix for Issue #16 https://github.com/UstadMobile/UMCloudDj-Code/issues/16
+- Fix for Issue #17 https://github.com/UstadMobile/UMCloudDj-Code/issues/17
+
 v0.9.97
 - Added universal basic http authentication for all opds requests and not using Django's authentication based on cookies.
   This will help make requests that are cookie independent and easier on the app side. 
