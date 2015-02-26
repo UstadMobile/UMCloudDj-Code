@@ -1,3 +1,16 @@
+v0.9.991
+- Package / Block to have language and description field.
+- Package / Block elp or epub file uploaded gets description and lang from tincanxml and contentv3 xml files and assigns it.
+- Merginng sendelpfile (from eXe/external) and Block upload  logic to better maintain export process.
+- External API /sendelpfile/ supports epub for uploads because it is using the same method.
+- Fixed bug #20 : https://github.com/UstadMobile/UMCloudDj-Code/issues/20
+- Upload resume, download, jobs, etc with eXe. (/blockupload/)
+- Delete unused and commented /list and /sendelpfile bits
+- To Do: Update block logic needs refining
+- To Do: Update Package URL field with epub exported url instead.
+- To Do: Update unit tests.
+- To Do: Consider Per User chunk Upload directory
+
 v0.9.98
 - Fix for Issue #16 https://github.com/UstadMobile/UMCloudDj-Code/issues/16
 - Fix for Issue #17 https://github.com/UstadMobile/UMCloudDj-Code/issues/17

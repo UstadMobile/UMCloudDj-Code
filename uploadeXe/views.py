@@ -183,7 +183,7 @@ def get_epub_blockid_name(epubpath):
     except:
         print("!!Could Not open epub file")
         state="Unable to upload. Unable to retrieve epub file"
-        return None, None, state
+        return None, None, state, None, None
 
     #try:
     if True:
@@ -230,8 +230,8 @@ def get_epub_blockid_name(epubpath):
                             elplomid=identifier
                             elpiname=title
 			    #Get TinCan Prefix:
-                            tincanprefix=get_prefix_from_tincanxml(epubpath)
-                            return elplomid, elpiname, tincanprefix
+                            tincanprefix, description, lang=get_prefix_from_tincanxml(epubpath)
+                            return elplomid, elpiname, tincanprefix, description, lang
 
                         else:
                             elpiname=None
@@ -241,7 +241,7 @@ def get_epub_blockid_name(epubpath):
                             state="Upload Failed. A valid title and ID was not found"
                             data['state']=state
                             data['statesuccess']=0
-                            return None, None, state
+                            return None, None, state, None, None
 
                 if packageFound == False:
                         print("!!ERROR in getting package file from EPUB!!")
@@ -249,7 +249,7 @@ def get_epub_blockid_name(epubpath):
                         statesuccess=0
                         data['state']=state
                         data['statesuccess']=statesuccess
-                        return None, None, state
+                        return None, None, state, None, None
 
         if foundFlag==False:
             print("!!Unable to find the container xml file in epub!!")
@@ -257,14 +257,14 @@ def get_epub_blockid_name(epubpath):
             statesuccess=0
             data['state']=state
             data['statesuccess']=statesuccess
-            return None, None, state
+            return None, None, state, None, None
     #except:
     else:
         state="Something went wrong in file upload. Contact us."
         epubfilehandle.close();
-        return None, None, state
+        return None, None, state, None, None
     epubfilehandle.close();
-    return None, None, "Something went wrong in the upload. Please contact us."
+    return None, None, "Something went wrong in the upload. Please contact us.", None, None
 
 """Common function: To figure out what the prefix is from the tincan.xml file.
    this tincan.xml file is generated as per export in epub.
@@ -275,9 +275,9 @@ def get_prefix_from_tincanxml(epubpath):
         epubasazip = zipfile.ZipFile(epubfilehandler)
     except:
 	print("!!Unable to open epub file for tincan xml extraction")
-	return None
-    #try:
-    if True:
+	return None, None, None
+    try:
+	print("here.....")
         foundPrefix = False
         foundTinCanFile = False
         for eachfile in epubasazip.namelist():
@@ -293,30 +293,460 @@ def get_prefix_from_tincanxml(epubpath):
 			    except:
 			        print("Could not get activity id from tincan.xml")
 				epubfilehandler.close()
-			        return None
+			        return None, None, None
    			    else:
 			        if activityid != "" and activityid != None:
+				    description = ""
+				    lang = ""
+				    for activityelement in activitieselement:
+					if "description" in activityelement.tag:
+					    description = str(activityelement.text)
+					    lang = (activityelement.attrib['lang'])
+			
 				    tincanprefix = activityid.rsplit('/',1)[0]
 			            if tincanprefix != "":
 				        epubfilehandler.close()
-					print("Found prefix!")
-				        return tincanprefix
+					print("Found prefix!" + str(tincanprefix))
+				
+				        return tincanprefix, description, lang
 				    else:
 				        epubfilehandler.close()
-				        return None
+				        return None, None, None
 			        else:
 				    epubfilehandler.close()
-				    return None
+				    return None, None, None
 	if foundPrefix == False or foundTinCanFile == False:
-	    return None
-    #except:
-    else:
+	    return None, None, None
+    except:
 	print("!!Something went wrong in epub tincanxml extraction!!")
         epubfilehandler.close()
     epubfilehandler.close()
-    return None
-				 
+    return None, None, None
 
+
+
+
+"""View and method to handle block/elp file uploads.
+"""
+@login_required(login_url='/login/')
+def upload(request, template_name='myapp/upload_handle.html'):
+    # Renders the Block upload and assignation form. 
+
+    state=""
+    teacher_role = Role.objects.get(pk=5)
+    student_role = Role.objects.get(pk=6)
+    data = {}    
+
+    teachers = User.objects.filter(pk__in=User_Roles.objects.\
+		filter(role_roleid=teacher_role).\
+		values_list('user_userid', flat=True))
+
+    students = User.objects.filter(pk__in=User_Roles.objects.\
+		filter(role_roleid=student_role).\
+		values_list('user_userid', flat=True))
+
+    data['teacher_list'] = teachers
+    data['student_list'] = students
+
+    form = ExeUploadForm() # A empty, unbound form
+    #documents here are just existing Blocks / Packages
+    documents = Document.objects.filter(\
+                 publisher=request.user, success="YES", active=True)
+    current_user = request.user.username
+    data['documents']=documents
+    data['form']=form
+    data['current_user']=current_user
+
+    if request.method == 'POST':
+        #If method is POST, a new elp file is being
+        #uploaded. 
+        post = request.POST;
+
+        #Handle the return form 
+        state = ""
+        teacher_role = Role.objects.get(pk=5)
+        student_role = Role.objects.get(pk=6)
+        teachers = User.objects.filter(pk__in=User_Roles.\
+                objects.filter(role_roleid=teacher_role).\
+                values_list('user_userid', flat=True))
+        students = User.objects.filter(pk__in=User_Roles.objects.\
+                filter(role_roleid=student_role).values_list(\
+                                'user_userid', flat=True))
+        data['teacher_list'] = teachers
+        data['student_list'] = students
+        studentidspicklist=post.getlist('target')
+
+	elpiname=None
+	elplomid = None
+
+	#getting the form from the POST request      
+        form = ExeUploadForm(request.POST, request.FILES)
+	forceNew     = request.POST.get('forceNew')
+	#noAutoassign = request.POST.get('noAutoassign') 
+        #noAutoassign is unimportant and disabled for web uploads.
+
+        #verifying the form (Django style)
+        if form.is_valid():
+          #For Every file uploaded
+	  for exefile in request.FILES.getlist('exefile'):
+
+            #This is the new thing
+            return_value, newdoc, data_updated = handle_block_upload(exefile, request.user, forceNew, None, data)
+            #This is the new thing
+
+            #If block failed to upload and / or validatinon failed
+            if return_value == False or return_value is None:
+                return render(request, template_name, data_updated)
+            else:
+                data = data_updated
+
+            #Assigning students
+            for everystudentid in studentidspicklist:
+                #("Looping student:")
+                currentstudent=User.objects.get(pk=everystudentid)
+                newdoc.students.add(currentstudent)
+                newdoc.save()          
+            
+            rete = return_value[0]
+            elpepubid = return_value[1]
+            uid = return_value[2]
+            unid = return_value[3]
+            elpiname = return_value[4]
+            elplomid = return_value[5]
+	    
+	 	
+            if rete =="newsuccess":
+		print("True, this block will be newly created.")
+                courseURL = '/media/eXeExport' + '/' + unid + '/' + elpiname + '/' + 'deviceframe.html'
+                setattr(newdoc, 'success', "YES")
+                setattr(newdoc, 'url', courseURL)
+                setattr(newdoc, 'name', elpiname)
+                setattr(newdoc, 'publisher', request.user)
+                newdoc.save()
+		state="Your Block: " + newdoc.name + "  has been uploaded."
+		statesuccess=1
+		data['state']=state
+		data['statesuccess']=statesuccess
+		if newdoc.elpid=='replacemewithxmldata':
+		    if elpepubid != None:
+			setattr(newdoc, 'elpid', elpepubid)
+			newdoc.save()
+		    else:
+		        newdoc.success="NO"
+			state="Couldn't get block's Unique ID. Please check."
+		        newdoc.save()
+			print("!!No Block ID got from Block file uploaded!!")
+			data['state']=state
+            		data['statesuccess']=0
+            		return render(request, template_name, data)
+			#return message
+                
+                """
+                Adding package to course
+                """
+                #("Going to assign the package to the selected book")
+                courseidspicklist=request.POST.getlist('target2')
+                for everycourseid in courseidspicklist:
+                    currentcourse = Course.objects.get(pk=everycourseid)
+                    currentcourse.packages.add(newdoc)
+                
+		"""#Commented and put on hold
+		##Code for grunt testing course against webkit
+                retg = grunt_course(unid, uidwe)
+                
+                if not retg:
+                    setattr(newdoc, 'success', 'NO')
+                    newdoc.save()
+		"""
+		#just to be sure..
+                newdoc.save()
+
+	    elif rete=="newfail":
+		state="Failed to upload block. Something is wrong with the file. Please contact us."
+		statesuccess=0
+		data['state']=state
+		data['statesuccess']=statesuccess
+	 	print("Failed to create and start process for new course and export")
+
+	    elif rete=="newfailcopy":
+		state="Failed to upload the new block. Failed to verify export process. Please contact us."
+                statesuccess=0
+                data['state']=state
+                data['statesuccess']=statesuccess
+		print("Exported but Failed to verify the export process")
+
+	    elif rete=="updatefail":
+		state="Failed to update block. Failed to start export process. Please contact us."
+                statesuccess=0
+                data['state']=state
+                data['statesuccess']=statesuccess
+		print("Failed to start export process.")
+
+	    elif rete=="updatefailcopy":
+		state="Failed to update block. Failed to verify export. Please contact us."
+                statesuccess=0
+                data['state']=state
+                data['statesuccess']=statesuccess
+		print("Failed to verify export. Exported however.")
+                    
+            elif rete=="updatesuccess":
+		state="This block: " + newdoc.name + " has been updated."
+                statesuccess=1
+                data['state']=state
+                data['statesuccess']=statesuccess
+		print("This block is going to be an update and has been updated.")
+                setattr(newdoc, 'success', "NO")
+		setattr(newdoc, 'active', False)
+                newdoc.save()
+		newdoc.delete()
+                # Redirect to the document list after POST
+                return HttpResponseRedirect(reverse(\
+					'uploadeXe.views.list'))
+
+
+
+
+	  if 'submittotable' in request.POST:
+	    data['state']=state
+            return render(request, template_name, data)
+            #return HttpResponseRedirect(reverse('uploadeXe.views.list'))
+          if 'submittonew' in request.POST:
+	    data['state']=state
+	    return render(request, 'myapp/new.html', data)
+          else:
+	    data['state']=state
+            return render(request, template_name, data)
+	else:
+	    print("Form is not valid")
+            
+
+
+    else: 
+	#Form isn't POST. 
+        print("!!NOT A POST REQUEST!!")
+        form = ExeUploadForm() # A empty, unbound form
+    documents = Document.objects.filter(\
+			publisher=request.user, success="YES", active=True)
+    current_user = request.user.username
+    # Render list page with the documents and the form
+    return render_to_response(
+        template_name,
+        {'student_list':data['student_list'] ,\
+	'documents': documents, 'form': form,\
+	 'current_user': current_user},
+        context_instance=RequestContext(request)
+    )
+
+
+				 
+"""
+Internal common function that Handles elp/epub file upload. 
+Takes in blockfile, publisher (User object), forceNew parameter, noAutoAssign parameter, data for returning to views)
+Returns return_value, Block object (Package object), data for returning to views.
+
+return_value is an array of: [rete, elpepubid, uid, unid, elpiname, elplomid]
+
+"""
+
+def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
+    print("Handling Block upload for user:" + " publisher.username")
+    appLocation = (os.path.dirname(os.path.realpath(__file__)))
+
+    elpiname=None
+    elplomid = None
+    
+    #Assume POST validation and Form validation is run
+    newdoc = Document(exefile=blockfile)
+    uid = str(getattr(newdoc, 'exefile'))
+    
+    #Temporarily create the entry for the file uploaded.
+    setattr(newdoc, 'url', '-')
+    setattr(newdoc, 'publisher', publisher)
+    setattr(newdoc, 'elphash', '-')
+    setattr(newdoc, 'tincanid', '-')
+    newdoc.save()
+
+    #Getting block md5sum
+    uid = str(getattr(newdoc, 'exefile'))
+    print(appLocation)
+    print(uid)
+    serverlocation=appLocation+'/../'
+    mainappstring = "UMCloudDj/"
+    elphash = hashlib.md5(open(serverlocation + mainappstring \
+		+ settings.MEDIA_URL + uid ).read()).hexdigest()	
+    hashlist=Document.objects.all().values_list('elphash')
+    if str(elphash) in hashlist:
+	print("ELP/EPUB already uploaded. Do we want to upload it again?")
+	#Put action here for future logic for existing files.
+    setattr(newdoc, 'elphash', elphash)
+
+    #Unique Upload ID.
+    unid = uid.split('.um.')[-2]
+    unid = unid.split('/')[-1]  #Unique id here.
+    setattr(newdoc, 'uid', unid)
+    
+    #EPUB/ELP is technically a ZIP file.
+    elpfile=appLocation + '/../UMCloudDj/media/' + uid
+    elpfilehandle = open(elpfile, 'rb')
+    elpzipfile = zipfile.ZipFile(elpfilehandle)
+   
+    #If it is an epub file:
+    if uid.lower().endswith('.epub'):
+	print("An EPUB File has been uploaded.." + uid)
+
+	#Updated to get description and lang from the epub.
+	elplomid, elpiname, tincanprefix, description, lang = get_epub_blockid_name(elpfile)
+
+	if elplomid == None and elpiname == None :
+	    setattr(newdoc, 'success', 'NO')
+	    setattr(newdoc, 'tincanid', '-')
+	    newdoc.save()
+	    state= tincanprefix
+	    statesuccess=0
+	    data['state']=state
+	    data['statesuccess']=statesuccess
+
+            return False, None, data
+	    #return render(request, template_name, data)
+	else:
+	    setattr(newdoc, 'elpid', elplomid)
+	    setattr(newdoc, 'name', elpiname)
+	    setattr(newdoc, 'description', description)
+	    setattr(newdoc, 'lang', lang)
+	    if tincanprefix == None:
+		tincanprefix = "/"
+	    setattr(newdoc, 'tincanid', tincanprefix)
+	    newdoc.save()
+
+    #If it is an elp file:
+    elif uid.lower().endswith('.elp'):
+    	print("An eXe ELP file has been uploaded..")
+    	foundFlag=False
+    	for name in elpzipfile.namelist():
+            if name.find('contentv3.xml') != -1:
+            	foundFlag=True
+                elpxmlfile=elpzipfile.open(name)
+                elpxmlfilecontents=elpxmlfile.read()
+                #Using minidom
+                elpxml=minidom.parseString(elpxmlfilecontents)
+
+                #using ET
+                root = ET.fromstring(elpxmlfilecontents)
+                for child in root:
+                    foundFlag2=False # For tincan prefix
+		    foundFlag3=False # For description
+	 	    foundFlag4=False # For lang
+                    for chi in child:
+                        if foundFlag2 == True:
+                            tincanprefix=chi.attrib['value']
+			    foundFlag2 = False
+                        if "}string" in chi.tag:
+                            if "xapi_prefix" in chi.attrib['value']:
+                                foundFlag2=True
+			if foundFlag3 == True:
+			    description=chi.attrib['value']
+			    foundFlag3 = False
+			if "}string" in chi.tag:
+			    if "_description" in chi.attrib['value']:
+				foundFlag3 = True
+			if foundFlag4 == True:
+			    lang=chi.attrib['value']
+			    foundFlag4 = False
+			if "}string" in chi.tag:
+			    if "_lang" in chi.attrib['value']:
+				foundFlag4 = True
+		try:
+		    if not description:
+			description="This is a block"
+		except:
+		    description="This is a Block"
+		setattr(newdoc, 'description', description)
+
+		try:
+		    if not lang:
+			lang=""
+		except:
+		    lang="-"
+		setattr(newdoc, 'lang', lang)
+			
+                try:
+                    if not tincanprefix:
+                        tincanprefix="-"
+                except:
+                    tincanprefix=""
+                setattr(newdoc, 'tincanid', tincanprefix)
+                try:
+                    dictionarylist=elpxml.getElementsByTagName('dictionary')
+                    stringlist=elpxml.getElementsByTagName('instance')
+                    lomemtry=None
+                    for x in stringlist:
+                        if x.getAttribute('class') == "exe.engine.lom.lomsubs.entrySub":
+                            lomentry=x
+                            break
+                    elplomidobject=lomentry.getElementsByTagName('unicode')
+                    elplomid=None
+                    for e in elplomidobject:
+                        elplomid=e.getAttribute('value')
+                    setattr(newdoc, 'elpid', elplomid)
+                    if not elplomid:
+                        setattr(newdoc, 'elpid', "replacemewithxmldata")
+                except:
+                    setattr(newdoc, 'elpid', '-')
+                    elpid="replacemewithxmldata"
+                    setattr(newdoc, 'elpid', elpid)
+
+                root = ET.fromstring(elpxmlfilecontents)
+                for child in root:
+                    elpfoundFlag=False
+                    for chi in child:
+                        if elpfoundFlag == True:
+                            elpiname=chi.attrib['value']
+                            break
+                        if "}string" in chi.tag:
+                            if "_name" in chi.attrib['value']:
+                                elpfoundFlag=True
+                if not elpiname:
+                    elpiname="-"
+    	if foundFlag==False:
+    	    print("!!Unable to find the container xml file in elp!!")
+    	    setattr(newdoc, 'success', 'NO')
+	    newdoc.save()
+	    #return HttpResponseRedirect(reverse(\
+            #            'uploadeXe.views.list'))
+
+    else:
+    	print("!!Unable to determine what file you have upload (elp/epub)!!")	
+    	setattr(newdoc, 'success', 'NO')
+    	newdoc.save()
+    	state="Unable to determine the file type. File is not a .epub or .elp file"
+    	statesuccess=0
+    	data['state']=state
+    	data['statesuccess']=statesuccess
+
+        return False, None, data 
+    	#return render(request, template_name, data)
+
+    if not noAutoassign:
+        newdoc.students.add(publisher)
+    if elpiname == None:
+        blockname="-"
+    else: 
+        blockname=elpiname
+    if elplomid == None:
+        blockid="-"
+    else:
+        blockid=elplomid
+    print(uid + "|" + unid + "|" + str(blockname) + "|" + str(blockid) + "|")
+    rete, elpepubid = ustadmobile_export(uid, unid, elpiname, elplomid, forceNew)
+    return_values = []
+    return_values.append(rete)
+    return_values.append(elpepubid)
+    return_values.append(uid)
+    return_values.append(unid)
+    return_values.append(elpiname)
+    return_values.append(elplomid)
+
+    return return_values, newdoc, data
     
 
 """View and method to handle block/elp file uploads.
@@ -418,7 +848,10 @@ def list(request, template_name='myapp/list.html'):
             #If it is an epub file:
             if uid.lower().endswith('.epub'):
 		print("An EPUB File has been uploaded.." + uid)
-		elplomid, elpiname, tincanprefix = get_epub_blockid_name(elpfile)
+	
+		#Updated to get description and lang from the epub.
+		elplomid, elpiname, tincanprefix, description, lang = get_epub_blockid_name(elpfile)
+
 		if elplomid == None and elpiname == None :
 		    setattr(newdoc, 'success', 'NO')
 		    setattr(newdoc, 'tincanid', '-')
@@ -431,6 +864,8 @@ def list(request, template_name='myapp/list.html'):
 		else:
 		    setattr(newdoc, 'elpid', elplomid)
 		    setattr(newdoc, 'name', elpiname)
+		    setattr(newdoc, 'description', description)
+		    setattr(newdoc, 'lang', lang)
 		    if tincanprefix == None:
 			tincanprefix = "/"
 		    setattr(newdoc, 'tincanid', tincanprefix)
@@ -451,13 +886,42 @@ def list(request, template_name='myapp/list.html'):
                         #using ET
                         root = ET.fromstring(elpxmlfilecontents)
                         for child in root:
-                            foundFlag2=False
+                            foundFlag2=False # For tincan prefix
+			    foundFlag3=False # For description
+		 	    foundFlag4=False # For lang
                             for chi in child:
                                 if foundFlag2 == True:
                                     tincanprefix=chi.attrib['value']
+				    foundFlag2 = False
                                 if "}string" in chi.tag:
                                     if "xapi_prefix" in chi.attrib['value']:
                                         foundFlag2=True
+				if foundFlag3 == True:
+				    description=chi.attrib['value']
+				    foundFlag3 = False
+				if "}string" in chi.tag:
+				    if "_description" in chi.attrib['value']:
+					foundFlag3 = True
+				if foundFlag4 == True:
+				    lang=chi.attrib['value']
+				    foundFlag4 = False
+				if "}string" in chi.tag:
+				    if "_lang" in chi.attrib['value']:
+					foundFlag4 = True
+			try:
+			    if not description:
+				description="This is a block"
+			except:
+			    description="This is a Block"
+			setattr(newdoc, 'description', description)
+
+			try:
+			    if not lang:
+				lang=""
+			except:
+			    lang="-"
+			setattr(newdoc, 'lang', lang)
+				
                         try:
                             if not tincanprefix:
                                 tincanprefix="-"

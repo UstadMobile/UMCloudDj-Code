@@ -3,6 +3,7 @@ from django.conf.urls import patterns, url
 
 urlpatterns = patterns('uploadeXe.views',
     url(r'^list/$', 'list', name='list'),
+    url(r'^upload/$', 'upload', name='upload'),
     url(r'^manage/$', 'manage', name='manage'),
     url(r'^new/$', 'new', name='new'),
     url(r'^edit/(?P<pk>\d+)$', 'edit', name='edit'),

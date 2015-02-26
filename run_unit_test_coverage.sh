@@ -10,7 +10,7 @@ fi
 echo "UMCloudDj UNIT TESTS PASS: CONTINUE"
 
 coverage report
-coverage report --omit=*lrs*,*oauth*,*django_messages*
-coverage html --omit=*lrs*,*oauth*,*django_messages*
+coverage report --omit=*lrs*,*oauth*,*django_messages*,*resumable*
+coverage html --omit=*lrs*,*oauth*,*django_messages*,*resumable*
 rsync -a htmlcov/ UMCloudDj/media/eXeExport/htmlcov/
 rm -rf htmlcov/

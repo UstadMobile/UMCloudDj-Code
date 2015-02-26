@@ -47,8 +47,8 @@
 		}
 		</script>	
 
+	<!--
 		<i>List of your uploaded Blocks. Click to view online</i>
-		<!-- List of uploaded documents -->
 		{% if documents %}
 			<ul>
 			{% for document in documents %}
@@ -61,9 +61,9 @@
 		{% else %}
 			<p>No Blocks uploaded. Click on Upload New to upload a new eXe block.</p>
 		{% endif %}
-
+	-->
 		<p></p>
 		<a href="/uploadeXe/new"><button id="newelp" type="button">Upload New</button></a>
-		<a href="/uploadeXe/manage"><button id="manageelp" type="button">Manage Above</button></a>
-		<a href="/uploadeXe/managecourses/"><button id="managecourses" type="button">Manage Courses</button></a>
+		<a href="/uploadeXe/manage"><button id="manageelp" type="button">Manage My Blocks</button></a>
+		<a href="/uploadeXe/managecourses"><button id="managecourses" type="button">Manage Courses</button></a>
 {% endblock %}

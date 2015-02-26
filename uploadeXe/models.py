@@ -12,6 +12,7 @@ import time
 (eXe) and direc upload from umcloud portal
 """
 def get_file_path(instance, filename):
+   print("Yo, here in get_file_path." + str(filename))
    ext = filename.split('.')[-1]
    ext = "um."
    filename = "%s.%s" % (uuid.uuid4(), ext) + filename
@@ -50,6 +51,8 @@ class Package(models.Model):
    elphash = models.CharField(max_length=80)
    tincanid = models.CharField(max_length=200,\
 		default="http://www.ustadmobile.com/um-tincan/activities")
+   description = models.CharField(max_length=1800, null=True)
+   lang = models.CharField(max_length = 100, null=True)
 
    def __unicode__(self):
         return u'%s' % (self.name)

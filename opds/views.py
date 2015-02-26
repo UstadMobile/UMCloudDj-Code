@@ -317,7 +317,7 @@ def get_course(request):
 
             xmlreturn = opds_xml_header
 
-            xmlreturn += "<id>http://umcloud1.ustadmobile.com/opds/course/?id="+str(courseid)+"</id>"
+            xmlreturn += "<id>"+str(courseid)+"</id>"
 
             xmlreturn += "<link rel=\"start\"\n\
                 href=\"/opds/\"\n\

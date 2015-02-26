@@ -18,11 +18,22 @@ from django.conf.urls.static import static
 from django.views.generic import RedirectView
 from django.contrib import admin
 
+#For django-resumable 
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from django.views.generic import RedirectView
+from resumable.views import ResumableUploadView
+from UMCloudDj.views import ResumableBlockUploadView
+
 #UMCloudDj.uploadeXe
 
 urlpatterns = patterns('',
         (r'^umlrs/', include('lrs.urls')),
   	(r'^opds/', include('opds.urls')),
+	url('^blockupload/$', csrf_exempt(ResumableBlockUploadView.as_view()), #Resumablejs block upload
+	    name='block_upload'),
+	url('^resumableupload/$', csrf_exempt(ResumableUploadView.as_view()),  #Resumable file upload.
+            name='resumable_upload'),
 	url(r'^$', RedirectView.as_view(url='/userstable/')), # Just for ease of use.
 	url(r'^upload/', 'UMCloudDj.views.upload_view', name='oldcoursesview'),
 	url(r'^management/', 'UMCloudDj.views.management_view', name='management'),

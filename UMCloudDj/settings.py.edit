@@ -55,6 +55,7 @@ INSTALLED_APPS = (
     'django_extensions',
     'django_messages', #Added 110824012121S
     'report_statement', #basic db report application
+    'resumable', #For django-resumable resumablejs's django server implementation
 )
 
 #For lrs entry trial 190820142046
@@ -230,6 +231,10 @@ REQUEST_HANDLER_LOG_DIR = os.path.join(BASE_DIR, 'logs/django_request.log')
 DEFAULT_LOG_DIR = os.path.join(BASE_DIR, 'logs/lrs.log')
 REQUEST_HANDLER_UMCLOUDJ = os.path.join(BASE_DIR, 'logs/umclouddj.log')
 
+
+
+# Resumable upload parameters
+FILE_UPLOAD_TEMP_DIR = MEDIA_ROOT + '/eXeUpload/UPLOAD_CHUNKS/'
 
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.

@@ -24,6 +24,7 @@ from allclass.models import Allclass
 from school.models import School
 from django import forms
 from uploadeXe.views import ustadmobile_export
+from uploadeXe.views import handle_block_upload
 #from uploadeXe.views import grunt_course
 
 from django.http import HttpResponse
@@ -51,6 +52,15 @@ import socket
 import logging
 from django.utils.datastructures import MultiValueDictKeyError
 from random import randrange
+
+#For django-resumable uploads
+from django.views.generic import View
+from resumable.views import ResumableUploadView
+from resumable.files import ResumableFile
+from django.core.exceptions import ImproperlyConfigured
+from django.core.files.storage import FileSystemStorage
+import requests
+import uuid
 
 logger = logging.getLogger(__name__)
 ###################################
@@ -1066,6 +1076,226 @@ def getassignedcourseids_view(request):
 		authresponse.write("Not a POST request. Assigned Course IDs retrival failed.")
 		return authresponse
 
+"""Method / Function to handle resumablejs uploads to UMCloudDj
+"""
+"""
+def handle_resumable_js(request):
+    chunks_dir = getattr(settings, 'FILE_UPLOAD_TEMP_DIR', None)
+    if not chunks_dir:
+	raise ImproperlyConfigured(
+	    'You must set settings.FILE_UPLOAD_TEMP_DIR')
+	
+"""
+
+class ResumableBlockUploadView(View):
+    def get(self, *args, **kwargs):
+        """Checks if chunk has allready been sended.
+        """
+        r = ResumableFile(self.storage, self.request.GET)
+        if not (r.chunk_exists or r.is_complete):
+            return HttpResponse('chunk not found', status=404)
+        return HttpResponse('chunk already exists')
+
+    def post(self, *args, **kwargs):
+
+        try:
+	    logger.info('Login request coming from outside (eXe)')
+            username = self.request.POST.get('username');
+            password = self.request.POST.get('password');
+            if self.request.POST.get('forceNew') != 'false':
+                forceNew = self.request.POST.get('forceNew');
+            else:
+                forceNew = None
+            if self.request.POST.get('noAutoassign') != 'false':
+                noAutoassign = self.request.POST.get('noAutoassign');
+            else:
+                noAutoassign = None
+            logger.info("The username is")
+            logger.info(username)
+            logger.info("The file: ")
+            logger.info(self.request.FILES)
+
+            #Code for Authenticating the user
+            user = authenticate(username=self.request.POST['username'], \
+                        password=self.request.POST['password'])
+            if user is not None:
+                logger.info("Login a success!..")
+                #We Sign the user..
+                login(self.request, user)
+
+                organisation = User_Organisations.objects.get(\
+                   user_userid=user).organisation_organisationid;
+
+                #This is the new thing
+                data = {}
+	    else:
+		return HttpResponse(status=403)
+	except:
+	    logger.info("Unable to login / check authentication for request..")
+	    return HttpResponse(status=500)
+
+        """Saves chunks then checks if the file is complete.
+        """
+	print("Getting chunk..")
+        chunk = self.request.FILES.get('file')
+        r = ResumableFile(self.storage, self.request.POST)
+        if r.chunk_exists:
+            return HttpResponse('chunk already exists')
+	print("Processing chunk..")
+        r.process_chunk(chunk)
+	print("    Checking if complete..")
+        if r.is_complete:
+	    print("Completed. Now deleting chunks and starting export..")
+            filename = self.process_file(r.filename, r)
+            r.delete_chunks()
+	    #Now you can process things..
+	    print("All done.")
+
+	    print(type(r))
+	    print(r)
+	    #exefile = request.FILES['exeuploadelp']
+ 	    if filename:
+		print("Got updated filename: " + filename)
+	        exefile = "eXeUpload/UPLOAD_CHUNKS/" +  filename
+	    else:
+		print("Unable to process chunks in resumable upload.")
+		return HttpResponse(status=500)
+
+	
+	    user = self.request.user
+            return_value, newdoc, data_updated = handle_block_upload(exefile, user, forceNew, noAutoassign, data)
+
+            #If block failed to upload and / or validatinon failed
+            if return_value == False or return_value is None:
+                return render(request, template_name, data_updated)
+            else:
+                data = data_updated
+
+            rete = return_value[0]
+            elpepubid = return_value[1]
+            uid = return_value[2]
+            unid = return_value[3]
+            elpiname = return_value[4]
+            uidwe = return_value[4]
+            elplomid = return_value[5]
+
+	    if rete=="newsuccess":
+		print("A success export")
+                courseURL = '/media/eXeExport' + '/' + unid + '/' + elpiname + '/' + 'deviceframe.html'
+                setattr(newdoc, 'url', "cow")
+                newdoc.save()
+                setattr(newdoc, 'success', "YES")
+                setattr(newdoc, 'url', courseURL)
+                setattr(newdoc, 'name', uidwe)
+                setattr(newdoc, 'publisher', user)
+
+                newdoc.save()
+                print("Existing Id: " + str(newdoc.elpid))
+                if newdoc.elpid=='replacemewithxmldatas':
+                    if elpepubid != None:
+                        setattr(newdoc, 'elpid', elpepubid)
+                        newdoc.save()
+                    else:
+                        newdoc.success="NO"
+                        state="Couldn't get block's Unique ID. Please check."
+                        newdoc.save()
+                        print("!!No Block ID got from Block file uploaded!!")
+                        uploadresponse=HttpResponse(status=500)
+                        uploadresponse.write("Failed to create and export")
+                        uploadresponse['error'] = "Exe failed to export"
+                        return uploadresponse
+
+                logger.info("Going to create the course...")
+                #Update  14th October 2014: We want blocks coming from eXe to be created as single courses.
+                blockcourse = Course(name=newdoc.name, category="-",\
+                    description="Block course for "+newdoc.name,\
+                         publisher=user, organisation=organisation)
+                blockcourse.save()
+                logger.info("assigning students to course..")
+                try:
+                    for every_user in newdoc.students.all():
+                        blockcourse.students.add(every_user)
+                        blockcourse.save()
+                    logger.info("Assigning block to course..")
+                    blockcourse.packages.add(newdoc);
+                    setattr(blockcourse, 'success', "YES")
+                    blockcourse.save()
+                    logger.info("Block course: " + blockcourse.name + " saved successfully!")
+                except:
+                    logger.info("Could not create course..")
+                    newdoc.students.remove(all);
+                    newdoc.delete()
+                    blockcourse.delete()
+
+
+                #form is valid (upload file form)
+                # Redirect to the document list after POST
+                uploadresponse = HttpResponse(status=200)
+                uploadresponse['courseid'] = getattr(blockcourse, 'id')
+                uploadresponse['coursename'] = getattr(blockcourse, 'name')
+                return uploadresponse
+
+            elif rete=="newfail":
+                uploadresponse=HttpResponse(status=500)
+                uploadresponse.write("Failed to create and export")
+                uploadresponse['error'] = "Exe failed to export"
+                return uploadresponse
+
+            elif rete=="newfailcopy":
+                uploadresponse=HttpResponse(status=500)
+                uploadresponse.write("Exported, did not complete.")
+                uploadresponse['error'] = "Exported but failed to complete"
+                return uploadresponse
+
+            elif rete=="updatesuccess":
+                setattr(newdoc, 'success', "NO")
+                setattr(newdoc, 'active', False)
+                newdoc.save()
+                newdoc.delete()
+
+                # Redirect to the document list after POST
+                uploadresponse = HttpResponse(status=200)
+                uploadresponse.write("Course's block updated.")
+                return uploadresponse
+
+            elif rete=="updatefail":
+                uploadresponse = HttpResponse(status=500)
+                uploadresponse.write("Exe Export faild but uploaded")
+                uploadresponse['error'] = "Exe export failed to start"
+                return uploadresponse
+
+
+
+	    
+	print("Continuing..")
+        return HttpResponse()
+
+    def process_file(self, filename, file):
+        """Process the complete file.
+        """
+	print("Doing additional things to the file..")
+	ext = "um."
+        filename = "%s.%s" % (uuid.uuid4(), ext) + filename
+	print("filename: " + str(filename))
+
+	if self.storage.save(filename, file):
+	    return filename
+	else:
+	    return False
+	
+
+    @property
+    def chunks_dir(self):
+        chunks_dir = getattr(settings, 'FILE_UPLOAD_TEMP_DIR', None)
+        if not chunks_dir:
+            raise ImproperlyConfigured(
+                'You must set settings.FILE_UPLOAD_TEMP_DIR')
+        return chunks_dir
+
+    @property
+    def storage(self):
+        return FileSystemStorage(location=self.chunks_dir)
+
 
 """External API to send elp file as POST request with authentication to upload and set the block to a course
 by default
@@ -1104,111 +1334,32 @@ def sendelpfile_view(request):
 
 			organisation = User_Organisations.objects.get(\
 				user_userid=user).organisation_organisationid;
-			#Try to save the file
-			newdoc = Document(exefile = request.FILES['exeuploadelp'])
-		        uid = str(getattr(newdoc, 'exefile'))
-            		appLocation = (os.path.dirname(os.path.realpath(__file__)))
-            		#Get the file and run eXe command
-            		#Get url / path
-            		setattr (newdoc, 'url', 'bull')
-			setattr (newdoc, 'publisher', user)
-			setattr (newdoc, 'elphash','-')
-            		setattr (newdoc, 'tincanid', '-')
-            		newdoc.save()
-            		os.system("echo Current location:")
-            		os.system("pwd")
-			status, serverlocation = commands.getstatusoutput("pwd")
-            		uid = str(getattr(newdoc, 'exefile'))
-            		logger.info("File saved as: ")
-            		logger.info(uid)
-			mainappstring = "/UMCloudDj/"
-			elphash = hashlib.md5(open(serverlocation + mainappstring \
-                        	+ settings.MEDIA_URL + uid).read()).hexdigest()
-			setattr(newdoc, 'elphash', elphash)
-            		unid = uid.split('.um.')[-2]
-            		unid = unid.split('/')[-1]  #Unique id here.
-            		logger.info("Unique id:")
-            		logger.info(unid)
-			
-			#Code for elp to ustadmobile export
 
-			setattr(newdoc, 'uid', unid)
+			#This is the new thing
+			data = {}
+
+			exefile = request.FILES['exeuploadelp']
+			print("exefile type:")
+			print(type(exefile))
+
+            		return_value, newdoc, data_updated = handle_block_upload(exefile, user, forceNew, noAutoassign, data)
+            		#This is the new thing
+
+            		#If block failed to upload and / or validatinon failed
+            		if return_value == False or return_value is None:
+                	    return render(request, template_name, data_updated)
+            		else:
+                	    data = data_updated
 
 
-			elpfile=appLocation + '/../UMCloudDj/media/' + uid
+            		rete = return_value[0]
+	                elpepubid = return_value[1]
+            		uid = return_value[2]
+            		unid = return_value[3]
+            		elpiname = return_value[4]
+			uidwe = return_value[4]
+           	 	elplomid = return_value[5]
 
-
-            		elpfilehandle = open(elpfile, 'rb')
-            		elpzipfile = zipfile.ZipFile(elpfilehandle)
-            		for name in elpzipfile.namelist():
-                	    if name.find('contentv3.xml') != -1:
-                    		elpxmlfile=elpzipfile.open(name)
-                    		elpxmlfilecontents=elpxmlfile.read()
-                    		#Using minidom
-                    		elpxml=minidom.parseString(elpxmlfilecontents)
-		
-                    		#using ET
-                    		root = ET.fromstring(elpxmlfilecontents)
-                    		for child in root:
-                        	    foundFlag=False
-                        	    for chi in child:
-                            		if foundFlag == True:
-                                	    tincanprefix=chi.attrib['value']
-                            		if "}string" in chi.tag:
-                                	    if "xapi_prefix" in chi.attrib['value']:
-                                    		foundFlag=True
-			 	try:
-                    		    if not tincanprefix:
-                        	    	tincanprefix="-"
-				except:
-				    tincanprefix=""
-                    		setattr(newdoc, 'tincanid', tincanprefix)
-                    		try:
-                        	    dictionarylist=elpxml.getElementsByTagName('dictionary')
-                        	    stringlist=elpxml.getElementsByTagName('instance')
-                        	    lomemtry=None
-                        	    for x in stringlist:
-                            		if x.getAttribute('class') == "exe.engine.lom.lomsubs.entrySub":
-                                	    lomentry=x
-                                	    break
-                        	    elplomidobject=lomentry.getElementsByTagName('unicode')
-                        	    elplomid=None
-                        	    for e in elplomidobject:
-                            		elplomid=e.getAttribute('value')
-                        	    logger.info("ELP LOM ID:")
-                        	    logger.info(elplomid)
-                        	    setattr(newdoc, 'elpid', elplomid)
-                    		except:
-                        	    setattr(newdoc, 'elpid', '-')
-                        	    elpid="replacemewithxmldata"
-                        	    setattr(newdoc, 'elpid', elpid)
-
-			
-
-			uidwe = uid.split('.um.')[-1]
-            		uidwe = uidwe.split('.elp')[-2]
-            		uidwe=uidwe.replace(" ", "_")
-			logger.info("Going to export..")
-
-			root = ET.fromstring(elpxmlfilecontents)
-                    	for child in root:
-                            elpfoundFlag=False
-                            for chi in child:
-                            	if elpfoundFlag == True:
-                                    elpiname=chi.attrib['value']
-                                    break
-                            	if "}string" in chi.tag:
-                                    if "_name" in chi.attrib['value']:
-                                    	elpfoundFlag=True
-                        if not elpiname:
-                            elpiname="-"
-
-			if not noAutoassign:
-				newdoc.students.add(user)
-			  	#newdoc.save()
-			#rete=ustadmobile_export(uid, unid, uidwe)
-		 	logger.info("Going to export 2..")
-			rete, elpepubid = ustadmobile_export(uid, unid, elpiname, elplomid, forceNew)
             		if rete=="newsuccess":
 			  	print("A success export")
                 		courseURL = '/media/eXeExport' + '/' + unid + '/' + elpiname + '/' + 'deviceframe.html'
@@ -1218,17 +1369,6 @@ def sendelpfile_view(request):
                 		setattr(newdoc, 'url', courseURL)
                 		setattr(newdoc, 'name', uidwe)
                 		setattr(newdoc, 'publisher', user)
-				"""
-                		retg = grunt_course(unid, uidwe)
-
-                		if not retg:
-	                    		setattr(newdoc, 'success', 'NO')
-                    			newdoc.save()
-					uploadresponse = HttpResponse(status=500)
-                                        uploadresponse.write("Course testing failed but uploaded")
-                                        uploadresponse['error'] = "Grunt test failed"
-                                        return uploadresponse
-				"""
 
                 		newdoc.save()
 				print("Existing Id: " + str(newdoc.elpid))
@@ -1294,14 +1434,6 @@ def sendelpfile_view(request):
                 		newdoc.save()
 				newdoc.delete()
 	
-				"""
-				uploadresponse = HttpResponse(status=200)
-                                print "Block ID: "
-                                print getattr(newdoc, 'id')
-                                uploadresponse['courseid'] = getattr(newdoc, 'id')
-                                uploadresponse['coursename'] = getattr(newdoc, 'name')
-                                return uploadresponse
-				"""
                 		# Redirect to the document list after POST
 				uploadresponse = HttpResponse(status=200)
 				uploadresponse.write("Course's block updated.")
