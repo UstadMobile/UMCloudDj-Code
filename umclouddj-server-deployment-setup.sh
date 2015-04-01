@@ -197,6 +197,7 @@ fi
 cd UMCloudDj/media/
 mkdir eXeExport
 mkdir eXeUpload
+mkdir eXeUpload/UPLOAD_CHUNKS
 mkdir test
 mkdir eXeTestElp
 mkdir eXeTestExport

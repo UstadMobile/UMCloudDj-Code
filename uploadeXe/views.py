@@ -176,7 +176,7 @@ def new(request, template_name='myapp/new.html'):
    file
 """
 def get_epub_blockid_name(epubpath):
-    print("Starting..")
+    print("Starting epub info crawler..")
     try:
         epubfilehandle = open(epubpath, 'rb')
         epubasazip = zipfile.ZipFile(epubfilehandle)
@@ -549,13 +549,14 @@ return_value is an array of: [rete, elpepubid, uid, unid, elpiname, elplomid]
 """
 
 def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
-    print("Handling Block upload for user:" + " publisher.username")
+    print("Handling Block upload for user:" +  str(publisher.username))
     appLocation = (os.path.dirname(os.path.realpath(__file__)))
 
     elpiname=None
     elplomid = None
     
     #Assume POST validation and Form validation is run
+    print("Creating Block object..")
     newdoc = Document(exefile=blockfile)
     uid = str(getattr(newdoc, 'exefile'))
     
@@ -565,6 +566,7 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
     setattr(newdoc, 'elphash', '-')
     setattr(newdoc, 'tincanid', '-')
     newdoc.save()
+    print("Created Block object.")
 
     #Getting block md5sum
     uid = str(getattr(newdoc, 'exefile'))
@@ -588,7 +590,21 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
     #EPUB/ELP is technically a ZIP file.
     elpfile=appLocation + '/../UMCloudDj/media/' + uid
     elpfilehandle = open(elpfile, 'rb')
-    elpzipfile = zipfile.ZipFile(elpfilehandle)
+    try:
+        elpzipfile = zipfile.ZipFile(elpfilehandle)
+    except:
+	print("!ERROR: NOT A ZIP FILE!")
+	setattr(newdoc, "success", "NO")
+	setattr(newdoc, "tincanid","-")
+	newdoc.save()
+	state="File provided was not a zip file (cannot be unzipped)"
+        statesuccess=0
+        data['state']=state
+        data['statesuccess']=statesuccess
+
+        return False, None, data
+
+	
    
     #If it is an epub file:
     if uid.lower().endswith('.epub'):
@@ -1382,6 +1398,9 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
                         else:
                             print("!!ERROR in getting package file from EPUB!!")
 			    return "newfail", None
+		else: #eXe didnt export well.
+		    return "newfail", None
+
                 if foundFlag==False:
                     print("!!Unable to find the package.opf file in epub!!")
 		    return "newfail", None

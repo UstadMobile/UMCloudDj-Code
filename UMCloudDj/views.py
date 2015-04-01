@@ -62,6 +62,8 @@ from django.core.files.storage import FileSystemStorage
 import requests
 import uuid
 
+from opds.views import login_basic_auth
+
 logger = logging.getLogger(__name__)
 ###################################
 # Role CRUD
@@ -343,13 +345,19 @@ def user_table(request, template_name='user/user_table.html', created=None):
     user_roles = []
     user_organisations = []
     for user in users:
-	role = User_Roles.objects.get(user_userid=user\
-					).role_roleid
-	organisation = User_Organisations.objects.get(\
-				user_userid=user\
-			).organisation_organisationid
-	user_roles.append(role)
-	user_organisations.append(organisation)
+        try:
+            role = User_Roles.objects.get(user_userid=user\
+                                        ).role_roleid
+            organisation = User_Organisations.objects.get(\
+                                user_userid=user\
+                        ).organisation_organisationid
+            user_roles.append(role)
+            user_organisations.append(organisation)
+        except:
+            logger.info("Unable to figure out Role and/or Orga" +\
+                "nisation for user: " + str(user.id) + ": " +
+                    str(user.username))
+            users.exclude(pk=user.pk)
     data['object_list'] = zip(users,user_roles,\
 				user_organisations)
     data['role_list'] = user_roles
@@ -1099,9 +1107,7 @@ class ResumableBlockUploadView(View):
     def post(self, *args, **kwargs):
 
         try:
-	    logger.info('Login request coming from outside (eXe)')
-            username = self.request.POST.get('username');
-            password = self.request.POST.get('password');
+	    logger.info('Block Upload request (resumable?) coming from outside (eXe?)')
             if self.request.POST.get('forceNew') != 'false':
                 forceNew = self.request.POST.get('forceNew');
             else:
@@ -1110,17 +1116,15 @@ class ResumableBlockUploadView(View):
                 noAutoassign = self.request.POST.get('noAutoassign');
             else:
                 noAutoassign = None
-            logger.info("The username is")
-            logger.info(username)
-            logger.info("The file: ")
-            logger.info(self.request.FILES)
 
-            #Code for Authenticating the user
-            user = authenticate(username=self.request.POST['username'], \
-                        password=self.request.POST['password'])
+	    state, authresponse = login_basic_auth(self.request)
+	    user = None
+	    if state == True:
+		user = authresponse
+
             if user is not None:
                 logger.info("Login a success!..")
-                #We Sign the user..
+                #We Sign in the user..
                 login(self.request, user)
 
                 organisation = User_Organisations.objects.get(\
@@ -1136,30 +1140,28 @@ class ResumableBlockUploadView(View):
 
         """Saves chunks then checks if the file is complete.
         """
-	print("Getting chunk..")
+	logger.info("Getting chunk..")
         chunk = self.request.FILES.get('file')
         r = ResumableFile(self.storage, self.request.POST)
         if r.chunk_exists:
             return HttpResponse('chunk already exists')
-	print("Processing chunk..")
+	logger.info("Processing chunk..")
         r.process_chunk(chunk)
-	print("    Checking if complete..")
+	logger.info("    Checking if complete..")
         if r.is_complete:
-	    print("Completed. Now deleting chunks and starting export..")
+	    logger.info("Completed. Now deleting chunks and starting export..")
             filename = self.process_file(r.filename, r)
             r.delete_chunks()
 	    #Now you can process things..
-	    print("All done.")
 
-	    print(type(r))
-	    print(r)
-	    #exefile = request.FILES['exeuploadelp']
  	    if filename:
-		print("Got updated filename: " + filename)
+		logger.info("Chunks processed Okay. Got updated filename: " + filename)
 	        exefile = "eXeUpload/UPLOAD_CHUNKS/" +  filename
 	    else:
-		print("Unable to process chunks in resumable upload.")
-		return HttpResponse(status=500)
+		logger.info("Unable to process chunks in resumable upload.")
+		authresponse = HttpResponse(status=500)
+		authresponse['error']="Unable to process chunks in resumable upload."
+		return authresponse
 
 	
 	    user = self.request.user
@@ -1167,7 +1169,12 @@ class ResumableBlockUploadView(View):
 
             #If block failed to upload and / or validatinon failed
             if return_value == False or return_value is None:
-                return render(request, template_name, data_updated)
+                #return render(self.request, self.template_name, data_updated)
+		authresponse = HttpResponse(status=500)
+                authresponse.write("Invalid ")
+		authresponse.write(data_updated['state'])
+		authresponse['error']=data_updated['state']
+		return authresponse
             else:
                 data = data_updated
 
@@ -1199,7 +1206,7 @@ class ResumableBlockUploadView(View):
                         newdoc.success="NO"
                         state="Couldn't get block's Unique ID. Please check."
                         newdoc.save()
-                        print("!!No Block ID got from Block file uploaded!!")
+                        logger.info("!!No Block ID got from Block file uploaded!!")
                         uploadresponse=HttpResponse(status=500)
                         uploadresponse.write("Failed to create and export")
                         uploadresponse['error'] = "Exe failed to export"

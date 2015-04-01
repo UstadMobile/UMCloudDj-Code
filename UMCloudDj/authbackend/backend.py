@@ -50,6 +50,7 @@ class MyCustomBackend:
 			print ("User doesn't exist, creating user..")
 			user = User(username=username, email=username)
     			user.set_password(password)
+			user.is_active=False
     			user.save()
 			print("User created!")
 
@@ -63,6 +64,8 @@ class MyCustomBackend:
     			new_organisation_mapping.save()
 			print("User organisation mappting created for new user from custom authentication backend: ustadmobile.com wordpress")
 
+			user.is_active = True
+			user.save()
 
         		#return auth_and_login(request)
 			return user;

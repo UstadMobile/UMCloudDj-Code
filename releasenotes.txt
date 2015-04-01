@@ -6,10 +6,19 @@ v0.9.991
 - Fixed bug #20 : https://github.com/UstadMobile/UMCloudDj-Code/issues/20
 - Upload resume, download, jobs, etc with eXe. (/blockupload/)
 - Delete unused and commented /list and /sendelpfile bits
+- Fixed Issue #22 https://github.com/UstadMobile/UMCloudDj-Code/issues/22
+  Added error detection to the way users details are gotten to render the userstable
+- Updated backend in backendauthentication against ustadmobile.com wordpress account 
+  to set user active flags to true when Roles and Organisatins have been assigned.
+- Updated Organisation views to check is_active and set accordingly
+- Auto-fix for Issue #21 https://github.com/UstadMobile/UMCloudDj-Code/issues/21
+- Updated scripts to mkdir eXeUpload/UPLOAD_CHUNKS for resumable capability
 - To Do: Update block logic needs refining
-- To Do: Update Package URL field with epub exported url instead.
-- To Do: Update unit tests.
+- To Do: In Block Model: Add epub field with epub exported url if available.
+- Updated unit tests
 - To Do: Consider Per User chunk Upload directory
+- To Do: Consider network driven chunk size, resumable js on portal side.
+- Updated production models to match the updated models. alter table, etc.
 
 v0.9.98
 - Fix for Issue #16 https://github.com/UstadMobile/UMCloudDj-Code/issues/16
