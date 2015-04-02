@@ -1197,7 +1197,8 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 		    print("Unable to delete old folder")
 		return "updatesuccess", None
 
-		"""
+		""" 
+		#Update logic commented till bug is updated.
 	        if os.system('rm -rf ' + appLocation + '/../UMCloudDj'\
 			 +url + '_old'):
 		    print("a success, trying to update date and stuff")
@@ -1398,8 +1399,11 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
                         else:
                             print("!!ERROR in getting package file from EPUB!!")
 			    return "newfail", None
+		"""
 		else: #eXe didnt export well.
+		    print("eXe did not export well.");
 		    return "newfail", None
+		"""
 
                 if foundFlag==False:
                     print("!!Unable to find the package.opf file in epub!!")
@@ -1412,6 +1416,7 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 	    	if (os.system('unzip -q ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
 	    	    	unid + "/" + name + ".epub" + "\"" + " -d " + appLocation + \
 			    '/../UMCloudDj/media/eXeExport/' + unid + "/"  )) == 0: # If unzip-ed successfully.
+		    print("Unzipped Successfully (epub)")
 	    	    #Get epub asset folder name from META-INF/container.xml
 	    	    epubassetfolder = "EPUB"
 	    	    if (os.system('mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
