@@ -1,0 +1,6 @@
+    <select multiple="multiple" name="brand" id="brand" required>
+        <!--<option selected disabled value="Z" required>Select Category</option>-->
+        {% for category in all_root_categories %}
+            <option value="{{ category.id}}">{{ category.name }}</option>
+        {% endfor %}
+    </select>*

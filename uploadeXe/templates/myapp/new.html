@@ -71,6 +71,7 @@
                         $('#submit').puibutton(); 
 			$('#submit2').puibutton();
 			$('#ajaxSpinnerImage').puipanel();
+ 			$('#block_desc').puiinputtext();
                 }
           ); 
 </script>
@@ -124,6 +125,10 @@
                 		<select multiple="multiple" id="target2" name="target2">
                 		</select>
         		</div>
+			<p></p>
+			<div data-role="fieldcontain">
+        		    <label for="block_desc">Block Description: </label><input type="text" name="block_desc" id="block_desc" value="" />
+			</div>
 			<p></p>
 			<h3>3. Click Upload</h3>
 			<button id="submit" type="submit" name="submittotable" value="upload">Upload</button>

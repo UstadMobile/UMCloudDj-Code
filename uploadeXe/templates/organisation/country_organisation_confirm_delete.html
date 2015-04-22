@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}UMCloud: Confirm Country Organisation Relationship Delete {% endblock %}
+{% block content %}
+{% if state %}
+        <p cass="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+<form method="post">{% csrf_token %}
+    Are you sure you want to delete "{{ object }}" ?
+    <input type="submit" value="Submit" />
+</form>
+{% endif %}
+
+{% endblock %}
+

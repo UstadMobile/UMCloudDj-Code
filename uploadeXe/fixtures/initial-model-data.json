@@ -66,7 +66,167 @@
       "organisation_desc" : "This is the default organisation for users from the website.",
       "set_package": 1
     }
-  }
-
+  },
+  {
+    "model": "uploadeXe.categories",
+    "pk": 1,
+    "fields": {
+      "name" : "Arts"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 2,
+    "fields": {
+      "name": "Agriculture"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 3,
+    "fields": {
+      "name": "Fiction"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 4,
+    "fields": {
+      "name": "Language, Language Teaching"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 5,
+    "fields": {
+      "name": "Reference"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 6,
+    "fields": {
+      "name": "History"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 7,
+    "fields": {
+      "name": "Social Science"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 8,
+    "fields": {
+      "name": "Humanities"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 9,
+    "fields": {
+      "name": "Business"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 10,
+    "fields": {
+      "name": "Management"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 11,
+    "fields": {
+      "name": "Law"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 12,
+    "fields": {
+      "name": "Medicine"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 13,
+    "fields": {
+      "name": "Mathematics"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 14,
+    "fields": {
+      "name": "Science"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 15,
+    "fields": {
+      "name": "Technology"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 16,
+    "fields": {
+      "name": "Health"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 17,
+    "fields": {
+      "name": "Children"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 18,
+    "fields": {
+      "name": "Lifestyle"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 19,
+    "fields": {
+      "name": "Computers and IT"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 20,
+    "fields": {
+      "name": "Entertainment"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 21,
+    "fields": {
+      "name": "Productivity"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 22,
+    "fields": {
+      "name": "Personal Development"
+    }
+ },
+ {
+    "model": "uploadeXe.categories",
+    "pk": 23,
+    "fields": {
+      "name": "Teaching and Learning"
+    }
+ }
 
 ]

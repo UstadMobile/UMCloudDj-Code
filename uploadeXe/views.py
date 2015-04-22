@@ -9,6 +9,7 @@ import os
 from uploadeXe.models import Package as Document
 from uploadeXe.forms import ExeUploadForm
 from uploadeXe.models import Course
+from uploadeXe.models import Categories
 from django.forms import ModelForm
 from organisation.models import Organisation
 from organisation.models import UMCloud_Package
@@ -37,6 +38,7 @@ import xml.etree.ElementTree as ET
 import commands #Added for obtaining the elp hash
 import sys
 from subprocess import call
+import simplejson
 
 
 ######################################################################
@@ -375,6 +377,7 @@ def upload(request, template_name='myapp/upload_handle.html'):
         data['teacher_list'] = teachers
         data['student_list'] = students
         studentidspicklist=post.getlist('target')
+	description = post.get('block_desc')
 
 	elpiname=None
 	elplomid = None
@@ -392,6 +395,8 @@ def upload(request, template_name='myapp/upload_handle.html'):
 
             #This is the new thing
             return_value, newdoc, data_updated = handle_block_upload(exefile, request.user, forceNew, None, data)
+	    newdoc.description = description
+	    newdoc.save()
             #This is the new thing
 
             #If block failed to upload and / or validatinon failed
@@ -1509,10 +1514,24 @@ def course_table(request, template_name='myapp/course_table.html'):
     courses = Course.objects.filter(success="YES", \
 				organisation=organisation)
     publisher_details=[]
+    categories=[]
     for course in courses:
 	pub_details=course.publisher.username + "(" +\
 		 course.organisation.organisation_name + ")"
 	publisher_details.append(pub_details)
+        try:
+	    category = course.cat.all()[0]
+	    allcategories = course.cat.all()
+	    categories_all=""
+	    for category in allcategories:
+		categories_all = categories_all + category.name + ", "
+	
+	    if categories_all:
+	        categories.append(categories_all[:-2])
+	    else:
+		categories.append(None)
+	except:
+	    categories.append(None)
 	
     data = {}
     data['object_list'] = courses
@@ -1520,7 +1539,7 @@ def course_table(request, template_name='myapp/course_table.html'):
 
     courses_as_json = serializers.serialize('json',courses)
     courses_as_json = json.loads(courses_as_json)
-    courses_as_json = zip(courses_as_json, publisher_details)
+    courses_as_json = zip(courses_as_json, publisher_details, categories)
 
     return render(request, template_name, {'data':data, \
 			'courses_as_json':courses_as_json})
@@ -1585,12 +1604,13 @@ def course_create(request, template_name='myapp/course_create.html'):
     if request.method == 'POST':
         post = request.POST;
         course_name = post['course_name']
+	categoryids=post.getlist('brand')
     	course_count = Course.objects.filter(name=course_name).count()
         if course_count == 0:
                 print("Creating the Course..")
                 course_name=post['course_name']
                 course_desc=post['course_desc']
-		course_category=post['course_category']
+		#course_category=post['course_category']
                 packageidspicklist=post.getlist('target')
                 print("packages selected from picklist:")
                 print(packageidspicklist)
@@ -1604,9 +1624,15 @@ def course_create(request, template_name='myapp/course_create.html'):
 		course_organisation = User_Organisations.objects.get(\
 					user_userid=course_publisher).\
 						organisation_organisationid
-		course = Course(name=course_name, category=course_category,\
+		course = Course(name=course_name,\
 			     description=course_desc, publisher=course_publisher,\
 				 organisation=course_organisation)
+		course.save()
+	
+		for categoryid in categoryids:
+		    category = Categories.objects.get(id=categoryid)
+		    course.cat.add(category)
+
 		course.save()
 
                 print("Mapping packages with course..")
@@ -1731,11 +1757,52 @@ def course_update(request, pk, template_name='myapp/course_form.html'):
 		course.allclasses.add(currentallclass)
 		course.save()
 
+   	print("Going to all the categories")
+	categoryids = request.POST.getlist('brand')
+        for categoryid in categoryids:
+	    category = Categories.objects.get(id=categoryid)
+	    if category not in course.cat.all():
+	        course.cat.add(category)
+	        course.save()
+
         return redirect('managecourses')
     return render(request, template_name, {'form':form, 'all_students':allstudents,\
 		 'assigned_students':assignedstudents,'all_packages':allpackages,\
 		'assigned_packages':assignedpackages, 'all_allclasses':allallclasses,\
 		 'assigned_allclasses':assignedallclasses})
 
+def allsubcategories(request, pk):
+    print(pk)
+    try:
+        all_categories = Categories.objects.filter(parent_id = pk)
+        json_allcategories = simplejson.dumps( [{'id': o.id,
+                           'name': o.name,
+                            } for o in all_categories] )
+        return HttpResponse(json_allcategories, mimetype="application/json")
+    except:
+        return HttpResponse(None)
+
+def allrootcategories(request):
+    try:
+        all_categories = Categories.objects.filter(parent_id = 0)
+        json_allcategories = simplejson.dumps( [{'id': o.id,
+                           'name': o.name,
+                            } for o in all_categories] )
+        return HttpResponse(json_allcategories, mimetype="application/json")
+    except:
+        return HttpResponse(None)
+
+"""
+f delete(request, pk, template_name='myapp/package_confirm_delete.html'):
+    document = get_object_or_404(Document, pk=pk)
+    if request.method=='POST':
+        if request.user == document.publisher:
+            document.delete()
+        else:
+            print("Only the publisher can delete the block")
+            return redirect('manage')
+        return redirect('manage')
+    return render(request, template_name, {'object':document})
+"""
 
 # Create your views here.

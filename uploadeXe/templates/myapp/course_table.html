@@ -34,14 +34,15 @@
             columns: [
                 {field:'name', headerText: 'Name', sortable:true},
 		{field:'category', headerText: 'Category', sortable:true},
+		{field:'add_date', headerText: 'Added', sortable:true},
 		{field:'publisher', headerText: 'Publisher', sortable:true},
 
 
             ],
             datasource: [
                 {% if courses_as_json %}
-                        {% for c,publisher_detail in courses_as_json %}
-                        {"pk":"{{c.pk}}", "name":"{{c.pk}}: {{c.fields.name}}","category":"{{c.fields.category}}","publisher":"{{publisher_detail}}","success":"{{c.fields.success}}"}{% if not forloop.last %},{% endif %}
+                        {% for c,publisher_detail, categories in courses_as_json %}
+                        {"pk":"{{c.pk}}", "name":"{{c.pk}}: {{c.fields.name}}","category":"{{categories}}","add_date":"{{c.fields.add_date}}","publisher":"{{publisher_detail}}","success":"{{c.fields.success}}"}{% if not forloop.last %},{% endif %}
                         {% endfor %}
                 {% endif %}
                 ],

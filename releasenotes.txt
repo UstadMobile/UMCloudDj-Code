@@ -1,3 +1,15 @@
+v0.9.992
+- Added and updated models to support Categories.
+- Populated categories.
+- Added Public catalog page for Ustad Mobile OPDS Courses.
+- Added Categories page logic for courses by categories.
+- Phone number of userprofile expanded to 50 char
+- Added API for Phone In-App Registrations for Phone Numbers
+- Added relation between country codes and Organisations
+- Added relation between Organisationsa and Courses
+- Added unit tests for the above
+- Added super admin console for country-organisation relationship
+
 v0.9.991
 - Package / Block to have language and description field.
 - Package / Block elp or epub file uploaded gets description and lang from tincanxml and contentv3 xml files and assigns it.

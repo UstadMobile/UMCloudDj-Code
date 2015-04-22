@@ -11,6 +11,7 @@ from uploadeXe.models import Package as Document
 from uploadeXe.models import Course
 from uploadeXe.models import Ustadmobiletest
 from uploadeXe.models import Invitation
+from uploadeXe.models import Country_Organisation
 
 from uploadeXe.models import Role
 from uploadeXe.models import User_Roles
@@ -63,6 +64,11 @@ import requests
 import uuid
 
 from opds.views import login_basic_auth
+import re
+from django.http import HttpResponseBadRequest
+import random
+import string
+import phonenumbers
 
 logger = logging.getLogger(__name__)
 ###################################
@@ -486,7 +492,10 @@ def admin_approve_request(request, template_name='user/admin_approve_request_tab
 	return render(request, template_name, {'state':state})
 
 """View to render the create user form and get parameters from POST request and 
-create the user"""
+create the user
+This is the user create by Organisational Admins -> Teachers within their org
+using the Management Tab in UMCLOUD.
+"""
 @login_required(login_url='/login/')
 def user_create(request, template_name='user/user_create.html'):
     organisation = User_Organisations.objects.get(\
@@ -1961,6 +1970,169 @@ def sign_up_in(request):
         #Shows message that the username/email address already exists in our database.
         state="The Username already exists.."
         return render_to_response('user/user_create_website_selection.html',{'state':state,'organisation_list':organisation_list}, context_instance=RequestContext(request))
+
+"""In-App authentication for phone numbers. 
+View to create non-user-validated users for users with phone numbers from within the App only.
+"""
+@csrf_exempt
+def phone_inapp_registration(request):
+    logger.info("Starting this..")
+    print(request.META)
+    if request.method !='POST':
+        logger.info("Not a POST request")
+        #Bad request: 400.
+        authresponse = HttpResponse(status=400)
+        authresponse.write("Not POST")
+        return authresponse
+    try:
+        version = request.META['UM-In-App-Registration-Version']
+    except:
+        try:
+            version = request.META['HTTP_UM_IN_APP_REGISTRATION_VERSION']
+        except:
+            version = request.META.get('UM-In-App-Registration-Version',\
+                                         None)
+            if not version:
+                import urllib
+                bdy = urllib.unquote_plus(request.body)
+                v = re.search(\
+                    'UM\WIn\WApp\WRegistration\WVersion=(?P<num>[\d\.]*)\&?', bdy)
+                if v:
+                    version = v.group('num')
+    if version:
+        regex = re.compile("^1\.0(\.\d+)?$")
+        if regex.match(version):
+            pass
+        else:
+            return HttpResponseBadRequest(\
+                "UM-In-App-Registration-Version is not supported")
+    else:
+        return HttpResponseBadRequest(\
+            "UM-In-App-Registration-Version header missing")
+
+
+    post = request.POST
+    phonenumber = post.get('phonenumber', None)
+    if not phonenumber:
+        logger.info("No Phone number in request")
+        return HttpResponseBadRequest("No phone number in request")
+
+    #Check quality of phone number
+
+    # Create random username and password (6 digits)
+    password = random.randrange(100000,999999)
+    username = ''.join(random.choice(string.ascii_letters) for x in range(5))\
+                                             + str(random.randrange(1000,9999))
+    usernames = User.objects.all().values_list('username', flat=True)
+    while (username in usernames):
+	print("Trying a username:")
+        username = ''.join(random.choice(string.ascii_letters) for x in range(5))\
+                                             + str(random.randrange(1000,9999))
+
+    print("Created username:" + username)
+    email = str(phonenumber) + "@ustadmobile.email"
+    first_name = str(phonenumber)
+    last_name = "InAppRegistration"
+    
+    user = User(username=username, email=email, first_name=first_name,\
+                 last_name=last_name)
+    user.set_password(password)
+    user.save()
+    logger.info("User object created..")
+    logger.info("Creating profile..")
+
+    #Organisation mapping.
+    if phonenumber.startswith("+"):
+        clean_number = phonenumber[1:]
+    elif phonenumber.startswith("00"):
+        clean_number = phonenumber[2:]
+    elif phonenumber.startswith("0"):
+        clean_number = phonenumber[1:]
+
+    phonenumber = phonenumber.strip()
+
+    phonenumber = "+" + str(phonenumber)
+
+    ph_number = phonenumbers.parse(phonenumber, None)
+    country_code = ph_number.country_code
+    print("Country code is :"  + str(country_code))
+
+    try:
+        country_mapping = Country_Organisation.objects.get(\
+            country_code=int(country_code))
+        organisation = country_mapping.organisation
+        print("orgaisation found by country code: " + organisation.organisation_name)
+        if organisation:
+            #Assign to courses.
+            country_courses = country_mapping.allcourses.all()
+
+
+    except:
+        print("Not assigned to a country")
+        organisation = Organisation.objects.get(pk=1)
+
+    gender = "F"
+    try:
+        user_profile = UserProfile(user=user, website="www.ustadmobile.com", \
+            job_title="In-App Phone Registration", \
+            gender=gender, phone_number=phonenumber,\
+            organisation_requested=organisation)
+	user_profile.save()
+    except:
+        logger.info("Something went wrong in making user profile")
+        authresponse = HttpResponse(status=500)
+        authresponse.write("Internal Error in making user profile")
+        return authresponse
+    
+    try:
+        student_role = Role.objects.get(pk=6)
+        new_role_mapping = User_Roles(name="ph_inapp_reg", \
+                            user_userid=user, role_roleid=student_role)
+
+        new_organisation_mapping = User_Organisations(user_userid=user, \
+                    organisation_organisationid=organisation)
+
+        user_profile.save()
+        logger.info("User profile created..")
+
+        new_role_mapping.save()
+        logger.info("Role Mapping created..")
+
+
+        new_organisation_mapping.save()
+        logger.info("Organisation mapping created..")
+
+        #Check if previous were a success.
+        logger.info("User Role mapping (website) success.")
+
+        user_profile.admin_approved=True
+        user_profile.save()
+
+    except:
+	authresponse = HttpResponse(status=500)
+        authresponse.write("Internal Error in Role mapping, organisation mapping.")
+        return authresponse
+
+    try:
+        #Assign student to courses
+        if country_courses:
+            for every_course in country_courses:
+                every_course.students.add(user)
+                every_course.save()
+
+
+        json_credentials = simplejson.dumps( {'username': username,
+                           'password': password,
+                            })
+        return HttpResponse(json_credentials, mimetype="application/json")
+    except:
+	authresponse = HttpResponse(status=500)
+        authresponse.write("Internal Error in assigning courses and Student roles.")
+        return authresponse
+
+    authresponse = HttpResponse(status=200)
+    authresponse.write("Test")
+    return authresponse
 
 """View to log out existing user and redirect back to login page
 """

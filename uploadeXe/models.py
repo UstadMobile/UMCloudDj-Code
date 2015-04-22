@@ -28,6 +28,16 @@ def update_filename(instance, filename):
    filename = instance.user + timestamp + ".um." + filename
    return os.path.join(path, filename)
 
+
+"""
+Course / Block Categories are declared over here. 
+"""
+class Categories(models.Model):
+    name = models.CharField(max_length=200)
+    parent_id = models.IntegerField(default=0)
+    def __unicode__(self):
+	return u'%s' % (self.name)
+
 """This represents a BLOCK. a block is an elp file technically
 and many blocks make the course.
 Blocks are related to its publisher 
@@ -75,6 +85,7 @@ class Course(models.Model):
    add_date=models.DateTimeField(auto_now_add=True)
    upd_date=models.DateTimeField(auto_now=True)
    category=models.CharField(max_length=200)
+   cat = models.ManyToManyField(Categories, related_name='coursecategory')
    price=models.FloatField(default = 0)
    active=models.BooleanField(default = True)
    public=models.BooleanField(default = True)
@@ -88,6 +99,17 @@ class Course(models.Model):
 
    def __unicode__(self):
         return u'%s' % (self.name)
+"""
+Links Country with Organisation and courses to be assigned. 
+"""
+
+class Country_Organisation(models.Model):
+    country_code = models.CharField(max_length=300)
+    organisation = models.ForeignKey(Organisation)
+    allcourses = models.ManyToManyField(Course, related_name='countryorgnaisationcourses')
+    def __unicode__(self):
+	return u'%s' %(self.country_code)
+
 
 """
 An Invitation object stores invitation unique uuid against invitations

@@ -25,7 +25,7 @@ class UserProfile(models.Model):
     job_title = models.CharField(max_length=100, blank=True)
     date_of_birth = models.DateField(blank=True, null=True)
     address = models.CharField(max_length=800, blank=True)
-    phone_number = models.CharField(max_length=15, blank=True)
+    phone_number = models.CharField(max_length=50, blank=True)
     gender = models.CharField(max_length=2, blank=True)
     admin_approved = models.BooleanField(default=False)
     organisation_requested = models.ForeignKey(Organisation)

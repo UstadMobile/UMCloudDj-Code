@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+                        $('#newcountryorg').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+{% block title %}Manage Country-Organisation Relationships - UstadMobile Cloud {% endblock %}
+{% block content %}
+
+
+<script type="text/javascript">
+  $(function() { 
+    $('#tblcountryorg').puidatatable({
+            caption: 'Country-Organisations',
+            paginator: {
+                rows: 10
+            },
+            columns: [
+                //{field:'pk', headerText: 'ID', sortable:true},
+                //{field:'model', headerText: 'Django Model', sortable:true},
+		{field:'country_code', headerText: 'Country code', sortable:true},
+                {field:'organisation_name', headerText: 'Organisation Name', sortable:true},
+                //{field:'organisation_desc', headerText: 'Organisation Desc', sortable:true},
+
+            ],
+            datasource: [
+                {% if organisations %}
+                        {% for c in object_list %}
+                        {"pk":"{{c.pk}}","model":"{{c.model}}","organisation_name":"{{c.organisation.organisation_name}}", "country_code":"{{c.country_code}}"}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                {% endif %}
+                ],
+            selectionMode: 'single',
+            rowSelect: function(event, data) {
+                console.log("Wassup?")
+                $('#messages').puigrowl('show', [{severity:'info', summary: 'Row Selected', detail: (data.organisation_name + ' ' + data.pk)}]);
+                var edit="/countryorgedit/"+data.pk;
+                window.open(edit, "_self");
+            },
+            rowUnselect: function(event, data) {
+                //$('#messages').puigrowl('show', [{severity:'info', summary: 'Row Unselected', detail: (data.brand + ' ' + data.vin)}]);
+            }
+   });
+  }
+  ); 
+</script>
+<p cass="error" style="color:red;"><i>{{state}}</i></p>
+<div id="tblcountryorg"> </div>
+<a href="/newcountryorg/"><button id="newcountryorg" type="button">New Country-Organisation Relationship</button></a>  
+{% endblock %}

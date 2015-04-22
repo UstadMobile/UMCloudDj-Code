@@ -17,6 +17,7 @@ from organisation.models import User_Organisations
 from UMCloudDj.views import create_user_more, user_exists
 from uploadeXe.models import Role
 from uploadeXe.models import User_Roles
+from uploadeXe.models import Country_Organisation
 from organisation.models import Organisation_Code
 
 from django.http import HttpResponse
@@ -28,6 +29,110 @@ import os
 import urllib
 import urllib2, base64, json
 from random import randrange
+
+
+"""
+The organisation model form that is used for update and creation
+"""
+class Country_OrganisationForm(ModelForm):
+    class Meta:
+        model = Country_Organisation
+
+
+@login_required(login_url='/login/')
+def country_organisation_table(request, template_name='organisation/country_organisation_table.html'):
+    if (request.user.is_staff == True):
+        print("ok")
+	corganisations = Country_Organisation.objects.all()
+        organisation_packages = []
+	data = {}
+        data['object_list']=corganisations
+        data['organisations']=corganisations
+        return render(request, template_name, data)
+
+    else:
+        state="You do not have permission to see this page."
+        return render(request, template_name, {'state':state})
+
+@login_required(login_url='/login/')
+def country_organisation_new(request, template_name='organisation/country_organisation_new.html'):
+    if (request.user.is_staff == True):
+	print("ok")
+	form = Country_OrganisationForm(request.POST or None)
+        if form.is_valid():
+            form.save()
+            return redirect('countryorgtable')
+        return render(request, template_name, {'form':form})
+
+    else:
+	state="You do not have permission to see this page."
+        return render(request, template_name, {'state':state})
+
+@login_required(login_url='/login/')
+def country_organisation_create(request, template_name='organisation/country_organisation_create.html'):
+    if (request.user.is_staff == True):
+        print("ok")
+	organisations=Organisation.objects.all()
+	data={}
+	data['organisations']=organisations
+	if request.method == 'POST':
+	    post=request.POST
+	    try:
+	        country_code=post['country_code']
+	        organisationid = post['organisationid']
+	    except: 
+		state="Invalid Code/Org"
+		data['state']=state
+		return render(request, template_name, data)
+	    if country_code != "" and country_code != None and\
+		 organisationid != None and organisationid != "":
+		organisation=Organisation.objects.get(pk=organisationid)
+		try:
+		    countryorg = Country_Organisation(country_code=country_code,\
+			organisation=organisation)
+		    countryorg.save()
+		except:
+		    state="Could not create the relationship"
+		    data['state']=state
+		    return render(request, template_name, data)
+		return redirect('countryorgtable')
+	return render(request, template_name, data)
+
+    else:
+        state="You do not have permission to see this page."
+        return render(request, template_name, {'state':state})
+
+@login_required(login_url='/login/')
+def country_organisation_edit(request, pk, template_name='organisation/country_organisation_edit.html'):
+
+    if (request.user.is_staff == True):
+        print("ok")
+	corganisation = get_object_or_404(Country_Organisation, pk=pk)
+        form = Country_OrganisationForm(request.POST or None, instance=corganisation)
+        if form.is_valid():
+                form.save()
+                return redirect('countryorgtable')
+        return render(request, template_name, {'form':form})
+
+    else:
+        state="You do not have permission to see this page."
+        return render(request, template_name, {'state':state})
+
+"""
+Super Admin option to delete country organisation relationship
+"""
+@login_required(login_url='/login/')
+def country_organisation_delete(request, pk, template_name='organisation/organisation_confirm_delete.html'):
+    if (request.user.is_staff==True):
+        corganisation = get_object_or_404(Country_Organisation, pk=pk)
+        if request.method=='POST':
+                corganisation.delete()
+                return redirect('countryorgtable')
+        return render(request, template_name, {'object':corganisation})
+    else:
+        print("Not a staff.")
+        state="You do not have permission to see this page."
+        return render(request, template_name, {'state':state})
 
 
 

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+                        $('#country_code').puiinputtext();
+                        $('#organisationid').puidropdown();
+			$('#organisation').puidropdown();
+                        $('#submit').puibutton();
+
+                }
+          ); 
+</script>
+{% endblock %}
+{% block title %}Add a Country Organisation Relationship {% endblock %}
+{% block content %}
+{% if state == "You do not have permission to see this page." %}
+	<p cass="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+	<p cass="error" style="color:red;"><i>{{state}}</i></p>
+<form id="newcountryorgform" method="post">{% csrf_token %}
+    <h1>Create a New Country/Organisation Relationship</h1>
+    <br></br>
+    <div data-role="fieldcontain">
+        <label for="country_code">Country code:  </label><input type="text" name="country_code" id="country_code" value="" required/>
+    </div>
+   <label>Organisation:</label> <select id="organisationid" form="newcountryorgform" name="organisationid">
+        {% for organisation in organisations %}
+        <option value="{{ organisation.id }}">{{ organisation.organisation_name }}</option>
+        {% endfor %}
+   </select>
+   <br></br>
+    <button id="submit" type="submit" name="submit" value="Create">Submit</button>
+</form>
+{% endif %}
+
+{% endblock %}

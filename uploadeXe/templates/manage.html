@@ -40,6 +40,12 @@ background-image:url(/media/system-settings.png);
     background-position: center left;
     text-align: center;
 }
+#countryorgtable {
+background-image:url(/media/system-settings.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: center;
+}
 #myorg {
 background-image:url(/media/system-settings.png);
     background-repeat: no-repeat;
@@ -54,6 +60,7 @@ background-image:url(/media/system-settings.png);
                         $('#roletable').puibutton(); 
 			$('#usertable').puibutton(); 
 			$('#orgtable').puibutton(); 
+			$('#countryorgtable').puibutton();
 			$('#umpackagetable').puibutton(); 
 			$('#schooltable').puibutton(); 
 			$('#allclasstable').puibutton(); 
@@ -74,6 +81,7 @@ background-image:url(/media/system-settings.png);
 		<a href="/userstable/"><button id="usertable" type="button" style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Users</button></a>
 		{% if superadmin_role == True %}
 			<a href="/organisationstable/"><button id="orgtable" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Organisations</button></a>
+			<a href="/countryorgtable/"><button id="countryorgtable" type="button" style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Country Org Map</button></a>
         	{% endif %}
 
 		<!--<a href="/umpackagestable/"><button id="umpackagetable" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Manage Subscription</button></a>-->

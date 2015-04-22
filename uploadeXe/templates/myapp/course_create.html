@@ -39,6 +39,7 @@
 			$('#newpackage').puibutton();
         		$('#course_desc').puiinputtext();
         		$('#course_category').puiinputtext();
+		 	//$('#brand').puilistbox();
 			$('#course_price').puiinputtext();
 			$('#submit').puibutton();
 			$('#submit2').puibutton();
@@ -90,7 +91,7 @@
 {% endblock %}
 
 {% block content %}
-
+{% load templatetags %}
 	{% if statesuccess == 1 %}
                         <p style="color:green;"><i><img src="/media/images/tick.png" alt="">{{state}}<i></p>
                 {% else %}
@@ -106,7 +107,8 @@
         <label for="course_desc">Course Desc:  </label><input type="text" name="course_desc" id="course_desc" value="" />
     </div>
     <div data-role="fieldcontain">
-        <label for="course_category">Course Category:  </label><input type="text" name="course_category" id="course_category" value="" />
+        <label for="course_category">Category:  </label>{% all_root_categories %}
+        <!--<input type="text" name="course_category" id="course_category" value="" />-->
     </div>
    <!--<div data-role="fieldcontain">
         <label for="course_price">Course Price:  </label><input type="number" step="0.01" min="0" name="course_price" id="course_price" value="" />
@@ -140,6 +142,5 @@
     <button id="submit2" type="submit" name="submittonew" value="Create">Save and Create another</button>
 
 </form>
-
 
 {% endblock %}

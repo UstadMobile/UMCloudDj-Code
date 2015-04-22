@@ -20,10 +20,12 @@ from django import forms
 from uploadeXe.models import Package as Document
 from uploadeXe.models import Course 
 from uploadeXe.models import Ustadmobiletest
+from uploadeXe.models import Country_Organisation
 from users.models import UserProfile
 import os 
 from django.conf import settings
 import base64
+import json
 
 class UMCloudDjViewTestCase(TestCase):
     fixtures = ['uploadeXe/fixtures/initial-model-data.json']
@@ -67,6 +69,18 @@ class UMCloudDjViewTestCase(TestCase):
 	test_course.save()
 	test_course.students.add(testuser)
 	test_course.save()
+
+  	test_course2 = Course(name="TestCourse2", category="Testing", description="This is a course made for phone in app reg testing", publisher=testuser, organisation=mainorganisation)
+        test_course2.save()
+
+	test_course3 = Course(name="TestCourse3", category="Testing", description="This is a course made for phone in app reg testing", publisher=testuser, organisation=mainorganisation)
+	test_course3.save()
+
+	countryorg = Country_Organisation(country_code="971", organisation=mainorganisation)
+	countryorg.save()
+	countryorg.allcourses.add(test_course2)
+	countryorg.allcourses.add(test_course3)
+	countryorg.save()
 	
 	test_block=Document(name="unittest01", elpid="ThisIsTheUniqueElpID", url="//this.is.the/linke/to/the/test/01",uid="123UGOFreei01", success="Yes", publisher=testuser)
 	test_block.save()
@@ -82,6 +96,58 @@ class UMCloudDjViewTestCase(TestCase):
 	allclass1.students.add(student1)
 	allclass1.save()
 
+    def test_get_phone_inapp_reg(self):
+	"""
+	Tests if external phone number registrations can be made in app
+	"""
+
+	url="/phoneinappreg/"
+	
+	"""Blank GET request will not do anything."""
+	self.c = Client()
+	response = self.c.get(url)
+	self.assertContains(response, "Not POST", status_code=400)
+	print(response)
+
+    def test_post_blank_phone_inapp_reg(self):
+	url="/phoneinappreg/"
+	response = self.client.post(url)
+	self.assertContains(response, "UM-In-App-Registration-Version header missing", status_code=400)
+
+    def test_wrong_param_phone_inapp_reg(self):
+
+	post_data={"phonenumber":"123234567890"}
+	response = self.client.post('/phoneinappreg/', post_data)
+	self.assertContains(response, "UM-In-App-Registration-Version header missing", status_code=400)
+
+    def test_nophone_phone_inapp_reg(self):
+	post_data={"phonenumber":""}
+	response = self.client.post("/phoneinappreg/", post_data, HTTP_UM_IN_APP_REGISTRATION_VERSION="1.0.0")
+	self.assertContains(response, "No phone number in request", status_code=400)
+    
+    def test_phone_inapp_reg(self):
+	post_data={"phonenumber":"+971528888888"}
+	response = self.client.post("/phoneinappreg/", post_data, HTTP_UM_IN_APP_REGISTRATION_VERSION="1.0.0")
+	self.assertEquals(response.status_code, 200)
+	self.assertContains(response, "username")
+	self.assertContains(response, "password")
+
+	#Test if courses are assigned
+	credential=json.loads(response.content)
+	username = credential['username']
+	password = credential['password']
+	authstring=str(username)+":"+str(password)
+	auth_headers = {
+            'HTTP_AUTHORIZATION': 'Basic ' + base64.b64encode(authstring),
+        }
+        ac_response = self.client.get("/opds/assigned_courses/", **auth_headers)
+	self.assertEquals(ac_response.status_code, 200)
+        self.assertContains(ac_response, "<title>+971528888888 InAppRegistration's ("+username+") assigned courses</title>")
+        self.assertContains(ac_response, "<title>TestCourse2</title>")
+        self.assertContains(ac_response, "<id>http://www.ustadmobile.com/um-tincan/course/2</id>")
+
+
+	
 
     def test_checklogin_view(self):
 	"""

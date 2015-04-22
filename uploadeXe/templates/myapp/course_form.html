@@ -114,6 +114,7 @@
 {% endblock %}
 {% block title %}Edit Course{% endblock %}
 {% block content %}
+{% load templatetags %}
 
 <form method="post">{% csrf_token %}
     <!--{{ form.as_p }}-->
@@ -127,6 +128,8 @@
     <label>Course Category</label>
 	{{form.category}}
 	<p></p>
+    <label>Course Category</label>
+	{% all_root_categories %}
     <!--<label>Course Price</label>
 	{{form.price}}
 	<p></p>-->
