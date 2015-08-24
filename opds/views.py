@@ -200,7 +200,7 @@ def root_view(request):
 	xmlreturn += "<author><name></name><uri></uri></author>"
 
 	xmlreturn += "<entry>"
-	xmlreturn += "<title>" + user.first_name + " " + user.last_name + "'s Assigned Courses</title>"
+	xmlreturn += "<title>My Assigned Courses</title>"
         xmlreturn += "<link rel=\"shelf\" href=\"/opds/assigned_courses/\" type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
 	xmlreturn += "<updated>"+py_time_now+"</updated>"
 	xmlreturn += "<id>http://umcloud1.ustadmobile.com/opds/assigned_courses/?userid=" + str(user.id) + "</id>"
@@ -252,6 +252,7 @@ def assigned_courses(request):
   	    xmlreturn += "<title>" + user.first_name + " " + user.last_name + "'s (" + user.username + ") assigned courses</title>"
 	    py_time_now = time.strftime('%Y-%m-%dT%H:%M:%SZ')
    	    xmlreturn += "<updated>" + py_time_now + "</updated>"
+	    xmlreturn += "\n"
 	    xmlreturn += get_author_xml_snippet(request.user)
 
 
@@ -265,6 +266,8 @@ def assigned_courses(request):
             assigned_course_ids=[]
             assigned_course_packages=[]
             assigned_course_packageids=[]
+	    #Remove duplicates:
+	    matchedcourses = list(set(matchedcourses))
             if matchedcourses:      #If there are matched courses
                 for everycourse in matchedcourses:
 		    xmlreturn += "\n"
@@ -374,6 +377,8 @@ def get_course(request):
 			    epubname = exefilepath.rsplit(".",2)[1]
 			    url = url.rsplit("/",1)[0] + "/" + epubname + ".epub"
 			    url = url.rsplit("/",1)[0] + ".epub"
+			if exefilepath.endswith(".epub"):
+			    url = "/media/"+exefilepath
 		    xmlreturn += "<entry>\n"
 		    xmlreturn += "<title>" + o.name +"</title>\n"
 		    xmlreturn += "<id>"+o.tincanid+'/'+o.elpid+"</id>\n"

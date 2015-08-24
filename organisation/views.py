@@ -119,6 +119,15 @@ def country_organisation_edit(request, pk, template_name='organisation/country_o
         return render(request, template_name, {'state':state})
 
 """
+@login_required(login_url='/login/')
+def country_organisation_update(request, pk, template_name='organisation/country_organisation_update.html'):
+    if (request.user.is_staff == True):
+	print("ok2")
+	corganisation = get_object_or_404(Country_Organisation, pk=pk)
+	
+"""
+
+"""
 Super Admin option to delete country organisation relationship
 """
 @login_required(login_url='/login/')

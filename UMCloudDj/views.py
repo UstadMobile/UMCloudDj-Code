@@ -2017,11 +2017,13 @@ def phone_inapp_registration(request):
         logger.info("No Phone number in request")
         return HttpResponseBadRequest("No phone number in request")
 
+    name = post.get('name', None)
+
     #Check quality of phone number
 
     # Create random username and password (6 digits)
     password = random.randrange(100000,999999)
-    username = ''.join(random.choice(string.ascii_letters) for x in range(5))\
+    username = ''.join(random.choice(string.ascii_lowercase) for x in range(5))\
                                              + str(random.randrange(1000,9999))
     usernames = User.objects.all().values_list('username', flat=True)
     while (username in usernames):
@@ -2030,8 +2032,13 @@ def phone_inapp_registration(request):
                                              + str(random.randrange(1000,9999))
 
     print("Created username:" + username)
+    if not name:
+ 	name = username
+
+    
     email = str(phonenumber) + "@ustadmobile.email"
     first_name = str(phonenumber)
+    first_name = str(name)
     last_name = "InAppRegistration"
     
     user = User(username=username, email=email, first_name=first_name,\
@@ -2071,7 +2078,11 @@ def phone_inapp_registration(request):
         print("Not assigned to a country")
         organisation = Organisation.objects.get(pk=1)
 
-    gender = "F"
+    gender = post.get('gender', None)
+    if not gender:
+	gender = ""
+    gender = str(gender)
+    #gender = "F"
     try:
         user_profile = UserProfile(user=user, website="www.ustadmobile.com", \
             job_title="In-App Phone Registration", \
@@ -2119,6 +2130,7 @@ def phone_inapp_registration(request):
             for every_course in country_courses:
                 every_course.students.add(user)
                 every_course.save()
+		#Do something with user. 
 
 
         json_credentials = simplejson.dumps( {'username': username,

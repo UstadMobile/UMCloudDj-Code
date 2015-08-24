@@ -1,3 +1,8 @@
+v0.9.993
+-Removed duplicate entries in assigned courses of opds api
+-Added correct epub mapping. 
+-Spaces allowed for now as a temporary fix. Long term fix is forunzipping to take place on python side.
+
 v0.9.992
 - Added and updated models to support Categories.
 - Populated categories.

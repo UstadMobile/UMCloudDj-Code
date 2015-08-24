@@ -1245,20 +1245,10 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 
         if uurl.lower().endswith('.epub'):
             print("Going to export an EPUB file..")
-            #epub file is: \"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" 
 	    print("Possible command:")
 	    print('unzip -q ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + " -d " +\
                 "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
                           unid + "/" + "\"")
-	    """
-	    if os.system(exe_do_command + ' -x ustadmobile '+ "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" +\
-		' ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + ".new\"") == 0:
-		
-		print("0. Epub re exported.")
-	    else:
-		print("!!Unable to re export epub file!!")
-		return "newfail", None
-	    """
 	
             if os.system('unzip -q ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + " -d " +\
             	"\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
@@ -1298,12 +1288,20 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
                     epubassetfolder=packagepath.rsplit('/',1)[0]
 		else:
 		  return "newfail", None
+		print("possible move command: " + 'mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+                    unid+"/"+epubassetfolder+"\"" + " " +  "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
+                            unid + "/" + name + "\"")
             	if (os.system('mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
-	    	    unid+"/"+epubassetfolder+"\"" + " " + appLocation+'/../UMCloudDj/media/eXeExport/'+\
-	    	    	    unid + "/" + name)) == 0:
+	    	    unid+"/"+epubassetfolder+"\"" + " " + "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
+	    	    	    unid + "/" + name + "\"")) == 0:
             	    print("2. Unzipped and verified.")
-            	    if os.system('cp ' + appLocation + '/../UMCloudDj/media/eXeExport/'\
-			    + unid + '/' + name + '/ustadpkg_html5.xml ' +\
+		    print("Possible copy command:" + 'cp ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
+                            + unid + '/' + name + '/ustadpkg_html5.xml' +"\"" + " " +\
+                                "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
+                                    + unid + '/' + name + '_ustadpkg_html5.xml' +\
+                                        "\"" )
+            	    if os.system('cp ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
+			    + unid + '/' + name + '/ustadpkg_html5.xml' + "\"" + " "  +\
 			 	"\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
 			 	    + unid + '/' + name + '_ustadpkg_html5.xml' +\
 			 		"\"" ) == 0: #ie if command got executed in success
@@ -1425,11 +1423,11 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 	    	    #Get epub asset folder name from META-INF/container.xml
 	    	    epubassetfolder = "EPUB"
 	    	    if (os.system('mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
-	    	        unid+"/"+epubassetfolder+"\""+ " " +appLocation+'/../UMCloudDj/media/eXeExport/'+\
-	    	    	    unid + "/" + name)) == 0:
+	    	        unid+"/"+epubassetfolder+"\""+ " " + "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
+	    	    	    unid + "/" + name + "\"")) == 0:
 	    	    	print("2. Unzipped and verified.")
-	    	    	if os.system('cp ' + appLocation + '/../UMCloudDj/media/eXeExport/'\
-			    + unid + '/' + name + '/ustadpkg_html5.xml ' +\
+	    	    	if os.system('cp ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
+			    + unid + '/' + name + '/ustadpkg_html5.xml' + "\"" + " " +\
 			 	"\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
 			 	    + unid + '/' + name + '_ustadpkg_html5.xml' +\
 			 		"\"" ) == 0: #ie if command got executed in success
