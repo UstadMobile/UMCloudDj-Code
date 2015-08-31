@@ -1977,7 +1977,6 @@ View to create non-user-validated users for users with phone numbers from within
 @csrf_exempt
 def phone_inapp_registration(request):
     logger.info("Starting this..")
-    print(request.META)
     if request.method !='POST':
         logger.info("Not a POST request")
         #Bad request: 400.
@@ -2010,7 +2009,6 @@ def phone_inapp_registration(request):
         return HttpResponseBadRequest(\
             "UM-In-App-Registration-Version header missing")
 
-
     post = request.POST
     phonenumber = post.get('phonenumber', None)
     if not phonenumber:
@@ -2036,8 +2034,15 @@ def phone_inapp_registration(request):
  	name = username
 
     
-    email = str(phonenumber) + "@ustadmobile.email"
-    first_name = str(phonenumber)
+    #Organisation mapping.
+    if phonenumber.startswith("+"):
+        clean_number = phonenumber[1:]
+    elif phonenumber.startswith("00"):
+        clean_number = phonenumber[2:]
+    elif phonenumber.startswith("0"):
+        clean_number = phonenumber[1:]
+
+    email = str(clean_number) + "@ustadmobile.email"
     first_name = str(name)
     last_name = "InAppRegistration"
     
@@ -2048,34 +2053,30 @@ def phone_inapp_registration(request):
     logger.info("User object created..")
     logger.info("Creating profile..")
 
-    #Organisation mapping.
-    if phonenumber.startswith("+"):
-        clean_number = phonenumber[1:]
-    elif phonenumber.startswith("00"):
-        clean_number = phonenumber[2:]
-    elif phonenumber.startswith("0"):
-        clean_number = phonenumber[1:]
-
     phonenumber = phonenumber.strip()
-
-    phonenumber = "+" + str(phonenumber)
+    if not phonenumber.startswith("+"):
+	if not phonenumber.startswith("00"):
+	    phonenumber = "+" + str(phonenumber)
+	else:
+	    phonenumber = phonenumber[2:]
+            phonenumber = "+" + str(phonenumber)
 
     ph_number = phonenumbers.parse(phonenumber, None)
     country_code = ph_number.country_code
-    print("Country code is :"  + str(country_code))
+    logger.info("Country code is :"  + str(country_code))
 
     try:
         country_mapping = Country_Organisation.objects.get(\
             country_code=int(country_code))
         organisation = country_mapping.organisation
-        print("orgaisation found by country code: " + organisation.organisation_name)
+        logger.info("orgaisation found by country code: " + organisation.organisation_name)
         if organisation:
             #Assign to courses.
             country_courses = country_mapping.allcourses.all()
 
 
     except:
-        print("Not assigned to a country")
+        logger.info("Not assigned to a country")
         organisation = Organisation.objects.get(pk=1)
 
     gender = post.get('gender', None)
