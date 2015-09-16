@@ -2066,6 +2066,7 @@ def phone_inapp_registration(request):
     country_code = ph_number.country_code
     logger.info("Country code is :"  + str(country_code))
 
+    country_courses=None
     try:
         country_mapping = Country_Organisation.objects.get(\
             country_code=int(country_code))
@@ -2079,7 +2080,6 @@ def phone_inapp_registration(request):
     except:
         logger.info("Not assigned to a country")
         organisation = Organisation.objects.get(pk=1)
-
     gender = post.get('gender', None)
     if not gender:
 	gender = ""
