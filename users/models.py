@@ -33,5 +33,6 @@ class UserProfile(models.Model):
 		    default='/media/avatars/no-img.jpg',\
 		        	null=True)
     notes=models.TextField(null=True,blank=True)
+    last_activity_date = models.DateTimeField(blank=True, null=True)
 
 # Create your models here.

@@ -37,6 +37,7 @@
  	    $('#id_notes').puiinputtext();
   	    $('#submit').puibutton();
 	    $('#deleteuser').puibutton();
+	    $('#id_last_activity_date').puiinputtext();
             });  
 
 	function disableusername() {
@@ -91,6 +92,9 @@
 	<label>Notes</label>
         {{upform.notes}}<p></p>
 	<!--{{upform.as_p}}-->
+	<label>Last Active On:</label>
+	{{upform.last_activity_date}}
+	<p></p>
 
 	<button id="submit" type="submit" name="submit" value="submit-value">Update</button>
 

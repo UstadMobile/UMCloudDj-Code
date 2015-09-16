@@ -330,6 +330,10 @@ def statements_db_dynatable(request,template_name='statements_db_02.html'):
     logger.info("User="+request.user.username+" accessed /reports/allstatements/")
     organisation = User_Organisations.objects.get(user_userid=request.user)\
 						.organisation_organisationid;
+    #redirect to pagi
+    return redirect('pagi_allstatements')
+    
+    """
     all_org_users= User.objects.filter(pk__in=User_Organisations.objects\
 		    .filter(organisation_organisationid=organisation)\
 			.values_list('user_userid', flat=True))
@@ -365,7 +369,7 @@ def statements_db_dynatable(request,template_name='statements_db_02.html'):
     return render(request, template_name,{'object_list':all_statements,\
 	 'table_headers_html':table_headers_html, 'pagetitle':pagetitle,\
 	     'tabletypeid':tabletypeid, 'logicpopulation':logicpopulation} )
-
+    """
 
 """
 Internal Fix: This is a super user feature to update statementinfo tables 
@@ -401,8 +405,39 @@ def update_all_statementinfo(request, template_name='check_statementinfos.html')
     result="test"
     return render(request, template_name, {'object_list':objectList, 'result':result} )
 """
+"""
+Internal Fix: To update all user profile to have a last activity date
+"""
+"""
+def update_lastactivity(request, template_name='check_statementinfos.html'):
+    object_list=[]
 
+    print("Getting all users..")
+    #allusers = User.objects.all()
+    karmaorg = Organisation.objects.get(organisation_name="Karmasnap")
+    allusers= User.objects.filter(pk__in=\
+        User_Organisations.objects.filter(\
+            organisation_organisationid=karmaorg\
+                ).values_list('user_userid', flat=True))
+    allusers=User.objects.all()
+    for everyuser in allusers:
+	try:
+	    everyuser_laststatement = models.Statement.objects.filter(user=everyuser,\
+		object_activity__activity_definition_type__icontains=\
+		    "activities/module").latest("timestamp")
+	    lastactivity_date = everyuser_laststatement.timestamp.isoformat()
+	    everyuser_profile = UserProfile.objects.get(user=everyuser)
+	    everyuser_profile.last_activity_date = lastactivity_date
+	    everyuser_profile.save()
+	except:
+	    #print("Unable to save last assigned for user: " + everyuser.username)
+	    object_list.append(everyuser.id)
+    print("Done")
+    result="test"
+    return render(request, template_name,{'object_list':object_list, \
+                                          'result':result} )
 
+"""
 
 """
 Internal Fix: Quick fix for organisation statements for
@@ -941,6 +976,102 @@ def allschools(request):
 	logger.info("Something went wrong in fetching all schools")
 	logger.info("Error really..")
 	return HttpResponse(None)
+
+"""Report: Last Activity Report
+This report shows the last activity for every user in current org.
+Only useful for org admins and functionality limited to org admins only
+"""
+@login_required(login_url='/login/')
+def last_activity_selection(request):
+    user_role = User_Roles.objects.get(user_userid=request.user).role_roleid;
+    organisational_admin_role = Role.objects.get(pk=2)
+    if user_role != organisational_admin_role:
+        authresponse = HttpResponse(status=400)
+        authresponse.write("Not Org admin")
+        return authresponse        
+    logger.info("User="+request.user.username+\
+            " accessed /reports/last_activity_selection/")
+    organisation = User_Organisations.objects.get(\
+            user_userid=request.user).organisation_organisationid
+    current_user = request.user.username + " (" + \
+            organisation.organisation_name + ")"
+    current_user_role = User_Roles.objects.get(user_userid=\
+                            request.user.id).role_roleid.role_name;
+    current_user = "Hi, " + request.user.first_name + ". You are a " +\
+            current_user_role + " in " + organisation.organisation_name +\
+                " organisation."
+    return render_to_response('last_activity_report_selection.html',\
+        {'current_user':current_user}, context_instance = RequestContext(request))
+
+
+"""Report: Last activity Report
+
+"""
+@login_required(login_url='/login/')
+def last_activity(request, template_name='last_activity_report.html'):
+    if request.method != 'POST':
+	pass
+        #return redirect('last_activity_selection')
+        #Return "Not Post request";
+
+    user_role = User_Roles.objects.get(user_userid=request.user).role_roleid;
+    organisational_admin_role = Role.objects.get(pk=2)
+    if user_role != organisational_admin_role:
+        authresponse = HttpResponse(status=400)
+        authresponse.write("Not Org admin")
+        return authresponse        
+
+    #Get current organisation 
+    organisation = User_Organisations.objects.get(\
+                user_userid=request.user).organisation_organisationid;
+
+    #Get all users in the organisation
+    user_selected= User.objects.filter(pk__in=\
+        User_Organisations.objects.filter(\
+            organisation_organisationid=organisation\
+                ).values_list('user_userid', flat=True))
+    users_with_statements = user_selected
+
+    logger.info("User="+request.user.username+" accessed /reports/lastactivity/")
+
+    if True:
+        yaxis=[]
+        label_legend=[]
+        user_duration=0
+
+        last_activity=[]
+	all_userids=[]
+
+        for user_with_statement in users_with_statements:
+	    all_userids.append(user_with_statement.id)
+	    label_legend.append(user_with_statement.first_name + " " + user_with_statement.last_name)
+	    try:
+		b=UserProfile.objects.get(user=user_with_statement).last_activity_date
+		#if b is None:
+		#    b="-"
+	    except:
+		b="-"
+	    last_activity.append(b)
+        #yaxis=zip(label_legend, yaxis, user_by_duration, users_with_statements, last_activity)
+        yaxis=zip(label_legend, all_userids, last_activity)
+        data={}
+        data['yaxis']=yaxis
+
+
+        data['pagetitle']="UstadMobile Last Activity Report"
+        data['tabletypeid']="lastactivitydynatable"
+
+        table_headers_html=[]
+        table_headers_name=[]
+        table_headers_html.append("user")
+        table_headers_name.append("User")
+        table_headers_html.append("last_activity")
+        table_headers_name.append("Last activity")
+        table_headers_html = zip(table_headers_html, table_headers_name)
+
+        data['table_headers_html']=table_headers_html
+
+    return render(request, template_name, data)
 	
 """Report: Duration Report
 This report shows the range and parameter selection page for 

@@ -144,12 +144,12 @@ def role_delete(request, pk, template_name='role/role_confirm_delete.html'):
 """UserProfile model form for additional details about the user
 """
 class UserProfileForm(ModelForm):
-    raw_id_fields=("user",)
-    readonly_fields=("user",)
+    raw_id_fields=("user", 'last_activity_date',)
+    readonly_fields=("user",'last_activity_date',)
     class Meta:
         model = UserProfile
 	fields=('website','company_name','job_title','date_of_birth',\
-			'address','phone_number','gender', 'notes')
+			'address','phone_number','gender', 'notes', 'last_activity_date')
 
 """User model form for user addition and update forms.
 """
@@ -631,6 +631,7 @@ def user_update(request, pk, template_name='user/user_update.html'):
 	userprofile.save()
     upform=UserProfileForm(request.POST or None, instance=userprofile)
     upform.fields['date_of_birth'].widget.attrs = {'class':'dobdatepicker'}
+    upform.fields['last_activity_date'].widget.attrs['readonly']=True
 
     if form.is_valid():
 	if upform.is_valid():
