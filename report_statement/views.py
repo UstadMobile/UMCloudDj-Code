@@ -1046,7 +1046,7 @@ def last_activity(request, template_name='last_activity_report.html'):
 	    all_userids.append(user_with_statement.id)
 	    label_legend.append(user_with_statement.first_name + " " + user_with_statement.last_name)
 	    try:
-		b=UserProfile.objects.get(user=user_with_statement).last_activity_date
+		b=UserProfile.objects.get(user=user_with_statement).last_activity_date.isoformat()
 		#if b is None:
 		#    b="-"
 	    except:
@@ -1070,6 +1070,86 @@ def last_activity(request, template_name='last_activity_report.html'):
         table_headers_html = zip(table_headers_html, table_headers_name)
 
         data['table_headers_html']=table_headers_html
+
+    return render(request, template_name, data)
+
+"""Report: Last activity Report - Inactive for x days
+
+"""
+@login_required(login_url='/login/')
+def last_activity_inactive(request, template_name='last_activity_report.html'):
+    days_inactive = request.GET.get('daysinactive')
+    if days_inactive == None or days_inactive == "":
+        print("No days specified")
+        return redirect('last_activity')
+    try:
+	days_inactive = int(days_inactive)
+    except:
+	print("Unable to cast int.")
+        return redirect('last_activity')
+    if days_inactive == None or days_inactive == "" or days_inactive == 0:
+	print("Un workable days inactive")
+	return redirect('last_activity')
+
+
+    print("Checking for days: " + str(days_inactive))
+    user_role = User_Roles.objects.get(user_userid=request.user).role_roleid;
+    organisational_admin_role = Role.objects.get(pk=2)
+    if user_role != organisational_admin_role:
+        authresponse = HttpResponse(status=400)
+        authresponse.write("Not Org admin")
+        return authresponse
+
+    #Get current organisation 
+    organisation = User_Organisations.objects.get(\
+                user_userid=request.user).organisation_organisationid;
+
+    #Get all users in the organisation
+    user_selected= User.objects.filter(pk__in=\
+        User_Organisations.objects.filter(\
+            organisation_organisationid=organisation\
+                ).values_list('user_userid', flat=True))
+    users_with_statements = user_selected
+
+    logger.info("User="+request.user.username+" accessed /reports/lastactivity/")
+
+    if True:
+        yaxis=[]
+        label_legend=[]
+        user_duration=0
+
+        last_activity=[]
+        all_userids=[]
+
+        users_with_statement_profile = UserProfile.objects.filter(user__in=users_with_statements).filter(last_activity_date__lte=datetime.now() - td(days=days_inactive))
+
+	for userprofile in users_with_statement_profile:
+	    all_userids.append(userprofile.user.id)
+	    label_legend.append(userprofile.user.first_name + " " + userprofile.user.last_name)
+	    try:
+		b = userprofile.last_activity_date.isoformat()
+	    except:
+		b="-"
+	    last_activity.append(b)
+        #yaxis=zip(label_legend, yaxis, user_by_duration, users_with_statements, last_activity)
+        yaxis=zip(label_legend, all_userids, last_activity)
+        data={}
+        data['yaxis']=yaxis
+
+
+        data['pagetitle']="UstadMobile Last Activity Report"
+        data['tabletypeid']="lastactivitydynatable"
+
+        table_headers_html=[]
+        table_headers_name=[]
+        table_headers_html.append("user")
+        table_headers_name.append("User")
+        table_headers_html.append("last_activity")
+        table_headers_name.append("Last activity")
+        table_headers_html = zip(table_headers_html, table_headers_name)
+
+        data['table_headers_html']=table_headers_html
+	data['inactivefor']=days_inactive
 
     return render(request, template_name, data)
 	

@@ -53,7 +53,7 @@ urlpatterns = patterns('',
 	url(r'^register/invitation/$','UMCloudDj.views.check_invitation_view',  name='check_invitation_view'),
 
 	#url(r'^updatelastactivity/$', 'report_statement.views.update_lastactivity', name='update_lastactivity'), #Internal fix only
-
+	url(r'^reports/noactivity/$', 'report_statement.views.last_activity_inactive', name='last_activity_inactive'), #showing inactive users inactive for x days
    	url(r'^reports/lastactivity/$', 'report_statement.views.last_activity', name='last_activity'), #last activity report
 	url(r'^reports/last_activity_selection/$', 'report_statement.views.last_activity_selection', name='last_activity_selection'), #last activity report selection
 	url(r'^reports/durationreport_selection/$', 'report_statement.views.durationreport_selection', name='durationreport_selection'), #duration report selection

@@ -4,43 +4,44 @@
 <script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart.js" %}"></script>
 <script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart-config.js" %}"></script>
 <script type="text/javascript">
-          $(function() { 
-                        var newtypeid="{{newtypeid}}";
-                        $('#{{newtypeid}}').puibutton(); 
-                        $(function() { 
-                                $('#{{tabletypeid}}').dynatable({
-                                        features: {
-                                                paginate: true,
-                                                search: true,
-                                                recordCount: true,
-                                                sorting: true,
-                                                
-                                        },
-					readers: {
-                                            'last_activity': function(el, record) {
-                                                 return Date.parse(el.innerHTML);
-                                             }
-                                        },
-                                        //writers: {
-                                        //    'last_activity': function(record) {
-                                        //        return record.date.toString();
-                                        //    }
-                                        //},
-                                        dataset: {
-                                        records:[
-						{% if yaxis %}
-                					{% for l,id,latest in yaxis  %}
-                        					//{"user":"<a href=\"../durationreport/getstatements/{{id}}\" >{{l}}</a>", "last_activity":"{{latest}}"} {% if not forloop.last %},{% endif %}
-							        {"user":"<a href=\"../../useredit/{{id}}\" >{{l}}</a>", "last_activity":"{{latest}}"} {% if not forloop.last %},{% endif %}
-                					{% endfor %}
-        					{% endif %}
-                                                ]
-                                        }
-                                });
-                        });
-
+      $(function() { 
+            var newtypeid="{{newtypeid}}";
+            $('#{{newtypeid}}').puibutton(); 
+            $(function() { 
+                $('#{{tabletypeid}}').dynatable({
+                    features: {
+                        paginate: true,
+                        search: true,
+                        recordCount: true,
+                        sorting: true,
+                    },
+                    writers: {
+                        'last_activity': function(record) {
+			    console.log(record.last_activity);
+			    record.parsedDate = Date.parse(record.last_activity);
+			    console.log("return: " + record.last_activity);
+			    console.log("date: " + record.parsedDate);
+			    if (record.parsedDate){
+				console.log("date exists..");
+				return new Date(record.last_activity).toUTCString();
+			    }
+			    return record.last_activity;
+                        }
+                    },
+                    dataset: {
+                        records:[
+			    {% if yaxis %}
+                		{% for l,id,latest in yaxis  %}
+				    {"user":"<a href=\"../../useredit/{{id}}\" >{{l}}</a>", 
+					"last_activity":"{{latest}}"} 
+					    {% if not forloop.last %},{% endif %}
+                		{% endfor %}
+        		    {% endif %}
+                        ]
+                    }
+                });
+            });
         });
-
 </script>
 
 {% endblock %}
@@ -50,18 +51,17 @@
     <p class="error" style="color:red;"><i>{{state}}</i></p>
 {% else %}
     <h3><i><center>Last Activity Report for your organisation</center></i></h3>
+	<form action="/reports/noactivity/">
+	    <h3><i>Show users inactive for <input type="text" name="daysinactive" value="{{inactivefor}}"> days:
+	    <input type="submit" value="Go"><p></p></i></h3>
+	</form>
     <table id="{{tabletypeid}}">
-    <thead>
-    {% for d, f in table_headers_html %}
-        <th data-dynatable-column="{{d}}" >{{f}}</th>
-    {% endfor %}
-    </thead>
-    <tbody>
-    </tbody>
-    <tfoot></tfoot>
+     <thead>
+	<th data-dynatable-column="user">User</th>
+	<th data-dynatable-column="last_activity">Last Activity</th>
+	<!--<th data-dynatable-column="last_activity" data-dynatable-sorts="parsedDate" >Last Activity</th>-->
+     </thead>
     </table>
-    <br></br>
-    <!-- HTML goes here -->
     <p></p>
 {% endif %}
 
