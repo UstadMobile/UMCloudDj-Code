@@ -1041,8 +1041,23 @@ def last_activity(request, template_name='last_activity_report.html'):
 
         last_activity=[]
 	all_userids=[]
+	class_assigned = ""
+	all_class_assigned=[]
 
         for user_with_statement in users_with_statements:
+	    try:
+	        alluserclasses = Allclass.objects.filter(students__in=[user_with_statement])
+	 	first=True
+		for everyclass in alluserclasses:
+		    if first:
+		        class_assigned = everyclass.allclass_name
+			first=False
+		    else:
+			class_assigned = class_assigned + ", " + everyclass.allclass_name
+	    except:
+		class_assigned = "-";
+	    all_class_assigned.append(class_assigned)
+	    
 	    all_userids.append(user_with_statement.id)
 	    label_legend.append(user_with_statement.first_name + " " + user_with_statement.last_name)
 	    try:
@@ -1053,7 +1068,7 @@ def last_activity(request, template_name='last_activity_report.html'):
 		b="-"
 	    last_activity.append(b)
         #yaxis=zip(label_legend, yaxis, user_by_duration, users_with_statements, last_activity)
-        yaxis=zip(label_legend, all_userids, last_activity)
+        yaxis=zip(label_legend, all_userids, last_activity, all_class_assigned)
         data={}
         data['yaxis']=yaxis
 

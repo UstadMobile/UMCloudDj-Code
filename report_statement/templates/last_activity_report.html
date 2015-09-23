@@ -31,9 +31,10 @@
                     dataset: {
                         records:[
 			    {% if yaxis %}
-                		{% for l,id,latest in yaxis  %}
+                		{% for l,id,latest,allclasses in yaxis  %}
 				    {"user":"<a href=\"../../useredit/{{id}}\" >{{l}}</a>", 
-					"last_activity":"{{latest}}"} 
+					"last_activity":"{{latest}}", 
+					    "allclass_assigned":"{{allclasses}}"}
 					    {% if not forloop.last %},{% endif %}
                 		{% endfor %}
         		    {% endif %}
@@ -59,6 +60,7 @@
      <thead>
 	<th data-dynatable-column="user">User</th>
 	<th data-dynatable-column="last_activity">Last Activity</th>
+	<th data-dynatable-column="allclass_assigned">Class Assigned</th>
 	<!--<th data-dynatable-column="last_activity" data-dynatable-sorts="parsedDate" >Last Activity</th>-->
      </thead>
     </table>

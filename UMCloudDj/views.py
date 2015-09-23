@@ -1109,10 +1109,13 @@ class ResumableBlockUploadView(View):
     def get(self, *args, **kwargs):
         """Checks if chunk has allready been sended.
         """
-        r = ResumableFile(self.storage, self.request.GET)
-        if not (r.chunk_exists or r.is_complete):
-            return HttpResponse('chunk not found', status=404)
-        return HttpResponse('chunk already exists')
+	try:
+            r = ResumableFile(self.storage, self.request.GET)
+            if not (r.chunk_exists or r.is_complete):
+                return HttpResponse('chunk not found', status=404)
+            return HttpResponse('chunk already exists')
+	except:
+	    return HttpResponse("Not a valid request..", status=400)
 
     def post(self, *args, **kwargs):
 
@@ -1173,7 +1176,10 @@ class ResumableBlockUploadView(View):
 		authresponse['error']="Unable to process chunks in resumable upload."
 		return authresponse
 
-	
+	    blockcourse = True
+	    data['forceNew'] = forceNew
+            data['noAutoassign'] = noAutoassign
+            data['blockCourse'] = blockcourse
 	    user = self.request.user
             return_value, newdoc, data_updated = handle_block_upload(exefile, user, forceNew, noAutoassign, data)
 
@@ -1195,6 +1201,7 @@ class ResumableBlockUploadView(View):
             elpiname = return_value[4]
             uidwe = return_value[4]
             elplomid = return_value[5]
+	    blockcourseid = return_value[6]
 
 	    if rete=="newsuccess":
 		print("A success export")
@@ -1222,6 +1229,7 @@ class ResumableBlockUploadView(View):
                         uploadresponse['error'] = "Exe failed to export"
                         return uploadresponse
 
+		"""
                 logger.info("Going to create the course...")
                 #Update  14th October 2014: We want blocks coming from eXe to be created as single courses.
                 blockcourse = Course(name=newdoc.name, category="-",\
@@ -1243,10 +1251,20 @@ class ResumableBlockUploadView(View):
                     newdoc.students.remove(all);
                     newdoc.delete()
                     blockcourse.delete()
+		"""
 
 
                 #form is valid (upload file form)
                 # Redirect to the document list after POST
+		blockcourse = None
+		try:
+		    print("Getting block course..")
+		    blockcourse = Course.objects.get(\
+			pk=blockcourseid)
+		    print("Got blockcourse : " + str(blockcourse.id))
+		except:
+		    print("Unable to get blockcourse.")
+		
                 uploadresponse = HttpResponse(status=200)
                 uploadresponse['courseid'] = getattr(blockcourse, 'id')
                 uploadresponse['coursename'] = getattr(blockcourse, 'name')

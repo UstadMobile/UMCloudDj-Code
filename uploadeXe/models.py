@@ -33,7 +33,7 @@ def update_filename(instance, filename):
 Course / Block Categories are declared over here. 
 """
 class Categories(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
     parent_id = models.IntegerField(default=0)
     def __unicode__(self):
 	return u'%s' % (self.name)
@@ -63,6 +63,7 @@ class Package(models.Model):
 		default="http://www.ustadmobile.com/um-tincan/activities")
    description = models.CharField(max_length=1800, null=True)
    lang = models.CharField(max_length = 100, null=True)
+   subject = models.CharField(max_length = 200, null=True)
 
    def __unicode__(self):
         return u'%s' % (self.name)
@@ -96,6 +97,9 @@ class Course(models.Model):
    allclasses = models.ManyToManyField(Allclass, related_name='coursesallclasses')
    tincanid = models.CharField(max_length=200, \
 			default="http://www.ustadmobile.com/um-tincan/course")
+   grade_level = models.CharField(max_length=100, null=True)
+   lang = models.CharField(max_length = 100, null=True)
+   
 
    def __unicode__(self):
         return u'%s' % (self.name)
