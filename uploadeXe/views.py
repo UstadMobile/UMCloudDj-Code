@@ -1,3 +1,6 @@
+from django.core.context_processors import csrf
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import render
 from django.template import RequestContext
 from django.http import HttpResponseRedirect
@@ -334,20 +337,57 @@ def get_prefix_from_tincanxml(epubpath):
 
 """View and method to handle block/elp file uploads.
 """
-@login_required(login_url='/login/')
+@csrf_exempt
+#@login_required(login_url='/login/')
 def upload(request, template_name='myapp/upload_handle.html'):
+    print("Upload request coming through..")
     # Renders the Block upload and assignation form. 
     state=""
     data = {}
     form = ExeUploadForm() # A empty, unbound form
     #documents here are just existing Blocks / Packages
+    print("request user is: ")
+    print(request.user)
+    
+    if request.user is None or request.user.is_anonymous():
+	print("No user in request")
+	if 'username' not in request.POST.keys():
+	    print("Invalid request")
+	    return HttpResponse("Not a valid request..", status=400)
+	else:
+	    if request.POST['username'] == "":
+	        print("Invalid request")
+	        return HttpResponse("Username given is empty..", status=400)
+		
+	if 'password' not in request.POST.keys():
+	    print("No password given.")
+	    return HttpResponse("Not a valid request..", status=400)
+
+	username = request.POST['username']
+	password = request.POST['password']
+	user = authenticate(username=request.POST['username'], \
+               password=request.POST['password'])
+        if user is not None:
+	    print("Login a success")
+	    request.user = user
+	    print("Setted request user")
+	else:
+	    print("Wrong username/password combination")
+	    return HttpResponse("Authentication failed", status=402)
+	    
     documents = Document.objects.filter(\
                  publisher=request.user, success="YES", active=True)
+    documents = []
     current_user = request.user.username
     data['documents']=documents
     data['form']=form
     data['current_user']=current_user
-
+    print("request:")
+    print(request)
+    print("request.method")
+    print(request.method)
+    print("request.POST")
+    print(request.POST)
     if request.method == 'POST':
         #If method is POST, an elp file is being
         #uploaded. 
@@ -364,6 +404,7 @@ def upload(request, template_name='myapp/upload_handle.html'):
         form = ExeUploadForm(request.POST, request.FILES)
 	forceNew     = request.POST.get('forceNew')
 	noAutoassign = request.POST.get('noAutoassign') 
+	print("getting category and other  extra elements..")
 	try:
 	    category = request.POST.get('category')
 	except: 
@@ -384,10 +425,12 @@ def upload(request, template_name='myapp/upload_handle.html'):
 	data['blockCourse'] = blockcourse
 
         #verifying the form (Django style)
-        if form.is_valid():
+        #if form.is_valid():
+	if True:
           #For Every file uploaded
+	  print("Getting files..")
 	  for exefile in request.FILES.getlist('exefile'):
-
+	    print("In file.." + str(exefile))
             #This is the new thing
             return_value, newdoc, data_updated = handle_block_upload(exefile, request.user, forceNew, noAutoassign, data)
 	    newdoc.description = description
@@ -806,7 +849,8 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
 	    setattr(newdoc, "name", elpiname)
 	    setattr(newdoc, "publisher", publisher)
 	    newdoc.save()
-	    if data['blockCourse'] is not None and data['blockCourse'] is True:
+	    if data['blockCourse'] is not None:
+		#and data['blockCourse'] is True:
 	        print("Got to make block into a course")
 		try:
 		    organisation = User_Organisations.objects.get(\
@@ -881,8 +925,10 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
 			blockcourse.save()
 
 		    #Adding grade level
+  		    print("Adding gradeLevel")
 		    if data['gradeLevel'] is not None and data['gradeLevel'] != "":
-                        override_level = data['gradeLevel']
+			print("grade Level is : " + str(data['gradeLevel']))
+                        override_level = str(data['gradeLevel'])
                         blockcourse.grade_level = override_level
                         blockcourse.save()
 		
