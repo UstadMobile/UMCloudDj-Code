@@ -23,6 +23,7 @@ class Organisation(models.Model):
    organisation_desc = models.CharField(max_length=1000)
    add_date = models.DateTimeField(default=datetime.datetime.now)
    set_package = models.ForeignKey(UMCloud_Package)
+   public = models.BooleanField(default = False)
 
    def __unicode__(self):
         return u'%s ' % (self.organisation_name)

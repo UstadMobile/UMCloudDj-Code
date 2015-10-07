@@ -22,17 +22,18 @@
                 {field:'pk', headerText: 'ID', sortable:true},
                 //{field:'model', headerText: 'Django Model', sortable:true},
                 {field:'organisation_name', headerText: 'Organisation Name', sortable:true},
-                {field:'organisation_desc', headerText: 'Organisation Desc', sortable:true},
+                //{field:'organisation_desc', headerText: 'Organisation Desc', sortable:true},
                 {field:'add_date', headerText: 'Date Added', sortable:true},
 		{field:'set_package', headerText: 'Subscription', sortable:true},
 		{field:'code', headerText: 'User Request Code', sortable:true},
 		{field:'admin', headerText: 'Admin/Manager', sortable:true},
+		{field: 'public', headerText: 'Public', sortable: true},
 
             ],
             datasource: [
                 {% if organisations %}
                         {% for c,r,a in object_list %}
-                        {"pk":"{{c.pk}}","model":"{{c.model}}","organisation_name":"{{c.organisation_name}}", "organisation_desc":"{{c.organisation_desc}}","add_date":"{{c.add_date}}","set_package":"{{c.set_package.package_name}}","code":"{{r}}","admin":"{{a}}"}{% if not forloop.last %},{% endif %}
+                        {"pk":"{{c.pk}}","model":"{{c.model}}","public":"{{c.public}}", "organisation_name":"{{c.organisation_name}}", "organisation_desc":"{{c.organisation_desc}}","add_date":"{{c.add_date}}","set_package":"{{c.set_package.package_name}}","code":"{{r}}","admin":"{{a}}"}{% if not forloop.last %},{% endif %}
                         {% endfor %}
                 {% endif %}
                 ],

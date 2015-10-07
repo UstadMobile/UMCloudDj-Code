@@ -338,15 +338,7 @@ def get_course(request):
             xmlreturn += "<link rel=\"self\"\n\
                 href=\"/opds/course/?id="+str(courseid)+"\"\n\
                 type=\"application/atom+xml;profile=opds-catalog;kind=acquisition\"/>"
-	    """
-	    xmlreturn += "<link rel=\"http://umcloud1.ustadmobile.com/opds/\"\n\
-                href=\"/course/?id="+str(courseid)+"\"\n\
-                type=\"application/atom+xml;profile=opds-catalog;kind=acquisition\"/>"
-	    """
 
-	    """
-	    Course details 
-	    """
 	    organisation = User_Organisations.objects.get(\
                                 user_userid=user)\
                                 .organisation_organisationid;
@@ -398,12 +390,6 @@ def get_course(request):
           		type=\"application/epub+zip\"/>\n"
 		
 		    xmlreturn += "</entry>\n"
-		
-
-                #return HttpResponse(json_blocks, mimetype="application/json")
-		#return None
-
-
 
             authresponse = HttpResponse(status=200)
             authresponse.write(xmlreturn)
@@ -476,6 +462,156 @@ def public_view(request):
         authresponse.write("Basic Authentication not present in request.")
         return authresponse
 
+@csrf_exempt
+def public_providers(request):
+    py_time_now = time.strftime('%Y-%m-%dT%H:%M:%SZ')
+    xmlreturn =opds_xml_header
+    xmlreturn += "  <id>http://umcloud1.ustadmobile.com/opds/public/providers</id>"
+
+    xmlreturn += "  <link rel=\"self\""
+    xmlreturn += "        href=\"/opds/public/providers/\""
+    xmlreturn += "        type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
+
+    xmlreturn += "  <link rel=\"start\""
+    xmlreturn += "        href=\"/opds/\""
+    xmlreturn += "        type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
+
+    xmlreturn += get_search_xml_snippet()
+
+    xmlreturn += "<title>All Public Providers</title>"
+    #Should be replaced by actual update time not current. Actually IS current time of request.
+    xmlreturn += "<updated>"+py_time_now+"</updated>"
+    xmlreturn += "<author><name>Ustad Mobile Public</name><uri>http://www.ustadmobile.com</uri></author>"
+
+    all_public_providers = Organisation.objects.filter(public = True);
+    for provider in all_public_providers:
+        xmlreturn += "<entry>"
+        xmlreturn += "<title>" + provider.organisation_name + "</title>"
+        xmlreturn += "<link href=\"/opds/public/providers/" + str(provider.id) + "\" type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
+        xmlreturn += "<updated>"+py_time_now+"</updated>"
+        xmlreturn += "<id></id>"
+        xmlreturn += "<content type=\"text\">Categories part of " + provider.organisation_name + " provider .</content>"
+        xmlreturn += "</entry>"
+
+    xmlreturn += "</feed>"
+    authresponse = HttpResponse(status=200)
+    authresponse.write(xmlreturn)
+    return authresponse
+
+@csrf_exempt
+def public_providers_nocategories(request, pk):
+    return public_providers_categories(request, pk, None)
+
+@csrf_exempt
+def public_providers_categories(request, pk, ct):
+    if pk != "" and pk != None and ct == None or ct == "":
+
+        py_time_now = time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        xmlreturn =opds_xml_header
+        provider = Organisation.objects.get(pk=pk);
+
+        xmlreturn += "  <id>http://umcloud1.ustadmobile.com/opds/public/providers/"+pk+"</id>"
+
+        xmlreturn += "  <link rel=\"self\""
+        xmlreturn += "        href=\"/opds/public/providers/"+pk+"\""
+        xmlreturn += "        type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
+
+        xmlreturn += "  <link rel=\"start\""
+        xmlreturn += "        href=\"/opds/public/\""
+        xmlreturn += "        type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
+
+        xmlreturn += get_search_xml_snippet()
+
+        xmlreturn += "<title>Categories of Provider: " + provider.organisation_name + " </title>"
+        xmlreturn += "<updated>"+py_time_now+"</updated>"
+        xmlreturn += "<author><name>Ustad Mobile Public</name><uri>http://www.ustadmobile.com</uri></author>"
+
+        all_provider_courses = Course.objects.filter(
+            success="YES", publisher__in=User.objects.filter(
+                pk__in=User_Organisations.objects.filter(
+                    organisation_organisationid=provider
+                ).values_list('user_userid', flat=True)
+            )
+        )
+        all_provider_categories = []
+        for every_provider_course in all_provider_courses:
+            every_provider_course_categories = every_provider_course.cat.all()
+            for every_category in every_provider_course_categories:
+		if every_category not in all_provider_categories:
+                    all_provider_categories.append(every_category)
+            
+        
+        for category in all_provider_categories:
+            xmlreturn += "<entry>"
+            xmlreturn += "<title>" + category.name + "</title>"
+            xmlreturn += "<link href=\"/opds/public/providers/" + str(pk) + "/" + str(category.id) + "\" type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
+            xmlreturn += "<updated>"+py_time_now+"</updated>"
+            xmlreturn += "<id></id>"
+            xmlreturn += "<content type=\"text\">Courses part of " + category.name + " category. </content>"
+            xmlreturn += "</entry>"
+
+        
+        xmlreturn += "</feed>"
+        authresponse = HttpResponse(status=200)
+        authresponse.write(xmlreturn)
+        return authresponse
+    elif (pk != "" and pk != None and ct != "" and ct != None):
+        py_time_now = time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        xmlreturn =opds_xml_header
+        provider = Organisation.objects.get(pk=pk);
+        category = Categories.objects.get(pk=ct);
+
+        xmlreturn += "  <id>http://umcloud1.ustadmobile.com/opds/public/providers/" + pk + "/" + ct + "</id>"
+
+        xmlreturn += "  <link rel=\"self\""
+        xmlreturn += "        href=\"/opds/public/providers/"+pk+"\""
+        xmlreturn += "        type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
+
+        xmlreturn += "  <link rel=\"start\""
+        xmlreturn += "        href=\"/opds/public/\""
+        xmlreturn += "        type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
+
+        xmlreturn += get_search_xml_snippet()
+
+        xmlreturn += "<title>Categories of Provider: " + provider.organisation_name + " </title>"
+        xmlreturn += "<updated>"+py_time_now+"</updated>"
+        xmlreturn += "<author><name>Ustad Mobile Public</name><uri>http://www.ustadmobile.com</uri></author>"
+
+
+        all_provider_courses = Course.objects.filter(
+            success="YES", publisher__in=User.objects.filter(
+                pk__in=User_Organisations.objects.filter(
+                    organisation_organisationid=provider
+                ).values_list('user_userid', flat=True)
+            )
+        )
+        all_provider_category_courses = []
+        for every_provider_course in all_provider_courses:
+            if category in every_provider_course.cat.all():
+                all_provider_category_courses.append(every_provider_course);
+            
+
+
+        for course in all_provider_category_courses:
+            xmlreturn += "<entry>"
+            xmlreturn += "<title>" + course.name + "</title>"
+            xmlreturn += "<link href=\"/opds/public/course/?id=" + str(course.tincanid) +'/'+ str(course.id) + "\" \n\
+                             type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
+            xmlreturn += "<id>" + str(course.tincanid) + "/" + str(course.id) + "</id>"
+            xmlreturn += "<updated>" + str(course.upd_date.strftime('%Y-%m-%dT%H:%M:%SZ')) + "</updated>"
+            xmlreturn += get_author_xml_snippet(course.publisher)
+            xmlreturn += "<content type=\"text\">" + course.description + "</content>"
+            xmlreturn += "</entry>"
+
+	xmlreturn += "</feed>"
+	authresponse = HttpResponse(status=200)
+        authresponse.write(xmlreturn)
+        return authresponse
+    else:
+        logger.info("pk is invalid")
+        authresponse = HttpResponse(status=401)
+        authresponse.write("Invalid ID given.")
+        return authresponse
 
 
 @csrf_exempt

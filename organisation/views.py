@@ -278,11 +278,13 @@ def my_organisation_update(request, pk, template_name='organisation/my_organisat
 						pk=pk)
         form = OrganisationCodeForm(request.POST or None, \
 				instance=organisation_code)
+	public = organisation.public;
+
         if form.is_valid():
                 form.save()
 		return redirect('my_organisation')
         return render(request, template_name, {'form':form, \
-				'organisation':organisation})
+	        'public':public, 'organisation':organisation})
     else:
         print("Not a staff.")
         data['state']="You do not have permission to see this page."

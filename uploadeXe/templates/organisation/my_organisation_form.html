@@ -19,6 +19,11 @@
     <input type="text" id="organisation_name" name="organisation_name" value="{{organisation}}" readonly="True"/><i>You cannot edit the Organisation name</i>
 	{{organisation}}
     {{ form.as_p }}
+    {% if public %}
+        <p><label for="id_public">Public:</label> <input checked="checked" id="id_public" name="public" type="checkbox" /></p>
+    {% else %}
+        <p><label for="id_public">Public:</label> <input id="id_public" name="public" type="checkbox" /></p>
+    {% endif %}
     <button id="submit" type="submit" name="submit" value="Create">Update</button>
 </form>
  

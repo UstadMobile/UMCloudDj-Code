@@ -1694,7 +1694,7 @@ class CourseForm(ModelForm):
     description = forms.CharField(required = False)
     class Meta:
         model = Course
-        fields = ('name', 'category','description')
+        fields = ('name', 'category','description', 'grade_level')
 
 """Course view to render all courses in a primeui table rendered
 by course template"""
