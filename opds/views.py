@@ -339,6 +339,7 @@ def get_course(request):
                 href=\"/opds/course/?id="+str(courseid)+"\"\n\
                 type=\"application/atom+xml;profile=opds-catalog;kind=acquisition\"/>"
 
+
 	    organisation = User_Organisations.objects.get(\
                                 user_userid=user)\
                                 .organisation_organisationid;
@@ -355,6 +356,7 @@ def get_course(request):
 		    xmlreturn += "<updated></updated>"
 		    xmlreturn += get_author_xml_snippet(course.publisher)
 		    xmlreturn += "\n"
+
             except:
                 authresponse=HttpResponse(status=500)
                 authresponse.write("Course id does not exist (Is your tincanprefix and pk right?) or does not belong to your organisation")
@@ -388,6 +390,14 @@ def get_course(request):
 		    xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
 			href=\"" + url + "\"\n\
           		type=\"application/epub+zip\"/>\n"
+
+                    if o.url != None and o.url != "" and o.url.endswith(".html"):
+                        print("Has a url")
+			extracted_path = o.url.rsplit("/",1)[0] + "/"
+                        xmlreturn += "<link rel=\"http://ustadmobile.com/epubrunner\"\n\
+                            href=\"" + extracted_path + "\" \n\
+                            type=\"text/html;profile=opds-catalog;kind=acquisition\"/>"	
+
 		
 		    xmlreturn += "</entry>\n"
 

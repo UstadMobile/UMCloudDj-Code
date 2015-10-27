@@ -6,6 +6,8 @@ UMCloudDj/media/test/*
 UMCloudDj/media/gruntConfig/umpassword.html
 UMCloudDj/media/eXeTestElp
 UMCloudDj/media/eXeTestExport
+UMCloudDj/media/web
+UMCloudDj/media/web/*
 UMCloudDj/settings.py
 UMCloudDj/wordpresscred.txt
 UMCloudDj/media/cfregdump

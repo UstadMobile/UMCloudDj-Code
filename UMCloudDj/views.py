@@ -1094,6 +1094,139 @@ def getassignedcourseids_view(request):
 		authresponse.write("Not a POST request. Assigned Course IDs retrival failed.")
 		return authresponse
 
+
+"""
+External API to check if requested user id's role is a teacher
+Takes in user's authentication
+"""
+@csrf_exempt
+def is_teacher(request):
+    state, authresponse = login_basic_auth(request)
+    if state == False:
+        return authresponse
+    if state == True:
+        request.user = authresponse
+    try:
+        user=request.user
+    except:
+        authresponse = HttpResponse(status=401)
+        authresponse.write("Not logged in or unknown user.")
+        return authresponse
+    else:
+        if user is not None:
+	    teacher_role = Role.objects.get(role_name='Teacher')
+	    user_role = User_Roles.objects.get(user_userid=user).role_roleid
+	    json_result = simplejson.dumps({
+                'role':user_role.role_name })
+            return HttpResponse(json_result, mimetype="application/json")
+		
+	else:
+	    authresponse = HttpResponse(status=401)
+	    authresponse.write("Unable to get user.")
+	    return authresponse
+
+
+"""
+External API to get all the classes assigned to teacher id given
+Takes in teacher authentication
+"""
+@csrf_exempt
+def get_teacher_allclasses(request):
+    state, authresponse = login_basic_auth(request)
+    if state == False:
+        return authresponse
+    if state == True:
+        request.user = authresponse
+    try:
+        user=request.user
+    except:
+        authresponse = HttpResponse(status=401)
+        authresponse.write("Not logged in or unknown user.")
+        return authresponse
+    else:
+        if user is not None:
+            teacher_role = Role.objects.get(role_name='Teacher')
+            user_role = User_Roles.objects.get(user_userid=user).role_roleid
+	    if (user_role == teacher_role):
+		allteachers=[]
+ 		allteachers.append(user)
+ 		allclasses=Allclass.objects.filter(teachers__in=allteachers);
+		
+		json_allclasses = simplejson.dumps([
+                        {
+                            'id':str(o.id),
+                            'name':o.allclass_name,
+                        }for o in allclasses])
+                return HttpResponse(json_allclasses, mimetype="application/json")
+
+	    else:
+		authresponse = HttpResponse(status=401)
+		authresponse.write("Unauthorized. Not a teacher")
+		return authresponse
+                
+        else:
+            authresponse = HttpResponse(status=401)
+            authresponse.write("Unable to get user.")
+            return authresponse
+
+
+"""
+External API to get a list of all student ids in a class id given
+Takes in teacher authentication
+"""
+@csrf_exempt
+def get_allclass_students(request, pk):
+    state, authresponse = login_basic_auth(request)
+    if state == False:
+        return authresponse
+    if state == True:
+        request.user = authresponse
+    try:
+        user=request.user
+    except:
+        authresponse = HttpResponse(status=401)
+        authresponse.write("Not logged in or unknown user.")
+        return authresponse
+    else:
+        if user is not None:
+            teacher_role = Role.objects.get(role_name='Teacher')
+            user_role = User_Roles.objects.get(user_userid=user).role_roleid
+            if (user_role == teacher_role):
+		allclass = Allclass.objects.get(pk=pk)
+	  	if allclass is not None:
+		    #Check if the teacher is assigned to this course.
+		    allclassteachers = allclass.teachers.all()
+	 	    if user in allclassteachers:
+		    	all_students = allclass.students.all()
+		    	json_allstudents = simplejson.dumps([
+			    {
+			    	'id':str(o.id),
+			    	'username':str(o.username),
+			    }for o in all_students])
+		    	return HttpResponse(json_allstudents, mimetype="application/json")
+		    else:
+			authresponse = HttpResponse(status=403)
+			authresponse.write("You cannot view this class. You are not a teacher of it.")
+			return authresponse
+
+		else:
+		    authresponse = HttpResponse(status=400)
+                    authresponse.write("The class id was invalid.")
+                    return authresponse
+		    
+            else:
+                authresponse = HttpResponse(status=401)
+                authresponse.write("Unauthorized. Not a teacher")
+                return authresponse
+
+        else:
+            authresponse = HttpResponse(status=401)
+            authresponse.write("Unable to get user.")
+            return authresponse
+
+
+
+
 """Method / Function to handle resumablejs uploads to UMCloudDj
 """
 """

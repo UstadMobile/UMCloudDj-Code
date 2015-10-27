@@ -51,6 +51,9 @@ urlpatterns = patterns('',
 	url(r'^get_course_blocks/$', 'UMCloudDj.views.get_course_blocks', name='get_course_blocks'),
 	url(r'^invite_to_course/$', 'UMCloudDj.views.invite_to_course', name='invite_to_course'),
 	url(r'^register/invitation/$','UMCloudDj.views.check_invitation_view',  name='check_invitation_view'),
+	url(r'^isteacher/$', 'UMCloudDj.views.is_teacher', name='is_teacher'),
+	url(r'^teacherclasses/$', 'UMCloudDj.views.get_teacher_allclasses', name='get_teacher_allclasses'),
+	url(r'^allclassstudents/(?P<pk>\d+)$', 'UMCloudDj.views.get_allclass_students', name='get_allclass_students'),
 
 	#url(r'^updatelastactivity/$', 'report_statement.views.update_lastactivity', name='update_lastactivity'), #Internal fix only
 	url(r'^reports/noactivity/$', 'report_statement.views.last_activity_inactive', name='last_activity_inactive'), #showing inactive users inactive for x days
