@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if [ $# -eq 0 ]; then
     echo "No arguments provided"
     echo "Usage: .sh <Super username> <password> <wordpress pass> <um pass> <secret key> <postgres user> <postgres password>"
@@ -61,7 +63,7 @@ sudo pip install pytz==2012c
 sudo pip install supervisor==3.0a12
 sudo pip install oauth2==1.5.170
 sudo pip install bencode==1.0
-sudo pip install Aisodate==0.4.9
+#sudo pip install Aisodate==0.4.9
 sudo pip install psycopg2==2.5
 sudo pip install isodate==0.4.9
 sudo pip install python-dateutil==1.5
@@ -170,7 +172,7 @@ python manage.py createcachetable attachment_cache
 #Sync it all..
 python manage.py syncdb --noinput
 
-if [ $DB_CREATE_FLAG == "0" ]
+if [ "$DB_CREATE_FLAG" == "0" ]
 then
     echo "lrs database created successfully. making roles and organisations"
     echo "from django.contrib.auth.models import User; User.objects.create_superuser('${SUPERUSERNAME}', 'info@ustadmobile.com', '${SUPERPASSWORD}')" | python manage.py shell
@@ -182,7 +184,7 @@ then
     echo "from uploadeXe.models import User_Roles; User_Roles.objects.create(name='build',user_userid_id=1,role_roleid_id=1,add_date='${DATE2}')" | python manage.py shell
     echo "from organisation.models import User_Organisations; User_Organisations.objects.create(add_date='${DATE2}',user_userid_id=1,organisation_organisationid_id=1)" | python manage.py shell
 else
-    echo "Couldn't create lrs. Possibly an update."
+    echo "Couldn't create lrs database. Possibly an update."
 fi
 
 
