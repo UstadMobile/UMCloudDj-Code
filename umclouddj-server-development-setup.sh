@@ -73,6 +73,7 @@ sudo pip install pygraphviz==1.2
 sudo pip install graphviz
 sudo pip install simplejson
 sudo pip install pytz
+sudo pip install phonenumbers
 
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
@@ -131,6 +132,7 @@ sed -i.bak -e 's/^SECRET_KEY/##/' UMCloudDj/settings.py
 echo "SECRET_KEY=\"${SECRET_KEY}\"" >> UMCloudDj/settings.py
 
 echo "Configuing postgres in your system.."
+sudo pg_createcluster 9.4 main --start
 sudo pg_createcluster 9.3 main --start
 sudo pg_createcluster 9.1 main --start #sometimes this is used instead.
 
