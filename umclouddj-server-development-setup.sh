@@ -42,8 +42,9 @@ sudo apt-get install -y git
 sudo apt-get install -y fabric
 sudo apt-get install -y postgresql
 sudo apt-get install -y python-setuptools
-sudo apt-get install -y postgresql-server-dev-9.3
-sudo apt-get install -y postgresql-server-dev-9.1 #Sometimes this is installed
+sudo apt-get install -y postgresql-server-dev-all
+#sudo apt-get install -y postgresql-server-dev-9.3
+#sudo apt-get install -y postgresql-server-dev-9.1 #Sometimes this is installed
 sudo apt-get install -y python-dev libxml2-dev libxslt-dev
 
 sudo easy_install pip
