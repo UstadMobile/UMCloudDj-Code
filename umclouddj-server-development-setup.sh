@@ -132,9 +132,10 @@ sed -i.bak -e 's/^SECRET_KEY/##/' UMCloudDj/settings.py
 echo "SECRET_KEY=\"${SECRET_KEY}\"" >> UMCloudDj/settings.py
 
 echo "Configuing postgres in your system.."
-sudo pg_createcluster 9.4 main --start
-sudo pg_createcluster 9.3 main --start
-sudo pg_createcluster 9.1 main --start #sometimes this is used instead.
+VER=`dpkg -l | grep postgresql- | head -n 1 | awk ' { print $2 }' | awk -F\- '{ print $2 }'`
+sudo pg_createcluster ${VER} main --start
+#sudo pg_createcluster 9.3 main --start
+#sudo pg_createcluster 9.1 main --start #sometimes this is used instead.
 
 #By this time there should be a postgres user as it has been installed in the system. 
 #we can set the user and password for this postgres user: 
