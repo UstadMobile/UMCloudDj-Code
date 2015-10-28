@@ -72,6 +72,10 @@ urlpatterns = patterns('',
         url(r'^reports/usage_report','report_statement.views.test_usage_report'),  #Usage Report (Testing)
   	url(r'^reports/responsereport_selection/$', 'report_statement.views.response_report_selection', name='response_report_selection'), #Usage Report (Mockups)
 	url(r'^reports/breakdown_report/$', 'report_statement.views.test_heather_report', name='heather_report'), #Breakdown report
+	url(r'^reports/attendance_selection/$', 'report_statement.views.attendance_selection', name='attendance_selection'), #Attendance Report Selection
+	url(r'^reports/attendance_process/$', 'report_statement.views.attendance_process', name='attendance_process'), #Processing the attendance !
+	url(r'^reports/attendance_registrations/$', 'report_statement.views.attendance_get_registration', name='attendance_get_registration'), #Show all registrations 
+	url(r'^reports/attendance_registrations/(?P<registration_id>[-\w]+)/$', 'report_statement.views.attendance_registration_students', name='attendance_registration_students'),
 
 	#For ajax fetchings
     	url(r'^fetch/allcategories/$','uploadeXe.views.allrootcategories', name='allcategories'),

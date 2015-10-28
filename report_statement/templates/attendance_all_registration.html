@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{pagetitle}}{% endblock %}
+{% block scriptjs %}
+<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart.js" %}"></script>
+<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart-config.js" %}"></script>
+
+<script>
+$(function() { 
+    var newtypeid="{{newtypeid}}";
+    $('#{{newtypeid}}').puibutton(); 
+    $(function() { 
+        $('#{{tabletypeid}}').dynatable({
+            features: {
+                paginate: true,
+                search: true,
+                recordCount: true,
+                sorting: true,
+            },
+            dataset: {
+            records:[
+                {% if yaxis %}
+                        {% for l,u in yaxis  %}
+                                {"registration":"<a href=\"{{l.context_registration}}/\" >{{u}}</a> ({{l.context_registration}})","timestamp":"{{l.timestamp}}"}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                {% endif %}
+                ]
+            }
+        });
+    });
+
+});
+</script>
+
+<style type="text/css">
+
+    #content {
+        float: left;
+        width: 800px;
+        /*margin-left: 245px;*/
+        /*width: 100%;*/
+        border: 1px solid grey;
+        padding: 5px;
+        border-radius: 5px;
+    }
+</style>
+
+{% endblock %}
+{% block content %}
+{% if state %}
+<p class="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+
+<h3><i>All registrations for class {{allclass}} between {{ date_since}} and {{date_until}}</i></h3>
+<table id="{{tabletypeid}}">
+  <thead>
+    {% for d, f in table_headers_html %}
+        <th data-dynatable-column="{{d}}" >{{f}}</th>
+    {% endfor %}
+
+  </thead>
+  <tbody>
+  </tbody>
+  <tfoot></tfoot>
+</table>
+<br></br>
+<!-- HTML goes here -->
+</div>
+
+{% endif %}
+
+{% endblock %}

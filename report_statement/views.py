@@ -46,6 +46,7 @@ from oauth_provider.consts import ACCEPTED, CONSUMER_STATES
 from django.forms.models import model_to_dict
 import os
 import subprocess
+import datetime, dateutil.parser
 
 # This uses the lrs logger for LRS specific information
 logger = logging.getLogger(__name__)
@@ -1167,6 +1168,316 @@ def last_activity_inactive(request, template_name='last_activity_report.html'):
 	data['inactivefor']=days_inactive
 
     return render(request, template_name, data)
+
+
+"""Report: Attendance Report Selection
+"""
+@login_required(login_url='/login/')
+def attendance_selection(request):
+        logger.info("User="+request.user.username+\
+                " accessed /reports/attendance_selection/")
+        organisation = User_Organisations.objects.get(\
+                user_userid=request.user).organisation_organisationid
+        current_user = request.user.username + " (" + \
+                organisation.organisation_name + ")"
+        current_user_role = User_Roles.objects.get(user_userid=\
+                                request.user.id).role_roleid.role_name;
+        current_user = "Hi, " + request.user.first_name + ". You are a " +\
+                current_user_role + " in " + organisation.organisation_name +\
+                    " organisation."
+	
+	teacher_role = Role.objects.get(role_name="Teacher")
+	user_role = User_Roles.objects.get(user_userid=request.user).role_roleid
+	if (user_role == teacher_role):
+	    #Get only the classes the teacher has access to. Duh.
+	    allteachers=[]
+            allteachers.append(user)
+            allclass_list=Allclass.objects.filter(teachers__in=allteachers);
+	else:
+	    #Get all classes in that organisation
+	    allclass_list=Allclass.objects.filter(school__in=School.objects.filter(organisation=organisation));
+	template_name="attendance_report_selection.html"
+	data={}
+	data['current_user'] = current_user
+	data['allclass_list'] = allclass_list
+	return render(request, template_name, data)
+        #return render_to_response('attendance_report_selection.html',\
+        #    {'current_user':current_user}, context_instance = RequestContext(request))
+
+"""Report: Attendance Get Registration for selection
+"""
+@login_required(login_url='/login/')
+def attendance_get_registration(request, template_name='attendance_all_registration.html'):
+    if request.method != 'POST':
+        return redirect('attendance_selection')
+    try:
+        date_since = request.POST['since_1_alt']
+        date_until = request.POST['until_1_alt'] 
+	allclass_id = request.POST['allclass']
+        allclass = Allclass.objects.get(pk=allclass_id)
+        if allclass is not None:
+        
+            #Get all registrations unique for that class 
+            #allclass_statements = models.Statement.objects.filter(\
+            #    , timestamp__range=[date_since, date_until])
+            attended_activity_string = "http://www.ustadmobile.com/activities/attended-class/"
+            activity_id_string = attended_activity_string + allclass_id
+            all_activity_id_string = []
+            activity_id_string2 = activity_id_string + "/"
+            all_activity_id_string.append(activity_id_string)
+            all_activity_id_string.append(activity_id_string2)
+            all_hosted_verb_id = []
+            hosted_verb_id = "http://activitystrea.ms/schema/1.0/host"
+            hosted_verb_id2 = "http://activitystrea.ms/schema/1.0/host/"
+            all_hosted_verb_id.append(hosted_verb_id)
+            all_hosted_verb_id.append(hosted_verb_id2)
+            hosted_verb = models.Verb.objects.filter(verb_id__in=all_hosted_verb_id)
+            attendance_activity = models.Activity.objects.filter(\
+                activity_id__in=all_activity_id_string)
+
+            #Get all registrations 
+	    allteachers=[]
+            all_registrations = models.Statement.objects.filter(\
+                timestamp__range = [date_since, date_until],\
+                    object_activity__in = attendance_activity,\
+                        verb__in=hosted_verb).distinct('context_registration')
+	    for every_registration in all_registrations:
+		print("hi")
+		allteachers.append(every_registration.user)
+            print("I think I got the registrations")
+            print(all_registrations)
+	    table_headers_html = []
+	    table_headers_name = []
+   	    table_headers_html.append("registration")
+            table_headers_name.append("Registration ID")
+            table_headers_html.append("timestamp")
+            table_headers_name.append("Time")
+	    table_headers_html = zip(\
+		table_headers_html, table_headers_name)
+
+
+	    all_registrations = zip(\
+		all_registrations, allteachers)
+	    data={}
+	    
+	    data['yaxis'] = all_registrations
+	    data['pagetitle'] = "All registrations Selection"
+	    data['allclass'] = allclass
+	    ds = dateutil.parser.parse(date_since)
+	    du = dateutil.parser.parse(date_until)
+	    data['date_since'] = date_since
+	    data['date_until'] = date_until
+	    data['date_since']=ds
+	    data['date_until']=du
+	    data['tabletypeid'] = "attendanceregistration"
+	    data['table_headers_html'] = table_headers_html
+	    
+	    return render(request, template_name, data)
+	    
+	else:
+            authresponse = HttpResponse(status=400)
+            authresponse.write("Invalid class selected. Something went wrong.")
+            return authresponse
+    except Exception as e:
+        print(e)
+        authresponse = HttpResponse(status=500)
+        authresponse.write("Reporting exception: " + e.message + " Please check!")
+        return authresponse
+
+	
+class Student(object):
+    name = ""
+    verb = "" 
+    fingerprinted = ""
+
+    # The class "constructor" - It's actually an initializer 
+    def __init__(self, name, verb, fingerprinted):
+        self.name = name
+        self.verb = verb
+        self.fingerprinted = fingerprinted
+
+
+"""Report: Student Attendance Report by Registration ID
+"""
+@login_required(login_url='/login/')
+def attendance_registration_students(request, registration_id, template_name='attendance_registration_students.html'):
+    #if request.method != 'POST':
+    #    return redirect('attendance_selection')
+    try:
+	
+	attended_activity_string = "http://www.ustadmobile.com/activities/attended-class/"
+        all_hosted_verb_id = []
+        hosted_verb_id = "http://activitystrea.ms/schema/1.0/host"
+        hosted_verb_id2 = "http://activitystrea.ms/schema/1.0/host/"
+        all_hosted_verb_id.append(hosted_verb_id)
+        all_hosted_verb_id.append(hosted_verb_id2)
+        hosted_verb = models.Verb.objects.filter(verb_id__in=all_hosted_verb_id)
+
+	allstudents_statements_per_registration = models.Statement.objects.filter(\
+                    context_registration = registration_id).exclude(\
+                        verb__in = hosted_verb)
+	timestamp = ""
+	try:
+	    #Get class
+	    a = allstudents_statements_per_registration[0].object_activity.activity_id.strip()
+	    timestamp = allstudents_statements_per_registration[0].timestamp
+	    pos = a.find(attended_activity_string)
+	    pos = pos + len(attended_activity_string)
+	    allclass_id = a[pos:].strip()
+	    if (allclass_id.endswith('/')):
+	         allclass_id = allclass_id[:-1]
+	    allclass = Allclass.objects.get(pk=allclass_id)
+	    if allclass is None:
+	        allclass = ""
+	except Exception as e:
+	    print("Unable to get class from activity id")
+	    print(str(e.message));
+	    allclass = ""
+
+        print("All student statements for Registration : " + str(registration_id))
+        print(allstudents_statements_per_registration)
+	all_students_attendance = []
+        for every_statement in allstudents_statements_per_registration:
+	    actor_name = every_statement.actor.get_a_name()
+            verb = every_statement.verb.get_display()
+            context_extensions = every_statement.context_extensions
+            #context_extensions_json = json.loads(context_extensions)
+            fingerprinted = context_extensions[u'http://www.ustadmobile.com/fingerprinted']
+            if not fingerprinted:
+		all_students_attendance.append(Student(actor_name, verb, ""))
+                print("For student: " + actor_name + "->" + verb +  " " )
+            else:
+		all_students_attendance.append(Student(actor_name, verb, fingerprinted))
+                print("For student: " + actor_name + " -> " + verb + " -> fingerprinted: " + fingerprinted +  " " )
+
+
+        table_headers_html = []
+        table_headers_name = []
+        table_headers_html.append("student")
+        table_headers_name.append("Student")
+        table_headers_html.append("verb")
+        table_headers_name.append("Status")
+  	table_headers_html.append("fingerprinted")
+        table_headers_name.append("Fingerprinted")
+        table_headers_html = zip(\
+        table_headers_html, table_headers_name)
+
+        data={}
+
+        data['yaxis'] = allstudents_statements_per_registration
+	data['yaxis'] = all_students_attendance
+        data['pagetitle'] = "All Students Attendance by Registration"
+        data['allclass'] = allclass
+        data['tabletypeid'] = "attendanceregistrationstudents"
+        data['table_headers_html'] = table_headers_html
+	data['registration_id'] = registration_id
+	data['timestamp'] = timestamp
+
+        return render(request, template_name, data)
+
+	"""
+        else:
+            authresponse = HttpResponse(status=400)
+            authresponse.write("Invalid class selected. Something went wrong.")
+            return authresponse
+	"""
+    except Exception as e:
+        print(e)
+        authresponse = HttpResponse(status=500)
+        authresponse.write("Reporting exception: " + str(e.message) + " Please check!")
+        return authresponse
+
+
+
+
+"""Report: Attendance Report 
+"""
+@login_required(login_url='/login/')
+def attendance_process(request):
+    print(request.POST)
+    date_since = request.POST['since_1_alt']
+    date_until = request.POST['until_1_alt']
+    try:
+	allclass_id = request.POST['allclass']
+	allclass = Allclass.objects.get(pk=allclass_id)
+	if allclass is not None:
+	
+	    #Get all registrations unique for that class 
+	    #allclass_statements = models.Statement.objects.filter(\
+            #    , timestamp__range=[date_since, date_until])
+	    attended_activity_string = "http://www.ustadmobile.com/activities/attended-class/"
+	    activity_id_string = attended_activity_string + allclass_id
+	    all_activity_id_string = []
+	    activity_id_string2 = activity_id_string + "/"
+	    all_activity_id_string.append(activity_id_string)
+	    all_activity_id_string.append(activity_id_string2)
+	    all_hosted_verb_id = []
+	    hosted_verb_id = "http://activitystrea.ms/schema/1.0/host"
+	    hosted_verb_id2 = "http://activitystrea.ms/schema/1.0/host/"
+	    all_hosted_verb_id.append(hosted_verb_id)
+	    all_hosted_verb_id.append(hosted_verb_id2)
+	    hosted_verb = models.Verb.objects.filter(verb_id__in=all_hosted_verb_id)
+	    print("all hosted verbs:")
+	    print(hosted_verb)
+	    print("here we go..")
+	    attendance_activity = models.Activity.objects.filter(\
+		activity_id__in=all_activity_id_string)
+	    print("Got it")
+	    print(attendance_activity)
+
+	    #Get all registrations 
+	    all_registrations = models.Statement.objects.filter(\
+		timestamp__range = [date_since, date_until],\
+		    object_activity__in = attendance_activity,\
+			verb__in=hosted_verb).values_list(\
+				'context_registration', flat=True).distinct()
+	    print("I think I got the registrations")
+	    print(all_registrations)
+
+	    for every_registration in all_registrations:
+		allclass_statements_per_registration = models.Statement.objects.filter(\
+		    timestamp__range = [date_since, date_until],\
+			object_activity__in = attendance_activity,\
+			    context_registration = every_registration).exclude(\
+				verb__in = hosted_verb)
+		print("All student statements for Registration : " + str(every_registration))
+		print(allclass_statements_per_registration)
+		for every_statement in allclass_statements_per_registration:
+		    actor = every_statement.actor
+		    actor_name = actor.name
+		    if not actor_name:
+			actor_name = actor.account_name
+		    verb = every_statement.verb.get_display()
+		    context_extensions = every_statement.context_extensions
+		    #context_extensions_json = json.loads(context_extensions)
+		    fingerprinted = context_extensions[u'http://www.ustadmobile.com/fingerprinted']
+		    if not fingerprinted:
+		        print("For student: " + actor_name + "->" + verb +  " " )
+		    else:
+			print("For student: " + actor_name + " -> " + verb + " -> fingerprinted: " + fingerprinted +  " " )
+		
+
+	    allclass_statements = models.Statement.objects.filter(\
+		timestamp__range = [date_since, date_until],\
+		    object_activity__in = attendance_activity).exclude(\
+			verb__in=hosted_verb)
+	    print("Got all statements too")
+	    print(allclass_statements)
+
+	    authresponse = HttpResponse(status=200)
+    	    authresponse.write("Yay")
+    	    return authresponse
+	else:
+	    authresponse = HttpResponse(status=200)
+            authresponse.write("Invalid class selected. Something went wrong.")
+            return authresponse
+    except Exception as e: 
+	print(e)
+	authresponse = HttpResponse(status=200)
+        authresponse.write("Reporting exception: " + e.message + " Please check!")
+        return authresponse
+
+
 	
 """Report: Duration Report
 This report shows the range and parameter selection page for 
