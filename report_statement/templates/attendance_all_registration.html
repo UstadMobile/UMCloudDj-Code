@@ -20,7 +20,7 @@ $(function() {
             records:[
                 {% if yaxis %}
                         {% for l,u in yaxis  %}
-                                {"registration":"<a href=\"{{l.context_registration}}/\" >{{u}}</a> ({{l.context_registration}})","timestamp":"{{l.timestamp}}"}{% if not forloop.last %},{% endif %}
+                                {"registration":"<a href=\"{{l.context_registration}}/\" >{{u}}</a>","timestamp":"{{l.timestamp}}"}{% if not forloop.last %},{% endif %}
                         {% endfor %}
                 {% endif %}
                 ]

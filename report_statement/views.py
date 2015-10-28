@@ -1342,7 +1342,11 @@ def attendance_registration_students(request, registration_id, template_name='at
             verb = every_statement.verb.get_display()
             context_extensions = every_statement.context_extensions
             #context_extensions_json = json.loads(context_extensions)
-            fingerprinted = context_extensions[u'http://www.ustadmobile.com/fingerprinted']
+	    fingerprinted = ""
+	    try:
+                fingerprinted = context_extensions[u'http://www.ustadmobile.com/fingerprinted']
+	    except:
+		fingerprinted = ""
             if not fingerprinted:
 		all_students_attendance.append(Student(actor_name, verb, ""))
                 print("For student: " + actor_name + "->" + verb +  " " )
