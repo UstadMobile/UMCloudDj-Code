@@ -46,7 +46,7 @@ from oauth_provider.consts import ACCEPTED, CONSUMER_STATES
 from django.forms.models import model_to_dict
 import os
 import subprocess
-import datetime, dateutil.parser
+import dateutil.parser
 
 # This uses the lrs logger for LRS specific information
 logger = logging.getLogger(__name__)

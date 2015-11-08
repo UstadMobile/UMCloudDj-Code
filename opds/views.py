@@ -87,7 +87,7 @@ def get_public_xml_snippet(request):
     public_opds_xml_snippet = "<entry>\n\
 			<title>Public Library</title> \n\
                         <link rel=\"http://opds-spec.org/sort/public\" \n\
-                              href=\"/opds/public/\" \n\
+                              href=\"/opds/public/providers/\" \n\
                               type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>\n\
 			<updated>"+py_time_now+"</updated>\n\
     			<id>http://umcloud1.ustadmobile.com/opds/public/</id> \n\
