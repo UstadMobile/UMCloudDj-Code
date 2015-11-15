@@ -57,6 +57,7 @@ import socket
 import logging
 from django.utils.datastructures import MultiValueDictKeyError
 from random import randrange
+from os.path import basename
 
 logger = logging.getLogger(__name__)
 
@@ -365,6 +366,7 @@ def get_course(request):
                 all_blocks_in_course=course.packages.all()
 		for o in all_blocks_in_course:
 		    url = o.url;
+		    micro_edition_url = ""
 		    if url.endswith(".html"):
 			exefilepath = str(o.exefile)
 			if exefilepath.endswith(".epub") or exefilepath.endswith(".elp"):
@@ -390,6 +392,16 @@ def get_course(request):
 		    xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
 			href=\"" + url + "\"\n\
           		type=\"application/epub+zip\"/>\n"
+
+		    if o.micro_edition:
+			dst=os.path.splitext(basename(url))[0]
+                        if dst.strip():
+                            print("Exists!")
+                            micro_edition_url = os.path.dirname(url) + "/" +  dst + "_micro.epub"
+
+		        xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
+                            href=\"" + micro_edition_url + "\"\n\
+                            type=\"application/epub+zip;um-width=240;um-height=320\"/>\n"
 
                     if o.url != None and o.url != "" and o.url.endswith(".html"):
                         print("Has a url")

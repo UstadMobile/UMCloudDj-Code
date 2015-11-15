@@ -64,7 +64,7 @@ class Package(models.Model):
    description = models.CharField(max_length=1800, null=True)
    lang = models.CharField(max_length = 100, null=True)
    subject = models.CharField(max_length = 200, null=True)
-
+   micro_edition=models.BooleanField(default = False)
    def __unicode__(self):
         return u'%s' % (self.name)
 

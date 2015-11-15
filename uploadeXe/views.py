@@ -42,7 +42,8 @@ import commands #Added for obtaining the elp hash
 import sys
 from subprocess import call
 import simplejson
-
+from epubresizer import EPUBResizer
+from os.path import basename
 
 ######################################################################
 #Package CRUD
@@ -848,6 +849,7 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
 	if rete == "newsuccess":
 	    setattr(newdoc, "name", elpiname)
 	    setattr(newdoc, "publisher", publisher)
+	    setattr(newdoc, "micro_edition", True)
 	    newdoc.save()
 	    if data['blockCourse'] is not None:
 		#and data['blockCourse'] is True:
@@ -1210,6 +1212,7 @@ def list(request, template_name='myapp/list.html'):
                 setattr(newdoc, 'url', courseURL)
                 setattr(newdoc, 'name', elpiname)
                 setattr(newdoc, 'publisher', request.user)
+		setattr(newdoc, 'micro_edition', True)
                 newdoc.save()
 		state="Your Block: " + newdoc.name + "  has been uploaded."
 		statesuccess=1
@@ -1500,6 +1503,28 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 			 	    + unid + '/' + name + '_ustadpkg_html5.xml' +\
 			 		"\"" ) == 0: #ie if command got executed in success
 	    	    	print("3. Export process completed.")
+
+			"""
+			Here you can add the epub resizing micro version code.
+			"""
+			width=240
+			height=320
+			try:
+			    dst=os.path.splitext(basename(epubfile))[0]
+			    if dst.strip():
+				print("Exists!")
+				dst = os.path.dirname(epubfile) + "/" +  dst + "_micro.epub"
+				print("destination is: " + dst)
+			    else:
+				print("Unable to get destination")
+				return "newfailcopy", None
+
+			    resizer = EPUBResizer(epubfile)
+			    resizer.resize(dst, max_width = width, max_height = height)
+			except:
+			    print("Unable to resize.")
+			    return "newfailcopy", None
+		        
 	    	    	return "newsuccess", None
 	    	    else:
 	    	    	print("!!Couldn't copy html file xml to main directoy."+\
