@@ -20,82 +20,81 @@ Steps to set up UMCloudDj on your system.
 
 1. Install dependencies in your Linux environment (Tested in Ubuntu and Raspberry Pi2)
 
-sudo apt-get install -y libjpeg-dev apache2  python  python-pip python-virtualenv  tree  git sudo apt-get -f install  sqlite3  build-essential  unzip  ant  git  fabric  postgresql  python-setuptools  postgresql-server-dev-all  python-dev libxml2-dev libxslt-dev
+	sudo apt-get install -y libjpeg-dev apache2  python  python-pip python-virtualenv  tree  git sudo apt-get -f install  sqlite3  build-essential  unzip  ant  git  fabric  postgresql  python-setuptools  postgresql-server-dev-all  python-dev libxml2-dev libxslt-dev
 
-sudo easy_install pip
+	sudo easy_install pip
 
 2. Install Python dependencies
 
-sudo pip install virtualenv Django==1.6.6 requests coverage Image django_extensions gunicorn==0.14.2 pytz==2012c supervisor==3.0a12 oauth2==1.5.170 bencode==1.0 psycopg2==2.5 isodate==0.4.9 python-dateutil==1.5 unipath==1.0 pycrypto==2.5 lxml==2.3.4 jsonfield==0.9.19 pygraphviz==1.2 graphviz simplejson pytz phonenumbers
+	sudo pip install virtualenv Django==1.6.6 requests coverage Image django_extensions gunicorn==0.14.2 pytz==2012c supervisor==3.0a12 oauth2==1.5.170 bencode==1.0 psycopg2==2.5 isodate==0.4.9 python-dateutil==1.5 unipath==1.0 pycrypto==2.5 lxml==2.3.4 jsonfield==0.9.19 pygraphviz==1.2 graphviz simplejson pytz phonenumbers
 
 2b. Sometimes we may need to set this (not crutial):
 
-export LANGUAGE=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
-export LANG=en_US.UTF-8
-export LC_TYPE=en_US.UTF-8
+	export LANGUAGE=en_US.UTF-8
+	export LC_ALL=en_US.UTF-8
+	export LANG=en_US.UTF-8
+	export LC_TYPE=en_US.UTF-8
 
 3. Clone both UMCloudDj as well as modified LRS server:
 
-git clone https://github.com/UstadMobile/UMCloudDj-Code.git UMCloudDj
-git clone https://github.com/varunasingh/ADL_LRS.git ADL_LRS_VS
+	git clone https://github.com/UstadMobile/UMCloudDj-Code.git UMCloudDj
+	git clone https://github.com/varunasingh/ADL_LRS.git ADL_LRS_VS
 
 4. Copy the ADL LRS into UMCloudDj 
 
-cp -r ADL_LRS_VS/lrs UMCloudDj/ 
-cp -r ADL_LRS_VS/oauth_provider UMCloudDj/
-cp -r ADL_LRS_VS/adl_lrs UMCloudDj/
-rm -f UMCloudDj/adl_lrs/settings.py
+	cp -r ADL_LRS_VS/lrs UMCloudDj/ 
+	cp -r ADL_LRS_VS/oauth_provider UMCloudDj/
+	cp -r ADL_LRS_VS/adl_lrs UMCloudDj/
+	rm -f UMCloudDj/adl_lrs/settings.py
 
 (You can remove the main ADL_LRS_VS if you want: rm -rf ADL_LRS_VS)
 
 5. Make log directory in UMCloudDj
 
-cd UMCloudDj
-mkdir logs
+	cd UMCloudDj
+	mkdir logs
 
 6. Configure postgres in your system
 
 a. Get version, create postgres cluster based on that version
-VER=`dpkg -l | grep postgresql- | head -n 1 | awk ' { print $2 }' | awk -F\- '{ print $2 }'`
-sudo pg_createcluster ${VER} main --start
+	VER=`dpkg -l | grep postgresql- | head -n 1 | awk ' { print $2 }' | awk -F\- '{ print $2 }'`
+	sudo pg_createcluster ${VER} main --start
 
 b.Create postgres user and password 
 !!REPLACE pguser and pgpassword with your postgres username and password!!
 
-sudo -u postgres psql -c "CREATE USER pguser WITH PASSWORD 'pgpassword';"
+	sudo -u postgres psql -c "CREATE USER pguser WITH PASSWORD 'pgpassword';"
 
 
 7. Set up settings.py
 
 a. Copy template to create your own settings.py
-cp UMCloudDj/settings.py.edit UMCloudDj/settings.py
+	cp UMCloudDj/settings.py.edit UMCloudDj/settings.py
 
 b. Edit in your SECRET key 
 
-SECRET_KEY="MySuperSecretKey123"
+	SECRET_KEY="MySuperSecretKey123"
 (Remember to remove existing secret keys)
 
 c. Add postgres user and password to settings.py 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'umcdj',
-        'USER': 'pguser',
-        'PASSWORD':'pgpass',
-        'HOST': 'localhost',
-        'PORT': '',
-    }
-}
+	DATABASES = {
+    	    'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'umcdj',
+            'USER': 'pguser',
+            'PASSWORD':'pgpass',
+            'HOST': 'localhost',
+            'PORT': '',
+    	    }
+	}
 
 8. Set up the Database
 
-#Set up ADL LRS specific cache tables
-python manage.py createcachetable cache_statement_list
-python manage.py createcachetable attachment_cache
+	python manage.py createcachetable cache_statement_list
+	python manage.py createcachetable attachment_cache
 
-python manage.py syncdb --noinput 
+	python manage.py syncdb --noinput 
 
 If success: 
 
@@ -104,33 +103,34 @@ If success:
 
 !!REPLACE SUPERUSERNAME and SUPERPASSWORD with your Super admin credenntials that you like!!
 
-echo "from django.contrib.auth.models import User; User.objects.create_superuser('SUPERUSERNAME', 'info@ustadmobile.com', 'SUPERPASSWORD')" | python manage.py shell
+	echo "from django.contrib.auth.models import User; User.objects.create_superuser('SUPERUSERNAME', 'info@ustadmobile.com', 'SUPERPASSWORD')" | python manage.py shell
 
 9b. Load UMCloud Fixtures (Tables and data needed to start UMCloud)
 
-python manage.py loaddata uploadeXe/fixtures/initial-model-data.json
+	python manage.py loaddata uploadeXe/fixtures/initial-model-data.json
 
 10. Set up relationships on fixtures 
 
-DATE2=`date +%Y-%m-%d`
-echo "from uploadeXe.models import User_Roles; User_Roles.objects.create(name='build',user_userid_id=1,role_roleid_id=1,add_date='${DATE2}')" | python manage.py shell
-echo "from organisation.models import User_Organisations; User_Organisations.objects.create(add_date='${DATE2}',user_userid_id=1,organisation_organisationid_id=1)" | python manage.py shell
+	DATE2=`date +%Y-%m-%d`
+	echo "from uploadeXe.models import User_Roles; User_Roles.objects.create(name='build',user_userid_id=1,role_roleid_id=1,add_date='${DATE2}')" | python manage.py shell
+	echo "from organisation.models import User_Organisations; User_Organisations.objects.create(add_date='${DATE2}',user_userid_id=1,organisation_organisationid_id=1)" | python manage.py shell
 
 11. Make file folders necessary for upload functionality
 
-cd UMCloudDj/media/
-mkdir eXeExport
-mkdir eXeUpload
-mkdir eXeUpload/UPLOAD_CHUNKS
-mkdir test
-mkdir eXeTestElp
-mkdir eXeTestExport
+	cd UMCloudDj/media/
+	mkdir eXeExport
+	mkdir eXeUpload
+	mkdir eXeUpload/UPLOAD_CHUNKS
+	mkdir test
+	mkdir eXeTestElp
+	mkdir eXeTestExport
 
 
 12. Run the server :
 
-cd ../
-python manage.py runserver 0:8042 
+	cd ../
+	python manage.py runserver 0:8042 
+
 Go to your browser : localhost:8042 and it should be up and running. 
 
 
