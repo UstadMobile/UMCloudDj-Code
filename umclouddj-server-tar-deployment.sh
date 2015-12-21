@@ -1,6 +1,8 @@
 #!/bin/bash
 
+#Builds UMCloudDj in to a tar ball that can be unzipped and deployed. 
 #Build it.
+#Sets up Apache. This is deployment as well. 
 
 
 #sed -i.backup -e 's/^DEBUG=True/DEBUG = False/' $WORKSPACE/UMCloudDj/settings.py

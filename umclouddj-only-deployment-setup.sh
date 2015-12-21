@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #Run this file as sudo.
+#This deploys it to /var/www/ under apache2 
 
 #Copying the code to apache's html folder.
 echo "Copying the code to apache's html folder."

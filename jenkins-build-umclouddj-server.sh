@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#This is the script that gets run to build and update UMCloud in jenkins. It pulls from the LRS as well as eXe after jenkins pulls from UMCloud. It also updates the settings.py if needed and runs the coverage and unit test commands.
+
 cd $WORKSPACE
 
 git clone https://github.com/varunasingh/ADL_LRS.git ADL_LRS_VS

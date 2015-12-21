@@ -1,4 +1,13 @@
 #!/bin/bash
+
+#This builds UMCloud but also deploys it under apache2
+#Can be deleted. We have seperated those two steps now.
+
+#DEPRICATED
+
+echo "Sorry, this script is depricated"
+exit 1
+
 echo "Starting UMCloudDj deployment.."
 
 if [ $# -eq 0 ]; then

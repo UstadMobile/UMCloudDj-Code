@@ -1,9 +1,9 @@
 #!/bin/bash
 
 if [ $# -eq 0 ]; then
-    echo "No arguments provided"
-    echo "Usage: .sh <Super username> <password> <wordpress pass> <um pass> <secret key> <postgres user> <postgres password>"
-    echo "Ex:    .sh adminusername adminpassword worddpass umtestpass secretkey_10212wdsda><?:<>!@%*%$ umcloudadmin umcloudpassword"
+    echo "No arguments provided "
+    echo "Usage: .sh <Super username> <password> <wordpress pass> <um pass> <secret key> <postgres user> <postgres password> <exe link>" 
+    echo "Ex:    .sh adminusername adminpassword worddpass umtestpass secretkey_10212wdsda><?:<>!@%*%$ umcloudadmin umcloudpassword" "https://path/to/exe.git"
     exit 1
 fi
 
@@ -22,6 +22,14 @@ UMPASS=${4}
 SECRET_KEY=${5}
 PGUSER=${6}
 PGPASSWORD=${7}
+EXELINK=${8}
+if [ "${EXELINK}" == "" ]
+then
+   echo "No eXe link given. Not going to install eXe"
+else
+   echo "eXe Link given. Will try to install it."
+fi
+
 
 DATE=`date +%Y-%m-%d-%H-%M-%S`
 echo "Starting installation of UMCDjCloud."
@@ -52,7 +60,7 @@ sudo apt-get install -y python-dev libxml2-dev libxslt-dev
 sudo easy_install pip
 
 sudo pip install virtualenv
-
+sudo apt-get install libjpeg-dev
 sudo pip install Django==1.6.6
 sudo pip install requests
 sudo pip install coverage
@@ -63,7 +71,6 @@ sudo pip install pytz==2012c
 sudo pip install supervisor==3.0a12
 sudo pip install oauth2==1.5.170
 sudo pip install bencode==1.0
-#sudo pip install Aisodate==0.4.9
 sudo pip install psycopg2==2.5
 sudo pip install isodate==0.4.9
 sudo pip install python-dateutil==1.5
@@ -82,8 +89,6 @@ export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LC_TYPE=en_US.UTF-8
 
-#git clone ssh://varunasingh@git.code.sf.net/p/ustadmobil/code-umclouddjango UMCloudDj
-#git clone http://git.code.sf.net/p/ustadmobil/code-umclouddjango UMCloudDj
 git clone https://github.com/UstadMobile/UMCloudDj-Code.git UMCloudDj
 git clone https://github.com/varunasingh/ADL_LRS.git ADL_LRS_VS
 
@@ -101,9 +106,15 @@ echo "  echo \"finished.\"" >> git_pull.sh
 echo "  else" >> git_pull.sh
 echo "   echo \"settings.py file already exists.\"" >> git_pull.sh
 echo " fi" >> git_pull.sh
-echo "echo \"Pulling from exelearning-ustadmobile-work..\"" >> git_pull.sh
-echo "cd exelearning-ustadmobile-work/" >> git_pull.sh
-echo "git pull" >> git_pull.sh
+
+if [ "${EXELINK}" == "" ]
+then
+    echo "Skipping eXe because eXe mode is disabled"
+else
+    echo "echo \"Pulling from exelearning-ustadmobile-work..\"" >> git_pull.sh
+    echo "cd exelearning-ustadmobile-work/" >> git_pull.sh
+    echo "git pull" >> git_pull.sh
+fi
 
 chmod a+x git_pull.sh
 
@@ -197,5 +208,10 @@ mkdir eXeTestElp
 mkdir eXeTestExport
 
 cd ../
-git clone https://github.com/UstadMobile/exelearning-ustadmobile-work.git
+if [ "${EXELINK}" == "" ]
+then
+   echo "Skipping cloning eXe because eXe mode is disabled"
+else
+   git clone https://github.com/UstadMobile/exelearning-ustadmobile-work.git
+fi
 
