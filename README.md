@@ -69,6 +69,7 @@ b.Create postgres user and password
 7. Set up settings.py
 
 a. Copy template to create your own settings.py
+
 	cp UMCloudDj/settings.py.edit UMCloudDj/settings.py
 
 b. Edit in your SECRET key 

@@ -34,14 +34,19 @@ fi
 DATE=`date +%Y-%m-%d-%H-%M-%S`
 echo "Starting installation of UMCDjCloud."
 echo "Sorting and installing dependencies.."
-sudo apt-get install -y libjpeg-dev apache2  python  python-pip python-virtualenv  tree  git sudo apt-get -f install  sqlite3  build-essential  unzip  ant  git  fabric  postgresql  python-setuptools  postgresql-server-dev-all  python-dev libxml2-dev libxslt-dev
+sudo apt-get -y update
+sudo apt-get install -y screen libjpeg-dev apache2 python python-pip python-virtualenv tree git sqlite3 build-essential unzip ant git fabric postgresql python-setuptools postgresql-server-dev-all python-dev libxml2-dev libxslt-dev libpq-dev sudo python-pip
+
 #sudo apt-get -y dist-upgrade #Added 31/12/2014 to make sure every distribution gets updated
 #sudo apt-get -y update
 #sudo apt-get -y upgrade
 
-sudo easy_install pip
+#sudo easy_install pip
 
-sudo pip install virtualenv Django==1.6.6 requests coverage Image django_extensions gunicorn==0.14.2 pytz==2012c supervisor==3.0a12 oauth2==1.5.170 bencode==1.0 psycopg2==2.5 isodate==0.4.9 python-dateutil==1.5 unipath==1.0 pycrypto==2.5 lxml==2.3.4 jsonfield==0.9.19 pygraphviz==1.2 graphviz simplejson pytz phonenumbers
+sudo pip install virtualenv Django==1.6.6 requests coverage Image django_extensions gunicorn==0.14.2 pytz==2012c supervisor==3.0a12 oauth2==1.5.170 bencode==1.0 psycopg2==2.5 isodate==0.4.9 python-dateutil==1.5 unipath==1.0 pycrypto==2.5 lxml==2.3.4 jsonfield==0.9.19 graphviz simplejson phonenumbers
+
+sudo apt-get install -y python-pygraphviz
+
 
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
@@ -166,7 +171,7 @@ mkdir test
 mkdir eXeTestElp
 mkdir eXeTestExport
 
-cd ../
+cd ../../
 if [ "${EXELINK}" == "" ]
 then
    echo "Skipping cloning eXe because eXe mode is disabled"
