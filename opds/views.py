@@ -366,8 +366,10 @@ def get_course(request):
                 all_blocks_in_course=course.packages.all()
 		for o in all_blocks_in_course:
 		    url = o.url;
+		    url = str(o.exefile);
 		    micro_edition_url = ""
-		    if url.endswith(".html"):
+		    #if url.endswith(".html"):
+		    if True:
 			exefilepath = str(o.exefile)
 			if exefilepath.endswith(".epub") or exefilepath.endswith(".elp"):
 			    epubname = exefilepath.rsplit(".",2)[1]
@@ -786,7 +788,9 @@ def get_public_course(request):
         all_blocks_in_course=course.packages.all()
         for o in all_blocks_in_course:
             url = o.url;
-            if url.endswith(".html"):
+	    url = str(o.exefile);
+            #if url.endswith(".html"):
+	    if True:
                 exefilepath = str(o.exefile)
                 if exefilepath.endswith(".epub") or exefilepath.endswith(".elp"):
                     epubname = exefilepath.rsplit(".",2)[1]

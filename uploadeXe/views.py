@@ -209,12 +209,20 @@ def get_epub_blockid_name(epubpath):
                 packagepage=None
                 for child in root:
                     for chi in child:
-                        if "package.opf" in chi.attrib['full-path']:
+                        if ".opf" in chi.attrib['full-path']:
                             packagepath=chi.attrib['full-path']
+			    print("YAY")
+		    	    print(packagepath)
                             break #We got the package file..
+		print("package path found ????")
                 packageFound=False
                 if packagepath != None:
                     epubassetfolder=packagepath.rsplit('/',1)[0]
+		    splitpp = packagepath.rsplit('/',1)
+		    if len(splitpp) > 1:
+			epubassetfolder=packagepath.rsplit('/',1)[0]
+		    else:
+			epubassetfolder=""
                     #package File: pf
                     try:
                         pf=epubasazip.open(packagepath)
@@ -833,7 +841,7 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
         blockid="-"
     else:
         blockid=elplomid
-    print(uid + "|" + unid + "|" + str(blockname) + "|" + str(blockid) + "|")
+    #print(uid + "|" + unid + "|" + str(blockname) + "|" + str(blockid) + "|")
     rete, elpepubid = ustadmobile_export(uid, unid, elpiname, elplomid, forceNew)
     return_values = []
     return_values.append(rete)
@@ -1474,7 +1482,7 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
                         packagepage=None
                         for child in root:
                             for chi in child:
-                                if "package.opf" in chi.attrib['full-path']:
+                                if ".opf" in chi.attrib['full-path']:
                                     packagepath=chi.attrib['full-path']
                                     break #We got the package file..
 
@@ -1483,56 +1491,65 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 
 		if packagepath != None:
                     epubassetfolder=packagepath.rsplit('/',1)[0]
+		    splitpp = packagepath.rsplit('/',1)
+                    if len(splitpp) > 1:
+                        epubassetfolder=packagepath.rsplit('/',1)[0]
+                    else:
+                        epubassetfolder=""
 		else:
 		  return "newfail", None
-		print("possible move command: " + 'mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
-                    unid+"/"+epubassetfolder+"\"" + " " +  "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
+		
+		if epubassetfolder == "":
+		    return "newsuccess", None
+	   	else:
+		    print("possible move command: " + 'mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+                        unid+"/"+epubassetfolder+"\"" + " " +  "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
                             unid + "/" + name + "\"")
-            	if (os.system('mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
-	    	    unid+"/"+epubassetfolder+"\"" + " " + "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
+            	    if (os.system('mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+	    	        unid+"/" + epubassetfolder + "\"" + " " + "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
 	    	    	    unid + "/" + name + "\"")) == 0:
-            	    print("2. Unzipped and verified.")
-		    print("Possible copy command:" + 'cp ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
+            	        print("2. Unzipped and verified.")
+		        print("Possible copy command:" + 'cp ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
                             + unid + '/' + name + '/ustadpkg_html5.xml' +"\"" + " " +\
                                 "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
                                     + unid + '/' + name + '_ustadpkg_html5.xml' +\
                                         "\"" )
-            	    if os.system('cp ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
+            	        if os.system('cp ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
 			    + unid + '/' + name + '/ustadpkg_html5.xml' + "\"" + " "  +\
 			 	"\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
 			 	    + unid + '/' + name + '_ustadpkg_html5.xml' +\
 			 		"\"" ) == 0: #ie if command got executed in success
-	    	    	print("3. Export process completed.")
+	    	    	    print("3. Export process completed.")
 
-			"""
-			Here you can add the epub resizing micro version code.
-			"""
-			width=240
-			height=320
-			try:
-			    dst=os.path.splitext(basename(epubfile))[0]
-			    if dst.strip():
-				print("Exists!")
-				dst = os.path.dirname(epubfile) + "/" +  dst + "_micro.epub"
-				print("destination is: " + dst)
-			    else:
-				print("Unable to get destination")
-				return "newfailcopy", None
+			    """
+			    Here you can add the epub resizing micro version code.
+			    """
+			    width=240
+			    height=320
+			    try:
+			        dst=os.path.splitext(basename(epubfile))[0]
+			        if dst.strip():
+				    print("Exists!")
+				    dst = os.path.dirname(epubfile) + "/" +  dst + "_micro.epub"
+				    print("destination is: " + dst)
+			        else:
+				    print("Unable to get destination")
+				    return "newfailcopy", None
 
-			    resizer = EPUBResizer(epubfile)
-			    resizer.resize(dst, max_width = width, max_height = height)
-			except:
-			    print("Unable to resize.")
-			    return "newfailcopy", None
+			        resizer = EPUBResizer(epubfile)
+			        resizer.resize(dst, max_width = width, max_height = height)
+			    except:
+			        print("Unable to resize.")
+			        return "newfailcopy", None
 		        
-	    	    	return "newsuccess", None
-	    	    else:
-	    	    	print("!!Couldn't copy html file xml to main directoy."+\
-			    "Something went wrong in the exe export!!")
-			return "newfailcopy", None
-		else:
-		    print("!!Couldn't rename EPUB folder to Block name!!")
-		    return "newfailcopy", None
+	    	    	    return "newsuccess", None
+	    	        else:
+	    	    	    print("!!Couldn't copy html file xml to main directoy."+\
+			        "Something went wrong in the exe export!!")
+			    return "newfailcopy", None
+		    else:
+		        print("!!Couldn't rename EPUB folder to Block name!!")
+		        return "newfailcopy", None
 	    else:
 	    	print("!!EPUB failed to extract.!!")
 	    	return "newfail", None
@@ -1595,6 +1612,11 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
                                     break #We got the package file..
                         if packagepath != None:
                             epubassetfolder=packagepath.rsplit('/',1)[0]
+			    splitpp = packagepath.rsplit('/',1)
+                    	    if len(splitpp) > 1:
+                        	epubassetfolder=packagepath.rsplit('/',1)[0]
+                      	    else:
+                        	epubassetfolder=""
                             #package File: pf
                             pf=epubzipfile.open(packagepath)
                             pfc=pf.read()
@@ -1640,26 +1662,31 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 			    '/../UMCloudDj/media/eXeExport/' + unid + "/"  )) == 0: # If unzip-ed successfully.
 		    print("Unzipped Successfully (epub)")
 	    	    #Get epub asset folder name from META-INF/container.xml
-	    	    epubassetfolder = "EPUB"
-	    	    if (os.system('mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
-	    	        unid+"/"+epubassetfolder+"\""+ " " + "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
-	    	    	    unid + "/" + name + "\"")) == 0:
-	    	    	print("2. Unzipped and verified.")
-	    	    	if os.system('cp ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
-			    + unid + '/' + name + '/ustadpkg_html5.xml' + "\"" + " " +\
-			 	"\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
+	    	    #epubassetfolder = "EPUB"
+
+                    if epubassetfolder == "":
+                        return "newsuccess", elpepubid
+                    else:
+
+	    	        if (os.system('mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+	    	            unid+"/"+epubassetfolder+"\""+ " " + "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
+	    	    	        unid + "/" + name + "\"")) == 0:
+	    	    	    print("2. Unzipped and verified.")
+	    	    	    if os.system('cp ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
+			        + unid + '/' + name + '/ustadpkg_html5.xml' + "\"" + " " +\
+			 	  "\"" + appLocation + '/../UMCloudDj/media/eXeExport/'\
 			 	    + unid + '/' + name + '_ustadpkg_html5.xml' +\
 			 		"\"" ) == 0: #ie if command got executed in success
-	    	    	    print("3. Export process completed..")
-			    print(elpepubid)
-	    	    	    return "newsuccess", elpepubid
-	    	    	else:
-	    	    	    print("!!Couldn't copy html file xml to main directoy."+\
-			        "Something went wrong in the exe export!!")
-			    return "newfailcopy", None
-		    else:
-		    	print("!!Couldn't rename EPUB folder to Block name!!")
-		    	return "newfail", None
+	    	    	        print("3. Export process completed..")
+			        print(elpepubid)
+	    	    	        return "newsuccess", elpepubid
+	    	    	    else:
+	    	    	        print("!!Couldn't copy html file xml to main directoy."+\
+			            "Something went wrong in the exe export!!")
+			        return "newfailcopy", None
+		        else:
+		    	    print("!!Couldn't rename EPUB folder to Block name!!")
+		    	    return "newfail", None
 	    else:
 	    	print("!!Exe didn't run. exe_do : something went wrong in eXe!!")
 	    	return "newfail", None
