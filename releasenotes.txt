@@ -1,3 +1,11 @@
+v1.0.042
+- Upload any file
+- Command line add to entry and acquisition link
+- web client update
+- other bugs and fixes
+- multiple version support
+
+
 v0.9.997
 - Added micro edition 320x240 epub versions to epub uploads 
 - Changed models to account for that

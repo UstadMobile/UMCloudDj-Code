@@ -30,6 +30,7 @@ from allclass.models import Allclass
 from school.models import School
 from django import forms
 from uploadeXe.views import ustadmobile_export
+from uploadeXe.views import get_package_url
 #from uploadeXe.views import grunt_course
 
 from django.http import HttpResponse
@@ -206,6 +207,7 @@ def root_view(request):
 	xmlreturn += "<updated>"+py_time_now+"</updated>"
 	xmlreturn += "<id>http://umcloud1.ustadmobile.com/opds/assigned_courses/?userid=" + str(user.id) + "</id>"
         xmlreturn += "<content type=\"text\">All of " + user.first_name + " " + user.last_name + "'s assigned courses</content>"
+	xmlreturn += "\n"
 	xmlreturn += "</entry>"
 
 	xmlreturn += get_public_xml_snippet(request)
@@ -283,6 +285,7 @@ def assigned_courses(request):
 		    xmlreturn += "<updated>" + str(everycourse.upd_date.strftime('%Y-%m-%dT%H:%M:%SZ')) + "</updated>"
 		    xmlreturn += get_author_xml_snippet(everycourse.publisher)
 		    xmlreturn += "<content type=\"text\">" + everycourse.description + "</content>"
+		    xmlreturn += "\n"
 		    xmlreturn += "</entry>"
 
                 xmlreturn+="</feed>"
@@ -354,7 +357,7 @@ def get_course(request):
                 course=Course.objects.get(id=coursepk, organisation=organisation, tincanid=coursetincanprefix)
 		if course is not None:
 		    xmlreturn += "\n<title>" + course.name + "</title>\n"
-		    xmlreturn += "<updated></updated>"
+		    xmlreturn += "<updated>" + str(course.upd_date.strftime('%Y-%m-%dT%H:%M:%SZ')) + "</updated>"
 		    xmlreturn += get_author_xml_snippet(course.publisher)
 		    xmlreturn += "\n"
 
@@ -365,55 +368,63 @@ def get_course(request):
             else:
                 all_blocks_in_course=course.packages.all()
 		for o in all_blocks_in_course:
-		    url = o.url;
-		    url = str(o.exefile);
-		    micro_edition_url = ""
-		    #if url.endswith(".html"):
-		    if True:
-			exefilepath = str(o.exefile)
-			if exefilepath.endswith(".epub") or exefilepath.endswith(".elp"):
-			    epubname = exefilepath.rsplit(".",2)[1]
-			    url = url.rsplit("/",1)[0] + "/" + epubname + ".epub"
-			    url = url.rsplit("/",1)[0] + ".epub"
-			if exefilepath.endswith(".epub"):
-			    url = "/media/"+exefilepath
+		    entry = o;
 		    xmlreturn += "<entry>\n"
-		    xmlreturn += "<title>" + o.name +"</title>\n"
-		    xmlreturn += "<id>"+o.tincanid+'/'+o.elpid+"</id>\n"
-		    xmlreturn += "<updated>"+str(o.upd_date.strftime('%Y-%m-%dT%H:%M:%SZ'))+"</updated>\n"
-		    xmlreturn += get_author_xml_snippet(o.publisher)
+                    xmlreturn += "<title>" + o.name +"</title>\n"
+                    xmlreturn += "<id>"+o.tincanid+'/'+o.elpid+"</id>\n"
+                    xmlreturn += "<updated>"+str(o.upd_date.strftime('%Y-%m-%dT%H:%M:%SZ'))+"</updated>\n"
+                    xmlreturn += get_author_xml_snippet(o.publisher)
+                    xmlreturn += "\n"
+                    xmlreturn += "<dc:language>en</dc:language>"
+                    xmlreturn += "<dc:issued></dc:issued>\n"
+
+                    xmlreturn += "<category\n\
+                                scheme=\"http://www.bisg.org/standards/bisac_subject/index.html\"\
+                                term=\"TESTING\"\
+                                label=\"TESTING\"/>\n"
+                    xmlreturn += "<summary>" + o.name + "'s description" + "</summary>\n"
+		    try:
+		        for acquisition_link in entry.acquisitionlink.all():
+			    print("In Acquisition Link : " + str(acquisition_link.id))
+			    print("url is : " + str(acquisition_link.exefile))
+			    url = str(acquisition_link.exefile)
+			    url = url.replace('&', '&amp;')
+			    xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
+                                href=\"" + "/media/" + url + "\"\n\
+                                    type=\"" + acquisition_link.mimetype + "\"/>\n"
+
+			    print("Figuring out preview_path")
+			    preview_path = acquisition_link.preview_path
+			    print(preview_path)
+			    preview_path = preview_path.replace('&','&amp;')
+	
+			    micro_edition_url = ""
+			    
+
+			
+		            if str(acquisition_link.exefile).lower().endswith('.epub') and o.micro_edition:
+			        dst=os.path.splitext(basename(url))[0]
+                                if dst.strip():
+                                    print("Exists!")
+                                    micro_edition_url = os.path.dirname(url) + "/" +  dst + "_micro.epub"
+			        micro_edition_url = micro_edition_url.replace('&','&amp;')
+		                xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
+                                    href=\"" + micro_edition_url + "\"\n\
+                                    type=\"application/epub+zip;x-umprofile=micro\"/>\n"
+
+			    if str(acquisition_link.exefile).lower().endswith('.epub') or \
+				str(acquisition_link.exefile).lower().endswith('.epub'):
+				if preview_path != None and preview_path != "":
+                                    xmlreturn += "<link rel=\"http://ustadmobile.com/epubrunner\"\n\
+                                       href=\"" + preview_path + "\" \n\
+                                        type=\"text/html;profile=opds-catalog;kind=acquisition\"/>"	
+		    except Exception, e:
+			print("Error in Acquiring links.")
+			print(str(e))
 		    xmlreturn += "\n"
-		    xmlreturn += "<dc:language>en</dc:language>"
-		    xmlreturn += "<dc:issued></dc:issued>\n"
-
-		    xmlreturn += "<category\n\
-				scheme=\"http://www.bisg.org/standards/bisac_subject/index.html\"\
-              			term=\"TESTING\"\
-              			label=\"TESTING\"/>\n"
-		    xmlreturn += "<summary>" + o.name + "'s description" + "</summary>\n"
-		    xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
-			href=\"" + url + "\"\n\
-          		type=\"application/epub+zip\"/>\n"
-
-		    if o.micro_edition:
-			dst=os.path.splitext(basename(url))[0]
-                        if dst.strip():
-                            print("Exists!")
-                            micro_edition_url = os.path.dirname(url) + "/" +  dst + "_micro.epub"
-
-		        xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
-                            href=\"" + micro_edition_url + "\"\n\
-                            type=\"application/epub+zip;um-width=240;um-height=320\"/>\n"
-
-                    if o.url != None and o.url != "" and o.url.endswith(".html"):
-                        print("Has a url")
-			extracted_path = o.url.rsplit("/",1)[0] + "/"
-                        xmlreturn += "<link rel=\"http://ustadmobile.com/epubrunner\"\n\
-                            href=\"" + extracted_path + "\" \n\
-                            type=\"text/html;profile=opds-catalog;kind=acquisition\"/>"	
-
-		
 		    xmlreturn += "</entry>\n"
+
+	    xmlreturn += "</feed>"
 
             authresponse = HttpResponse(status=200)
             authresponse.write(xmlreturn)
@@ -450,6 +461,7 @@ def public_view(request):
         xmlreturn += "<updated>"+py_time_now+"</updated>"
         xmlreturn += "<id></id>"
         xmlreturn += "<content type=\"text\">The most recent courses from Ustad Mobile in the last month</content>"
+	xmlreturn += "\n"
         xmlreturn += "</entry>"
 
         xmlreturn += "<entry>"
@@ -458,6 +470,7 @@ def public_view(request):
         xmlreturn += "<updated>"+py_time_now+"</updated>"
         xmlreturn += "<id></id>"
         xmlreturn += "<content type=\"text\">Our top featured Ustad Mobile courses picked by our Editors</content>"
+	xmlreturn +="\n"
         xmlreturn += "</entry>"
 
         xmlreturn += "<entry>"
@@ -466,6 +479,7 @@ def public_view(request):
         xmlreturn += "<updated>"+py_time_now+"</updated>"
         xmlreturn += "<id></id>"
         xmlreturn += "<content type=\"text\">Courses by categories.</content>"
+	xmlreturn += "\n"
         xmlreturn += "</entry>"
 
         xmlreturn += "<entry>"
@@ -474,6 +488,7 @@ def public_view(request):
         xmlreturn += "<updated>"+py_time_now+"</updated>"
         xmlreturn += "<id></id>"
         xmlreturn += "<content type=\"text\">Courses by categories.</content>"
+	xmlreturn += "\n"
         xmlreturn += "</entry>"
 
         xmlreturn += "</feed>"
@@ -515,6 +530,7 @@ def public_providers(request):
         xmlreturn += "<updated>"+py_time_now+"</updated>"
         xmlreturn += "<id></id>"
         xmlreturn += "<content type=\"text\">Categories part of " + provider.organisation_name + " provider .</content>"
+	xmlreturn += "\n"
         xmlreturn += "</entry>"
 
     xmlreturn += "</feed>"
@@ -572,6 +588,7 @@ def public_providers_categories(request, pk, ct):
             xmlreturn += "<updated>"+py_time_now+"</updated>"
             xmlreturn += "<id></id>"
             xmlreturn += "<content type=\"text\">Courses part of " + category.name + " category. </content>"
+	    xmlreturn += "\n"
             xmlreturn += "</entry>"
 
         
@@ -625,6 +642,7 @@ def public_providers_categories(request, pk, ct):
             xmlreturn += "<updated>" + str(course.upd_date.strftime('%Y-%m-%dT%H:%M:%SZ')) + "</updated>"
             xmlreturn += get_author_xml_snippet(course.publisher)
             xmlreturn += "<content type=\"text\">" + course.description + "</content>"
+	    xmlreturn += "\n"
             xmlreturn += "</entry>"
 
 	xmlreturn += "</feed>"
@@ -669,6 +687,7 @@ def public_categories_view(request):
             xmlreturn += "<updated>"+py_time_now+"</updated>"
             xmlreturn += "<id></id>"
             xmlreturn += "<content type=\"text\">Courses part of " + category.name + " category.</content>"
+	    xmlreturn += "\n"
             xmlreturn += "</entry>"
 
         xmlreturn += "</feed>"
@@ -715,6 +734,7 @@ def public_category_view(request, pk):
             xmlreturn += "<updated>"+py_time_now+"</updated>"
             xmlreturn += "<id></id>"
             xmlreturn += "<content type=\"text\">Courses part of " + category.name + " sub-category. (" + this_category.name + " > " + category.name + ")</content>"
+	    xmlreturn += "\n"
             xmlreturn += "</entry>"
 
         all_courses_in_this_category = Course.objects.filter(cat__id=pk, public=True)
@@ -731,6 +751,7 @@ def public_category_view(request, pk):
             xmlreturn += "<updated>" + str(everycourse.upd_date.strftime('%Y-%m-%dT%H:%M:%SZ')) + "</updated>"
             xmlreturn += get_author_xml_snippet(everycourse.publisher)
             xmlreturn += "<content type=\"text\">" + everycourse.description + "</content>"
+	    xmlreturn +="\n"
             xmlreturn += "</entry>"
 
         xmlreturn += "</feed>"
@@ -774,10 +795,11 @@ def get_public_course(request):
     """
 
     try:
+	py_time_now = time.strftime('%Y-%m-%dT%H:%M:%SZ')
         course=Course.objects.get(id=coursepk, tincanid=coursetincanprefix)
         if course is not None:
             xmlreturn += "\n<title>" + course.name + "</title>\n"
-            xmlreturn += "<updated></updated>"
+            xmlreturn += "<updated>" + py_time_now + "</updated>"
             xmlreturn += get_author_xml_snippet(course.publisher)
             xmlreturn += "\n"
     except:
@@ -785,17 +807,9 @@ def get_public_course(request):
         authresponse.write("Course id does not exist (Is your tincanprefix and pk right?)")
         return authresponse
     else:
-        all_blocks_in_course=course.packages.all()
+	all_blocks_in_course=course.packages.all()
         for o in all_blocks_in_course:
-            url = o.url;
-	    url = str(o.exefile);
-            #if url.endswith(".html"):
-	    if True:
-                exefilepath = str(o.exefile)
-                if exefilepath.endswith(".epub") or exefilepath.endswith(".elp"):
-                    epubname = exefilepath.rsplit(".",2)[1]
-                    url = url.rsplit("/",1)[0] + "/" + epubname + ".epub"
-                    url = url.rsplit("/",1)[0] + ".epub"
+            entry = o;
             xmlreturn += "<entry>\n"
             xmlreturn += "<title>" + o.name +"</title>\n"
             xmlreturn += "<id>"+o.tincanid+'/'+o.elpid+"</id>\n"
@@ -809,17 +823,40 @@ def get_public_course(request):
                         scheme=\"http://www.bisg.org/standards/bisac_subject/index.html\"\
                         term=\"TESTING\"\
                         label=\"TESTING\"/>\n"
-	    if o.description:
-                xmlreturn += "<summary>" + o.description + "</summary>\n"
-	    else:
-		xmlreturn += "<summary>" + o.name + "</summary>\n"
-            #xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
-  	    xmlreturn += "<link \n \
-                href=\"" + url + "\"\n\
-                type=\"application/epub+zip\"/>\n"
+            xmlreturn += "<summary>" + o.name + "'s description" + "</summary>\n"
 
+            for acquisition_link in entry.acquisitionlink.all():
+                url = str(acquisition_link.exefile)
+                url = url.replace('&', '&amp;')
+                xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
+                    href=\"" + "/media/" + url + "\"\n\
+                    type=\"application/epub+zip\"/>\n"
+
+                preview_path = acquisition_link.preview_path
+                preview_path = preview_path.replace('&','&amp;')
+
+                micro_edition_url = ""
+
+
+                if o.micro_edition:
+                    dst=os.path.splitext(basename(url))[0]
+                    if dst.strip():
+                        print("Exists!")
+                        micro_edition_url = os.path.dirname(url) + "/" +  dst + "_micro.epub"
+                    micro_edition_url = micro_edition_url.replace('&','&amp;')
+                    xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
+                        href=\"" + micro_edition_url + "\"\n\
+                        type=\"application/epub+zip;um-width=240;um-height=320\"/>\n"
+
+                if preview_path != None and preview_path != "":
+                    xmlreturn += "<link rel=\"http://ustadmobile.com/epubrunner\"\n\
+                        href=\"" + preview_path + "\" \n\
+                        type=\"text/html;profile=opds-catalog;kind=acquisition\"/>"
+
+            xmlreturn += "\n"
             xmlreturn += "</entry>\n"
 
+	xmlreturn += "</feed>"
 
     authresponse = HttpResponse(status=200)
     authresponse.write(xmlreturn)

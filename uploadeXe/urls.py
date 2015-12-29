@@ -13,5 +13,7 @@ urlpatterns = patterns('uploadeXe.views',
     url(r'^coursenew/$','course_create', name='coursenew'),
     url(r'^courseedit/(?P<pk>\d+)$','course_update', name='courseedit'),
     url(r'^coursedelete/(?P<pk>\d+)$','course_delete',name='coursedelete'),
-
+    
+    #MultipleVersionMigration temp
+    url(r'^blockToAcquisitionLink/$','blockToAcquisitionLink', name='blockToAcquisitionLink'),
 )

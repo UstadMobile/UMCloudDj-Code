@@ -1314,7 +1314,8 @@ class ResumableBlockUploadView(View):
             data['noAutoassign'] = noAutoassign
             data['blockCourse'] = blockcourse
 	    user = self.request.user
-            return_value, newdoc, data_updated = handle_block_upload(exefile, user, forceNew, noAutoassign, data)
+	    data['publisher'] = user
+            return_value, newdoc, data_updated = handle_block_upload(exefile, data)
 
             #If block failed to upload and / or validatinon failed
             if return_value == False or return_value is None:
@@ -1509,8 +1510,11 @@ def sendelpfile_view(request):
 			exefile = request.FILES['exeuploadelp']
 			print("exefile type:")
 			print(type(exefile))
-
-            		return_value, newdoc, data_updated = handle_block_upload(exefile, user, forceNew, noAutoassign, data)
+			
+			data['publisher'] = user
+		 	data['forceNew'] = forceNew
+			data['noAutoassign'] = noAutoassign
+            		return_value, newdoc, data_updated = handle_block_upload(exefile, data)
             		#This is the new thing
 
             		#If block failed to upload and / or validatinon failed
@@ -2168,23 +2172,37 @@ def phone_inapp_registration(request):
         return HttpResponseBadRequest("No phone number in request")
 
     name = post.get('name', None)
-
+    email = post.get('email', None)
+    username = post.get('username', None)
+    usernamegiven = False
+    if username is not None:
+        usernamegiven = True
+    password = post.get('password', None)
+    code = post.get('regcode', None)
     #Check quality of phone number
 
     # Create random username and password (6 digits)
-    password = random.randrange(100000,999999)
-    username = ''.join(random.choice(string.ascii_lowercase) for x in range(5))\
+    if password is None:
+        password = random.randrange(100000,999999)
+    if username is None:
+        username = ''.join(random.choice(string.ascii_lowercase) for x in range(5))\
                                              + str(random.randrange(1000,9999))
     usernames = User.objects.all().values_list('username', flat=True)
     while (username in usernames):
 	print("Trying a username:")
-        username = ''.join(random.choice(string.ascii_letters) for x in range(5))\
+	if usernamegiven == False :
+            username = ''.join(random.choice(string.ascii_letters) for x in range(5))\
                                              + str(random.randrange(1000,9999))
+	else:
+	    #Return "this username has already been created error"
+	    print("Error: Username already exists..");
+	    errormessage = "Username already taken. Please choose another one!"
+	    json_credentials = simplejson.dumps( {'errormessage': errormessage})
+        return HttpResponse(json_credentials, mimetype="application/json", status=400)
 
     print("Created username:" + username)
     if not name:
  	name = username
-
     
     #Organisation mapping.
     if phonenumber.startswith("+"):
@@ -2194,7 +2212,8 @@ def phone_inapp_registration(request):
     elif phonenumber.startswith("0"):
         clean_number = phonenumber[1:]
 
-    email = str(clean_number) + "@ustadmobile.email"
+    if not email:
+        email = str(clean_number) + "@ustadmobile.email"
     first_name = str(name)
     last_name = "InAppRegistration"
     
@@ -2216,26 +2235,33 @@ def phone_inapp_registration(request):
     ph_number = phonenumbers.parse(phonenumber, None)
     country_code = ph_number.country_code
     logger.info("Country code is :"  + str(country_code))
+    organisation = None
+    if code is not None:
+	try:
+            organisation = Organisation_Code.objects.get(\
+                code=code).organisation
+        except Organisation_Code.DoesNotExist, e:
+            print("Please enter your organisation code first")
 
-    country_courses=None
-    try:
-        country_mapping = Country_Organisation.objects.get(\
-            country_code=int(country_code))
-        organisation = country_mapping.organisation
-        logger.info("orgaisation found by country code: " + organisation.organisation_name)
-        if organisation:
-            #Assign to courses.
-            country_courses = country_mapping.allcourses.all()
+    if not code and not organisation:
+        country_courses=None
+    	try:
+            country_mapping = Country_Organisation.objects.get(\
+                country_code=int(country_code))
+            organisation = country_mapping.organisation
+            logger.info("orgaisation found by country code: " + organisation.organisation_name)
+            if organisation:
+                #Assign to courses.
+                country_courses = country_mapping.allcourses.all()
+        except:
+            logger.info("Not assigned to a country")
+            organisation = Organisation.objects.get(pk=1)
 
-
-    except:
-        logger.info("Not assigned to a country")
-        organisation = Organisation.objects.get(pk=1)
     gender = post.get('gender', None)
     if not gender:
 	gender = ""
     gender = str(gender)
-    #gender = "F"
+
     try:
         user_profile = UserProfile(user=user, website="www.ustadmobile.com", \
             job_title="In-App Phone Registration", \

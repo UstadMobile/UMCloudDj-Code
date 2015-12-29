@@ -9,7 +9,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render_to_response, redirect, get_object_or_404 
 
 import os 
-from uploadeXe.models import Package as Document
+from uploadeXe.models import Package as Entry
+from uploadeXe.models import AcquisitionLink
 from uploadeXe.forms import ExeUploadForm
 from uploadeXe.models import Course
 from uploadeXe.models import Categories
@@ -45,15 +46,85 @@ import simplejson
 from epubresizer import EPUBResizer
 from os.path import basename
 
+
+######################################################################
+#Internal Migration
+@login_required(login_url='/login/')
+def blockToAcquisitionLink(request):
+    print("Hey there!")
+    if request.user.is_staff == True:
+	all_blocks = Entry.objects.filter(success="YES")
+	a=len(all_blocks)
+	appLocation = (os.path.dirname(os.path.realpath(__file__)))
+	serverlocation=appLocation+'/../'
+        mainappstring = "UMCloudDj/"
+	fails = []
+	for every_block in all_blocks:
+	    path = str(every_block.exefile)
+	    try:
+	        size = os.path.getsize(serverlocation + mainappstring \
+		    + settings.MEDIA_URL + str(every_block.exefile))
+	    except:
+		size = 0
+	 	print("size zero for " + str(every_block.id))
+	
+	    if (every_block.elphash is not None and every_block.elphash != "-" \
+		and every_block.elphash != ""):
+		md5hash = every_block.elphash
+	    else:
+                md5hash = str(hashlib.md5(open(serverlocation + mainappstring \
+                    + settings.MEDIA_URL + path ).read()).hexdigest())
+	    
+	    """
+	    hashlist = AcquisitionLink.objects.values_list('md5', flat=True)
+	    print(hashlist)
+	    if str(md5hash) in hashlist:
+		print("Already uploaded and recorded. Putting it in anyway. " \
+			+ "Force new might have been selected")
+	    """
+	    
+	    if (path.lower().endswith('.epub')):
+	        mimetype="application/epub+zip"
+	    elif (path.lower().endswith('.elp')):
+	       mimetype="application/elp+zip"
+	    else:
+	        mimetype=""
+	    title = every_block.name
+	    preview_path = get_package_url(every_block)
+	    if preview_path == "" or preview_path ==None:
+		preview_path = everyblock.url
+	    try:
+	        acquisition_link = AcquisitionLink(exefile=every_block.exefile,\
+	        mimetype=mimetype, length=size, title=title, md5=md5hash,\
+	            preview_path=preview_path)
+	        #acquisition_link.save()
+		#Assigning Entry to Link
+		acquisition_link.entry = every_block;
+	 	acquisition_link.save()
+		all_acquisition_links = every_block.acquisitionlink.all()
+		print("All acquisition links for block " + str(every_block.id) + " is " + str(all_acquisition_links))
+
+		
+	    except:
+	        print("Unable to make for block " + str(every_block.id))
+	  	fails.append(every_block.id)
+	    
+		
+        authresponse = HttpResponse(status=200)
+        authresponse.write("Welcome Super Admin. No. of blocks failed: " + str(fails))
+        return authresponse
+    else:
+	return redirect('home')
+
 ######################################################################
 #Package CRUD
 
 """
-Document is Package which is a Block. This is the form for the block. 
+Entry is Package which is a Block. This is the form for the block. 
 """
-class DocumentForm(ModelForm):
+class EntryForm(ModelForm):
     class Meta:
-        model = Document
+        model = Entry
 	fields = ('name',)
 	
 """
@@ -61,7 +132,7 @@ The view to render delete a particular block.
 """
 @login_required(login_url='/login/')
 def delete(request, pk, template_name='myapp/package_confirm_delete.html'):
-    document = get_object_or_404(Document, pk=pk)
+    document = get_object_or_404(Entry, pk=pk)
     if request.method=='POST':
 	if request.user == document.publisher:
             document.delete()
@@ -76,7 +147,7 @@ Manages Blocks and reders to template rendering to primeui table
 """
 @login_required(login_url='/login/')
 def manage(request, template_name='myapp/manage.html'):
-    documents = Document.objects.filter(publisher=request.user,\
+    documents = Entry.objects.filter(publisher=request.user,\
 					 success="YES")
     current_user = request.user.username
     courses_as_json = serializers.serialize('json', documents)
@@ -84,6 +155,82 @@ def manage(request, template_name='myapp/manage.html'):
 
     return render(request, template_name, {'courses_as_json':\
 					    courses_as_json})
+
+"""
+Common function to get preview url for opds and 
+portal links
+"""
+def get_package_url(block):
+    appLocation = (os.path.dirname(os.path.realpath(__file__)))
+    #hostname = request.get_host()
+    serverlocation=appLocation+'/../'
+    mainappstring = "UMCloudDj/"
+
+    filename=str(block.exefile)
+    if filename.lower().endswith(".epub") or filename.lower().endswith(".elp"):
+        #extracted_path = block.url.rsplit("/",1)[0] + "/"
+        extracted_path = block.url
+        print(extracted_path)
+        container_path = ""
+        print("Getting container path")
+        if not os.path.isfile(serverlocation + mainappstring \
+            + extracted_path + "/" + "META-INF/container.xml"):
+            print("Not in there 1")
+            extracted_path = block.url.rsplit("/",2)[0]
+
+            if os.path.isfile(serverlocation + mainappstring \
+                + extracted_path + "/" + "META-INF/container.xml"):
+                #Legacy support
+                container_path = serverlocation + mainappstring \
+                    + extracted_path + "/" + "META-INF/container.xml"
+            else:
+                print("Cant figure. Emptying")
+                print("Can't figure this.");
+                container_path = "";
+        else:
+            extracted_path = block.url
+            container_path = serverlocation + mainappstring \
+                + extracted_path + "/" + 'META-INF/container.xml'
+
+
+        if container_path == "":
+            url = ""
+        else:
+            tree = ET.parse(container_path)
+
+            root = tree.getroot()
+            packagepage=None
+            for child in root:
+                for chi in child:
+                    if ".opf" in chi.attrib['full-path']:
+                        packagepath=chi.attrib['full-path']
+                        print("YAY")
+                        print(packagepath)
+                        break #We got the package file..
+            splitpp = packagepath.rsplit('/',1)
+            if len(splitpp) > 1:
+                epubassetfolder=packagepath.rsplit('/',1)[0]
+                restpath = packagepath.rsplit('/',1)[1]
+                if not os.path.isfile(serverlocation + mainappstring \
+                    + extracted_path + packagepath):
+                    print("Container file no existo..")
+                    epubassetfolder = block.name
+                    packagepath = epubassetfolder + "/" + restpath
+            else:
+                epubassetfolder=""
+
+            #http_prefix = "http://"
+	    if not extracted_path.endswith("/"):
+                extracted_path = extracted_path + "/"
+            package_url = extracted_path + packagepath
+
+            #package_url = base server + media + path to opf file.
+            #url="/media/epubrunner/ustad_contentepubrunner.html?src=" + package_url + "&output=embed";
+    else:
+        #url = str(block.exefile)
+	package_url = ""
+    return package_url
+
 """
 View to make edits to Blocks as oer Block model form.
 Assigned students are also rendered and given to the
@@ -94,8 +241,8 @@ this view via POST parameters
 def edit(request, pk, template_name='myapp/update.html'):
     organisation = User_Organisations.objects.get(user_userid=request.user).\
 						organisation_organisationid;
-    document = get_object_or_404(Document, pk=pk)
-    form = DocumentForm(request.POST or None, instance=document)
+    document = get_object_or_404(Entry, pk=pk)
+    form = EntryForm(request.POST or None, instance=document)
     student_role = Role.objects.get(pk=6)
     allstudents=User.objects.filter(pk__in=User_Roles.objects.filter(\
 				role_roleid=student_role).\
@@ -110,7 +257,20 @@ def edit(request, pk, template_name='myapp/update.html'):
 							organisation)
 
     assignedcourses=Course.objects.filter(packages=document)
-    url=document.url;
+
+    appLocation = (os.path.dirname(os.path.realpath(__file__)))
+    hostname = request.get_host()
+    serverlocation=appLocation+'/../'
+    mainappstring = "UMCloudDj/"
+    http_prefix = "http://"
+
+    package_url = get_package_url(document)
+    if package_url != "":
+	package_url = http_prefix + hostname + package_url
+        url="/media/epubrunner/ustad_contentepubrunner.html?src=" + package_url + "&output=embed";
+    else:
+	print("else")
+	url = settings.MEDIA_URL + str(document.exefile)
 
     if form.is_valid():
 	form.save()
@@ -355,8 +515,6 @@ def upload(request, template_name='myapp/upload_handle.html'):
     data = {}
     form = ExeUploadForm() # A empty, unbound form
     #documents here are just existing Blocks / Packages
-    print("request user is: ")
-    print(request.user)
     
     if request.user is None or request.user.is_anonymous():
 	print("No user in request")
@@ -383,25 +541,18 @@ def upload(request, template_name='myapp/upload_handle.html'):
 	else:
 	    print("Wrong username/password combination")
 	    return HttpResponse("Authentication failed", status=402)
-	    
-    documents = Document.objects.filter(\
-                 publisher=request.user, success="YES", active=True)
+
+    publisher = request.user
+    documents = Entry.objects.filter(\
+                 publisher=publisher, success="YES", active=True)
     documents = []
     current_user = request.user.username
     data['documents']=documents
     data['form']=form
     data['current_user']=current_user
-    print("request:")
-    print(request)
-    print("request.method")
-    print(request.method)
-    print("request.POST")
-    print(request.POST)
     if request.method == 'POST':
-        #If method is POST, an elp file is being
-        #uploaded. 
+        #If method is POST, an elp file is being uploaded. 
         post = request.POST;
-
         state = ""
         studentidspicklist=post.getlist('target')
 	description = post.get('block_desc')
@@ -413,7 +564,8 @@ def upload(request, template_name='myapp/upload_handle.html'):
         form = ExeUploadForm(request.POST, request.FILES)
 	forceNew     = request.POST.get('forceNew')
 	noAutoassign = request.POST.get('noAutoassign') 
-	print("getting category and other  extra elements..")
+
+	#getting category and other  extra elements
 	try:
 	    category = request.POST.get('category')
 	except: 
@@ -426,25 +578,36 @@ def upload(request, template_name='myapp/upload_handle.html'):
 	    blockcourse = request.POST.get('blockCourse')
 	except:
 	    blockcourse = None
+	try:
+	    entry_id = request.POST.get('entryId').strip()
+	    print("Entry: " + str(entry_id))
+	    try:
+		entry_selected = Entry.objects.filter(elpid=entry_id, success='YES', active=True).latest('id')
+	        print("Got Entry Selected")
+	    except Exception, e:
+		entry_selected = None
+		print("Unable to identify entry..")
+		print(str(e))
+	except:
+	    entry_selected = None
 
-	data['forceNew'] = forceNew
-	data['noAutoassign'] = noAutoassign
-	data['category'] = category
-	data['gradeLevel'] = grade_level
-	data['blockCourse'] = blockcourse
+	data['forceNew']      = forceNew
+	data['noAutoassign']  = noAutoassign
+	data['category']      = category
+	data['gradeLevel']    = grade_level
+	data['blockCourse']   = blockcourse
+	data['description']   = description
+	data['entrySelected'] = entry_selected
+	data['publisher']     = publisher
 
         #verifying the form (Django style)
         #if form.is_valid():
 	if True:
           #For Every file uploaded
-	  print("Getting files..")
 	  for exefile in request.FILES.getlist('exefile'):
 	    print("In file.." + str(exefile))
             #This is the new thing
-            return_value, newdoc, data_updated = handle_block_upload(exefile, request.user, forceNew, noAutoassign, data)
-	    newdoc.description = description
-	    newdoc.save()
-            #This is the new thing
+            return_value, newdoc, data_updated = handle_block_upload(exefile, data)
 
             #If block failed to upload and / or validatinon failed
             if return_value == False or return_value is None:
@@ -465,15 +628,19 @@ def upload(request, template_name='myapp/upload_handle.html'):
             unid = return_value[3]
             elpiname = return_value[4]
             elplomid = return_value[5]
-	    
+
+	    if rete == "linkaddsuccess":
+		state="Your Acquisition Link has been uploaded to " + newdoc.entry.name
+		statesuccess=1
+		data['state']=state
+		data['statesuccess']=statesuccess
+		
 	 	
-            if rete =="newsuccess":
+            elif rete =="newsuccess":
 		print("True, this block will be newly created.")
-                courseURL = '/media/eXeExport' + '/' + unid + '/' + elpiname + '/' + 'deviceframe.html'
                 setattr(newdoc, 'success', "YES")
-                setattr(newdoc, 'url', courseURL)
-                setattr(newdoc, 'name', elpiname)
                 setattr(newdoc, 'publisher', request.user)
+		#newdoc.description = description
                 newdoc.save()
 		state="Your Block: " + newdoc.name + "  has been uploaded."
 		statesuccess=1
@@ -491,7 +658,6 @@ def upload(request, template_name='myapp/upload_handle.html'):
 			data['state']=state
             		data['statesuccess']=0
             		return render(request, template_name, data)
-			#return message
                 
                 """
                 Adding package to course
@@ -502,14 +668,6 @@ def upload(request, template_name='myapp/upload_handle.html'):
                     currentcourse = Course.objects.get(pk=everycourseid)
                     currentcourse.packages.add(newdoc)
                 
-		"""#Commented and put on hold
-		##Code for grunt testing course against webkit
-                retg = grunt_course(unid, uidwe)
-                
-                if not retg:
-                    setattr(newdoc, 'success', 'NO')
-                    newdoc.save()
-		"""
 		#just to be sure..
                 newdoc.save()
 
@@ -549,19 +707,16 @@ def upload(request, template_name='myapp/upload_handle.html'):
 		print("This block is going to be an update and has been updated.")
                 setattr(newdoc, 'success', "NO")
 		setattr(newdoc, 'active', False)
+		#newdoc.description = description
                 newdoc.save()
 		newdoc.delete()
                 # Redirect to the document list after POST
                 return HttpResponseRedirect(reverse(\
 					'uploadeXe.views.list'))
 
-
-
-
 	  if 'submittotable' in request.POST:
 	    data['state']=state
             return render(request, template_name, data)
-            #return HttpResponseRedirect(reverse('uploadeXe.views.list'))
           if 'submittonew' in request.POST:
 	    data['state']=state
 	    return render(request, 'myapp/new.html', data)
@@ -570,28 +725,125 @@ def upload(request, template_name='myapp/upload_handle.html'):
             return render(request, template_name, data)
 	else:
 	    print("Form is not valid")
-            
-
-
     else: 
 	#Form isn't POST. 
         print("!!NOT A POST REQUEST!!")
         form = ExeUploadForm() # A empty, unbound form
-    documents = Document.objects.filter(\
+    documents = Entry.objects.filter(\
 			publisher=request.user, success="YES", active=True)
     current_user = request.user.username
     # Render list page with the documents and the form
     return render_to_response(
         template_name,
         {\
-	#'student_list':data['student_list'] ,\
 	'documents': documents, 'form': form,\
 	 'current_user': current_user},
         context_instance=RequestContext(request)
     )
 
+"""
+Make an Acquisition Link from the block already uploaded
+"""
+def make_acquisition_link(block):
+    #Adding the file upload as an Acquisition Link
+    print("Adding the file upload as an Acquisition Link!")
+    path = str(block.exefile)
+    if (path.lower().endswith('.epub')):
+        mimetype="application/epub+zip"
+    elif (path.lower().endswith('.elp')):
+        mimetype="application/elp+zip"
+    elif (path.lower().endswith('.pdf')):
+        mimetype="application/pdf"
+    else:
+        mimetype=""
+    try:
+        size = os.path.getsize(serverlocation + mainappstring \
+            + settings.MEDIA_URL + str(block.exefile))
+    except:
+        size = 0
 
-				 
+    try:
+        preview_path = get_package_url(block)
+    except:
+        print("Something wrong in getting preview path.")
+        preview_path = None
+
+    #This will only work for already uploaded epubs..
+    if preview_path == "" or preview_path ==None:
+        preview_path = block.url
+    try:
+        acquisition_link = AcquisitionLink(exefile=block.exefile,\
+            mimetype=mimetype, length=size, title=block.name, md5=block.elphash,\
+            preview_path = preview_path)
+    except:
+        print("Cant create AL")
+    #Assigning Entry to Link
+    acquisition_link.entry = block;
+    acquisition_link.save()
+    print("AL made!")
+
+
+"""
+Make New Acquisition Link From File object and master entry object
+"""
+def make_acquisition_link_new(blockfile, entry):
+	#Adding the file upload as an Acquisition Link
+	print("Adding the file upload as an Acquisition Link!")
+	appLocation = (os.path.dirname(os.path.realpath(__file__)))
+	serverlocation=appLocation+'/../'
+        mainappstring = "UMCloudDj/"
+
+	acquisition_link = AcquisitionLink(exefile=blockfile, \
+	    mimetype="-", length = 0, title = str(blockfile), active=False, entry=entry)
+	acquisition_link.save()
+	uid = str(acquisition_link.exefile)
+	unid = uid.split('.um.')[-2]
+	unid = unid.split('/')[-1]  #Unique id here
+	path = str(acquisition_link.exefile)
+
+	path = str(acquisition_link.exefile)
+	if (path.lower().endswith('.epub')):
+	    mimetype="application/epub+zip"
+	elif (path.lower().endswith('.elp')):
+	   mimetype="application/elp+zip"
+	elif (path.lower().endswith('.pdf')):
+	    mimetype="application/pdf"
+	else:
+	    mimetype=""
+	try:
+	    size = os.path.getsize(serverlocation + mainappstring \
+		+ settings.MEDIA_URL + str(acquisition_link.exefile))
+	except:
+	    size = 0
+
+	"""
+	preview_path = get_package_url(newdoc)
+	if preview_path == "" or preview_path ==None:
+	    preview_path = everyblock.urlnewdoc
+	"""
+	md5hash = str(hashlib.md5(open(serverlocation + mainappstring \
+                    + settings.MEDIA_URL + path ).read()).hexdigest())
+
+	acquisition_link.mimetype = mimetype
+	acquisition_link.length = size
+	acquisition_link.md5 = md5hash
+	
+	acquisition_link.save()
+
+	#Assigning Entry to Link
+	print("Assigning entry to acquisition link")
+	acquisition_link.entry = entry;
+	acquisition_link.save()
+
+	acquisition_link.preview_path = settings.MEDIA_URL + str(acquisition_link.exefile)
+	acquisition_link.save()
+	
+	acquisition_link.active = True;
+	acquisition_link.save()
+	print("Created new Acquisition Link and assigned it to an entry")
+	return acquisition_link
+
+
 """
 Internal common function that Handles elp/epub file upload. 
 Takes in blockfile, publisher (User object), forceNew parameter, noAutoAssign parameter, data for returning to views)
@@ -601,16 +853,49 @@ return_value is an array of: [rete, elpepubid, uid, unid, elpiname, elplomid]
 
 """
 
-def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
+def handle_block_upload(blockfile, data):
+    publisher = data['publisher']
+    forceNew = data['forceNew']
+    noAutoassign = data['noAutoassign']
+    try:
+	entry_selected = data['entrySelected']
+    except:
+	entry_selected = None
+
+    print("Checking if entry is selected..")
+    if entry_selected is not None:
+	print("Got entry. Now making Acuisition link")
+        try:
+	    acquisition_link = make_acquisition_link_new(blockfile, entry_selected)
+	except Exception, e:
+	    print("Couldn't make Acquisition Link. Error.")
+	    print(str(e))
+	    return None, None, data
+	
+	uid = str(acquisition_link.exefile)
+        unid = uid.split('.um.')[-2]
+        unid = unid.split('/')[-1]  #Unique id here
+        path = str(acquisition_link.exefile)
+
+	return_values = []
+        return_values.append("linkaddsuccess")
+        return_values.append(None)
+        return_values.append(uid)
+        return_values.append(unid)
+        return_values.append(str(blockfile))
+        return_values.append(unid)
+	print("All done?")
+	return return_values, acquisition_link, data
+	
     print("Handling Block upload for user:" +  str(publisher.username))
     appLocation = (os.path.dirname(os.path.realpath(__file__)))
 
-    elpiname=None
-    elplomid = None
+    entryname=None
+    entryid = None
     
     #Assume POST validation and Form validation is run
     print("Creating Block object..")
-    newdoc = Document(exefile=blockfile)
+    newdoc = Entry(exefile=blockfile)
     uid = str(getattr(newdoc, 'exefile'))
     
     #Temporarily create the entry for the file uploaded.
@@ -618,20 +903,20 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
     setattr(newdoc, 'publisher', publisher)
     setattr(newdoc, 'elphash', '-')
     setattr(newdoc, 'tincanid', '-')
+    
     newdoc.save()
     print("Created Block object.")
 
     #Getting block md5sum
     uid = str(getattr(newdoc, 'exefile'))
-    print(appLocation)
     print(uid)
     serverlocation=appLocation+'/../'
     mainappstring = "UMCloudDj/"
     elphash = hashlib.md5(open(serverlocation + mainappstring \
 		+ settings.MEDIA_URL + uid ).read()).hexdigest()	
-    hashlist=Document.objects.all().values_list('elphash')
+    hashlist=Entry.objects.all().values_list('elphash')
     if str(elphash) in hashlist:
-	print("ELP/EPUB already uploaded. Do we want to upload it again?")
+	print("File already uploaded. Do we want to upload it again?")
 	#Put action here for future logic for existing files.
     setattr(newdoc, 'elphash', elphash)
 
@@ -646,27 +931,16 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
     try:
         elpzipfile = zipfile.ZipFile(elpfilehandle)
     except:
-	print("!ERROR: NOT A ZIP FILE!")
-	setattr(newdoc, "success", "NO")
-	setattr(newdoc, "tincanid","-")
-	newdoc.save()
-	state="File provided was not a zip file (cannot be unzipped)"
-        statesuccess=0
-        data['state']=state
-        data['statesuccess']=statesuccess
-
-        return False, None, data
-
-	
+	print("NOT A ZIP FILE!")
    
     #If it is an epub file:
     if uid.lower().endswith('.epub'):
 	print("An EPUB File has been uploaded.." + uid)
 
 	#Updated to get description and lang from the epub.
-	elplomid, elpiname, tincanprefix, description, lang, subject = get_epub_blockid_name(elpfile)
+	entryid, entryname, tincanprefix, description, lang, subject = get_epub_blockid_name(elpfile)
 
-	if elplomid == None and elpiname == None :
+	if entryid == None and entryname == None :
 	    setattr(newdoc, 'success', 'NO')
 	    setattr(newdoc, 'tincanid', '-')
 	    if lang is not None and lang != "":
@@ -683,8 +957,8 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
             return False, None, data
 	    #return render(request, template_name, data)
 	else:
-	    setattr(newdoc, 'elpid', elplomid)
-	    setattr(newdoc, 'name', elpiname)
+	    setattr(newdoc, 'elpid', entryid)
+	    setattr(newdoc, 'name', entryname)
 	    if description is not None and description != "":
 	        setattr(newdoc, 'description', description)
 	    if lang is not None and lang != "":
@@ -785,12 +1059,12 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
                         if x.getAttribute('class') == "exe.engine.lom.lomsubs.entrySub":
                             lomentry=x
                             break
-                    elplomidobject=lomentry.getElementsByTagName('unicode')
-                    elplomid=None
-                    for e in elplomidobject:
-                        elplomid=e.getAttribute('value')
-                    setattr(newdoc, 'elpid', elplomid)
-                    if not elplomid:
+                    entryidobject=lomentry.getElementsByTagName('unicode')
+                    entryid=None
+                    for e in entryidobject:
+                        entryid=e.getAttribute('value')
+                    setattr(newdoc, 'elpid', entryid)
+                    if not entryid:
                         setattr(newdoc, 'elpid', "replacemewithxmldata")
                 except:
                     setattr(newdoc, 'elpid', '-')
@@ -802,13 +1076,13 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
                     elpfoundFlag=False
                     for chi in child:
                         if elpfoundFlag == True:
-                            elpiname=chi.attrib['value']
+                            entryname=chi.attrib['value']
                             break
                         if "}string" in chi.tag:
                             if "_name" in chi.attrib['value']:
                                 elpfoundFlag=True
-                if not elpiname:
-                    elpiname="-"
+                if not entryname:
+                    entryname="-"
 
 		#Save it all
 		newdoc.save()
@@ -820,45 +1094,76 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
             #            'uploadeXe.views.list'))
 
     else:
-    	print("!!Unable to determine what file you have upload (elp/epub)!!")	
-    	setattr(newdoc, 'success', 'NO')
-    	newdoc.save()
-    	state="Unable to determine the file type. File is not a .epub or .elp file"
-    	statesuccess=0
-    	data['state']=state
-    	data['statesuccess']=statesuccess
-
-        return False, None, data 
-    	#return render(request, template_name, data)
+    	print("None EPUB/ELP file uploaded. Just saved.")	
+        setattr(newdoc, 'url', str(newdoc.exefile))
+	setattr(newdoc, 'publisher', publisher)
+	setattr(newdoc, 'tincanid', '-')
+    	setattr(newdoc, 'success', 'YES')
+	setattr(newdoc, 'elpid', unid)
+	file_name = str(newdoc.exefile).rsplit('/',1)[1].rsplit('.um.',1)[1]
+	setattr(newdoc, 'name', file_name)
 
     if not noAutoassign:
         newdoc.students.add(publisher)
-    if elpiname == None:
-        blockname="-"
-    else: 
-        blockname=elpiname
-    if elplomid == None:
-        blockid="-"
-    else:
-        blockid=elplomid
-    #print(uid + "|" + unid + "|" + str(blockname) + "|" + str(blockid) + "|")
-    rete, elpepubid = ustadmobile_export(uid, unid, elpiname, elplomid, forceNew)
+    if entryname == None:
+        entryname="-"
+
+    if entryid == None:
+        entryid="-"
+    
+    if not uid.lower().endswith('.elp') or not uid.lower().endswith('.epub'):
+        if entryname == None or entryname == "-":
+	    entryname = str(uid).rsplit('/',1)[1].rsplit('.um.',1)[1]
+	    entryid = str(unid)
+	    print("Unable to get unique id. So taking uploaded unid as entry id.. " + entryid)
+
+    rete, elpepubid = ustadmobile_export(uid, unid, entryname, entryid, forceNew)
     return_values = []
     return_values.append(rete)
     return_values.append(elpepubid)
     return_values.append(uid)
     return_values.append(unid)
-    return_values.append(elpiname)
-    return_values.append(elplomid)
-
+    return_values.append(entryname)
+    return_values.append(entryid)
+    #print(str(rete)+"|"+str(elpepubid)+"|"+str(uid)+"|"+str(unid)+"|"+str(entryname)+"|"+str(entryid))
+  
     #Time to check if block needs to become a course and make it. 
     try:
 	blockcourse = None
 	if rete == "newsuccess":
-	    setattr(newdoc, "name", elpiname)
-	    setattr(newdoc, "publisher", publisher)
-	    setattr(newdoc, "micro_edition", True)
-	    newdoc.save()
+	    if uid.lower().endswith('.elp') or uid.lower().endswith('.epub'):
+	        setattr(newdoc, "name", entryname)
+	        setattr(newdoc, "publisher", publisher)
+	        setattr(newdoc, "micro_edition", True)
+	        newdoc.save()
+	    else:
+		if entryname != None or entryname != "-":
+		    if newdoc.name == "" or newdoc.name == "-":
+			print("Setting name..")
+        	        setattr(newdoc, 'name', entryname)
+		    setattr(newdoc, 'publisher', publisher)
+		    setattr(newdoc, 'micro_edition', False)
+		    newdoc.save()
+		else:
+		    print("Something went wrong..")
+		    setattr(newdoc, 'name', "-")
+		    setattr(newdoc, 'publisher', publisher)
+		    setattr(newdoc, 'micro_edition', False)
+
+            courseURL = '/media/eXeExport' + '/' + unid + '/'
+            setattr(newdoc, 'url', courseURL)
+            setattr(newdoc, 'name', entryname)
+            newdoc.save()
+
+	    try:
+                make_acquisition_link(newdoc)
+            except:
+                print("Unable to create Acquisition Link.")
+                return_values =[]
+                return_values[rete]="newfail"
+                return return_values, None, data
+
+
 	    if data['blockCourse'] is not None:
 		#and data['blockCourse'] is True:
 	        print("Got to make block into a course")
@@ -960,8 +1265,10 @@ def handle_block_upload(blockfile, publisher, forceNew, noAutoassign, data):
 
 	if rete == "updatesuccess":
 	    print("Got to update the already course and assign it to the updated epub if not newly created.")
-    except:
+    except Exception, e:
 	print("Block upload not over or something wrong in making block to course trial..")
+	print(str(e))
+	
     try:
 	#saving
 	newdoc.save()
@@ -995,7 +1302,7 @@ def list(request, template_name='myapp/list.html'):
     data['student_list'] = students
 
     form = ExeUploadForm() # A empty, unbound form
-    documents = Document.objects.filter(\
+    documents = Entry.objects.filter(\
                  publisher=request.user, success="YES", active=True)
     current_user = request.user.username
     data['documents']=documents
@@ -1015,7 +1322,7 @@ def list(request, template_name='myapp/list.html'):
         if form.is_valid():
           #For Every file uploaded
 	  for exefile in request.FILES.getlist('exefile'):
-	    newdoc = Document(exefile=exefile)
+	    newdoc = Entry(exefile=exefile)
             print("NEW Block file being uploaded by: " + \
 				request.user.username)
             teacher_role = Role.objects.get(pk=5)
@@ -1051,7 +1358,7 @@ def list(request, template_name='myapp/list.html'):
             uid = str(getattr(newdoc, 'exefile'))
             elphash = hashlib.md5(open(serverlocation + mainappstring \
 			+ settings.MEDIA_URL + uid).read()).hexdigest()	
-	    hashlist=Document.objects.all().values_list('elphash')
+	    hashlist=Entry.objects.all().values_list('elphash')
 	    if str(elphash) in hashlist:
 		print("ELP/EPUB already uploaded. Do we want to upload it again?")
 		#Put action here for future logic for existing files.
@@ -1216,6 +1523,31 @@ def list(request, template_name='myapp/list.html'):
             if rete =="newsuccess":
 		print("True, this block will be newly created.")
                 courseURL = '/media/eXeExport' + '/' + unid + '/' + elpiname + '/' + 'deviceframe.html'
+		courseURL = '/media/eXeExport' + '/' + unid + '/'
+		appLocation = (os.path.dirname(os.path.realpath(__file__)))
+                hostname = request.get_host()
+                serverlocation=appLocation+'/../'
+                mainappstring = "UMCloudDj/"
+                tree = ET.parse(serverlocation + mainappstring \
+                    + '/media/eXeExport' + '/' + unid + '/'+ 'META-INF/container.xml')
+                root = tree.getroot()
+                packagepage=None
+                for child in root:
+                    for chi in child:
+                        if ".opf" in chi.attrib['full-path']:
+                            packagepath=chi.attrib['full-path']
+                            print(packagepath)
+                            break #We got the package file..
+		if packagepath != None:
+                    assetfolder=packagepath.rsplit('/',1)[0]
+                    splitpp = packagepath.rsplit('/',1)
+                    if len(splitpp) > 1:
+                        assetfolder=packagepath.rsplit('/',1)[0] + "/"
+                    else:
+                        assetfolder=""
+
+                courseURL = '/media/eXeExport' + '/' + unid + '/'
+
                 setattr(newdoc, 'success', "YES")
                 setattr(newdoc, 'url', courseURL)
                 setattr(newdoc, 'name', elpiname)
@@ -1318,7 +1650,7 @@ def list(request, template_name='myapp/list.html'):
 	#Form isn't POST. 
         print("!!NOT A POST REQUEST!!")
         form = ExeUploadForm() # A empty, unbound form
-    documents = Document.objects.filter(\
+    documents = Entry.objects.filter(\
 			publisher=request.user, success="YES", active=True)
     current_user = request.user.username
     # Render list page with the documents and the form
@@ -1350,7 +1682,7 @@ updatesuccess: elp file updated and exported successfully. All good.
 def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
     appLocation = (os.path.dirname(os.path.realpath(__file__)))
     print("Checking block id..")
-    found=Document.objects.filter(elpid=elplomid, success="YES", active=True)
+    found=Entry.objects.filter(elpid=elplomid, success="YES", active=True)
     elplomid=None
     if found and not forceNew:
         print("Block ID already exists in the system." + \
@@ -1362,6 +1694,9 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 	print('mv ' + appLocation + '/../UMCloudDj' +\
                     folder_url + ' ' + appLocation + '/../UMCloudDj' +\
                         folder_url + '_old')
+	"""
+	Disabling this because it messes up with new way of export. 
+	ToDO: Update EPUBS
         if os.system('mv ' + appLocation + '/../UMCloudDj' +\
            	    folder_url + ' ' + appLocation + '/../UMCloudDj' +\
 			folder_url + '_old'):
@@ -1371,7 +1706,7 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 	    print("Error in moving " + appLocation + '/../UMCloudDj' +\
                     folder_url + " to " + appLocation + '/../UMCloudDj' +\
                         folder_url + '_old')
-
+	"""
 	if 'test' in sys.argv:
 	    print("Unit Testing in Block Update ")
 	    exe_do_command = appLocation + '/../exelearning-ustadmobile-work/exe/exe_do --standalone'
@@ -1444,6 +1779,7 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
         else:
             exe_do_command = appLocation + '/../exelearning-ustadmobile-work/exe/exe_do --standalone'
 
+	print("URL is : " + uurl)
         #1. Check if it is an .elp file or .epub file that is being uploaded. 
         #2. Export to epub
         #3. Unzip it, get details
@@ -1502,6 +1838,10 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 		if epubassetfolder == "":
 		    return "newsuccess", None
 	   	else:
+		    print("Not in root. Skipping move and copy anyway..")
+		    return "newsuccess", None
+
+		if False:
 		    print("possible move command: " + 'mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
                         unid+"/"+epubassetfolder+"\"" + " " +  "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
                             unid + "/" + name + "\"")
@@ -1643,6 +1983,7 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
                         else:
                             print("!!ERROR in getting package file from EPUB!!")
 			    return "newfail", None
+
 		"""
 		else: #eXe didnt export well.
 		    print("eXe did not export well.");
@@ -1667,7 +2008,10 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
                     if epubassetfolder == "":
                         return "newsuccess", elpepubid
                     else:
+			print("Assets not in root. Skipping move and Copy ayway..")
+			return "newsuccess", elpepubid
 
+		    if False:
 	    	        if (os.system('mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
 	    	            unid+"/"+epubassetfolder+"\""+ " " + "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
 	    	    	        unid + "/" + name + "\"")) == 0:
@@ -1690,6 +2034,10 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 	    else:
 	    	print("!!Exe didn't run. exe_do : something went wrong in eXe!!")
 	    	return "newfail", None
+	else:
+	    print("Hey there")
+	    print("Unable to determine zip or epub or elp. Skipping as other version..")
+	    return "newsuccess", None
       
 """Currently disabled and depricated. Grunt course function was used to run the exported
 unit tests and go through a couese using grunt and webkit.This would validate if all the pages 
@@ -1813,9 +2161,9 @@ def course_create(request, template_name='myapp/course_create.html'):
     organisation = User_Organisations.objects.get(user_userid=\
 			request.user).organisation_organisationid;
     form = CourseForm(request.POST or None)
-    #packages = Document.objects.all()
-    packages = Document.objects.filter(publisher=request.user, success="YES")
-    packages = Document.objects.filter(success="YES", publisher__in=\
+    #packages = Entry.objects.all()
+    packages = Entry.objects.filter(publisher=request.user, success="YES")
+    packages = Entry.objects.filter(success="YES", publisher__in=\
 		User.objects.filter(pk__in=User_Organisations.objects.filter(\
 			organisation_organisationid=organisation).values_list(\
 						'user_userid', flat=True)))
@@ -1882,7 +2230,7 @@ def course_create(request, template_name='myapp/course_create.html'):
                 print("Mapping packages with course..")
 
 		for everypackageid in packageidspicklist:
-			currentpackage = Document.objects.get(pk=everypackageid)
+			currentpackage = Entry.objects.get(pk=everypackageid)
 			course.packages.add(currentpackage)
 			course.save()
 
@@ -1936,10 +2284,7 @@ def course_update(request, pk, template_name='myapp/course_form.html'):
     form = CourseForm(request.POST or None, instance=course)
 
     #Assigned Packages mapping
-    allpackages = Document.objects.all();
-    allpackages = Document.objects.filter(\
-			publisher=request.user, success="YES")
-    allpackages = Document.objects.filter(\
+    allpackages = Entry.objects.filter(\
 			success="YES", \
 			publisher__in=User.objects.filter(\
 			   pk__in=User_Organisations.objects.filter(\
@@ -1974,7 +2319,7 @@ def course_update(request, pk, template_name='myapp/course_form.html'):
 		course.packages.clear()
 		assignedclear = course.packages.all();
 		for everypackageid in packagesidspicklist:
-			currentpackage = Document.objects.get(pk=everypackageid)
+			currentpackage = Entry.objects.get(pk=everypackageid)
 			course.packages.add(currentpackage)
 			course.save()
 
@@ -2038,7 +2383,7 @@ def allrootcategories(request):
 
 """
 f delete(request, pk, template_name='myapp/package_confirm_delete.html'):
-    document = get_object_or_404(Document, pk=pk)
+    document = get_object_or_404(Entry, pk=pk)
     if request.method=='POST':
         if request.user == document.publisher:
             document.delete()

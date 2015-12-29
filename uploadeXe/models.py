@@ -68,6 +68,18 @@ class Package(models.Model):
    def __unicode__(self):
         return u'%s' % (self.name)
 
+
+class AcquisitionLink(models.Model):
+   exefile = models.FileField(upload_to=get_file_path, max_length=900) #saves as a unique id.
+   mimetype = models.CharField(max_length=200, null=True)
+   length = models.PositiveIntegerField(default=0)
+   title = models.CharField(max_length=300)
+   rel = models.CharField(max_length=400, default="http://opds-spec.org/acquisition")
+   md5 = models.CharField(max_length=100)
+   preview_path = models.CharField(max_length=900, null=True) #Used to be url
+   entry = models.ForeignKey(Package, related_name="acquisitionlink")
+   active = models.BooleanField(default = True)
+
 """
 A course represents a combination of packages. Students 
 and classes are assigned to a course
