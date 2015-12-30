@@ -2133,6 +2133,7 @@ View to create non-user-validated users for users with phone numbers from within
 @csrf_exempt
 def phone_inapp_registration(request):
     logger.info("Starting this..")
+    country_courses = None
     if request.method !='POST':
         logger.info("Not a POST request")
         #Bad request: 400.
@@ -2189,7 +2190,6 @@ def phone_inapp_registration(request):
                                              + str(random.randrange(1000,9999))
     usernames = User.objects.all().values_list('username', flat=True)
     while (username in usernames):
-	print("Trying a username:")
 	if usernamegiven == False :
             username = ''.join(random.choice(string.ascii_letters) for x in range(5))\
                                              + str(random.randrange(1000,9999))
@@ -2261,19 +2261,21 @@ def phone_inapp_registration(request):
     if not gender:
 	gender = ""
     gender = str(gender)
-
     try:
         user_profile = UserProfile(user=user, website="www.ustadmobile.com", \
             job_title="In-App Phone Registration", \
             gender=gender, phone_number=phonenumber,\
             organisation_requested=organisation)
 	user_profile.save()
-    except:
+    except Exception, e:
+	errormessage = str(e)
         logger.info("Something went wrong in making user profile")
-        authresponse = HttpResponse(status=500)
-        authresponse.write("Internal Error in making user profile")
-        return authresponse
-    
+        json_credentials = simplejson.dumps( {'errormessage': errormessage})
+        return HttpResponse(json_credentials, mimetype="application/json", status=500)
+	
+        #authresponse = HttpResponse(status=500)
+        #authresponse.write("Internal Error in making user profile")
+        #return authresponse
     try:
         student_role = Role.objects.get(pk=6)
         new_role_mapping = User_Roles(name="ph_inapp_reg", \
@@ -2298,14 +2300,19 @@ def phone_inapp_registration(request):
         user_profile.admin_approved=True
         user_profile.save()
 
-    except:
-	authresponse = HttpResponse(status=500)
-        authresponse.write("Internal Error in Role mapping, organisation mapping.")
-        return authresponse
+    except Exception, e:
+	errormessage = str(e)
+        logger.info("Something went wrong in making user profile")
+        json_credentials = simplejson.dumps( {'errormessage': errormessage})
+        return HttpResponse(json_credentials, mimetype="application/json", status=500)
+	#authresponse = HttpResponse(status=500)
+        #authresponse.write("Internal Error in Role mapping, organisation mapping.")
+        #return authresponse
 
     try:
         #Assign student to courses
         if country_courses:
+	    print("Am I doing this?")
             for every_course in country_courses:
                 every_course.students.add(user)
                 every_course.save()
@@ -2316,10 +2323,16 @@ def phone_inapp_registration(request):
                            'password': password,
                             })
         return HttpResponse(json_credentials, mimetype="application/json")
-    except:
-	authresponse = HttpResponse(status=500)
-        authresponse.write("Internal Error in assigning courses and Student roles.")
-        return authresponse
+    except Exception, e:
+	print("Internal Error")
+	print(str(e))
+	errormessage = str(e)
+        logger.info("Something went wrong in making user profile")
+        json_credentials = simplejson.dumps( {'errormessage': errormessage})
+        return HttpResponse(json_credentials, mimetype="application/json", status=500)
+	#authresponse = HttpResponse(status=500)
+        #authresponse.write("Internal Error in assigning courses and Student roles.")
+        #return authresponse
 
     authresponse = HttpResponse(status=200)
     authresponse.write("Test")
