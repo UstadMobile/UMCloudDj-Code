@@ -825,33 +825,43 @@ def get_public_course(request):
                         label=\"TESTING\"/>\n"
             xmlreturn += "<summary>" + o.name + "'s description" + "</summary>\n"
 
-            for acquisition_link in entry.acquisitionlink.all():
-                url = str(acquisition_link.exefile)
-                url = url.replace('&', '&amp;')
-                xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
-                    href=\"" + "/media/" + url + "\"\n\
-                    type=\"application/epub+zip\"/>\n"
-
-                preview_path = acquisition_link.preview_path
-                preview_path = preview_path.replace('&','&amp;')
-
-                micro_edition_url = ""
-
-
-                if o.micro_edition:
-                    dst=os.path.splitext(basename(url))[0]
-                    if dst.strip():
-                        print("Exists!")
-                        micro_edition_url = os.path.dirname(url) + "/" +  dst + "_micro.epub"
-                    micro_edition_url = micro_edition_url.replace('&','&amp;')
+	    try:
+                for acquisition_link in entry.acquisitionlink.all():
+                    print("In Acquisition Link : " + str(acquisition_link.id))
+                    print("url is : " + str(acquisition_link.exefile))
+                    url = str(acquisition_link.exefile)
+                    url = url.replace('&', '&amp;')
                     xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
-                        href=\"" + micro_edition_url + "\"\n\
-                        type=\"application/epub+zip;um-width=240;um-height=320\"/>\n"
+                        href=\"" + "/media/" + url + "\"\n\
+                            type=\"" + acquisition_link.mimetype + "\"/>\n"
 
-                if preview_path != None and preview_path != "":
-                    xmlreturn += "<link rel=\"http://ustadmobile.com/epubrunner\"\n\
-                        href=\"" + preview_path + "\" \n\
-                        type=\"text/html;profile=opds-catalog;kind=acquisition\"/>"
+                    print("Figuring out preview_path")
+                    preview_path = acquisition_link.preview_path
+                    print(preview_path)
+                    preview_path = preview_path.replace('&','&amp;')
+
+                    micro_edition_url = ""
+
+                    if str(acquisition_link.exefile).lower().endswith('.epub') and o.micro_edition:
+                        dst=os.path.splitext(basename(url))[0]
+                        if dst.strip():
+                            print("Exists!")
+                            micro_edition_url = os.path.dirname(url) + "/" +  dst + "_micro.epub"
+                        micro_edition_url = micro_edition_url.replace('&','&amp;')
+                        xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
+                            href=\"" + micro_edition_url + "\"\n\
+                            type=\"application/epub+zip;x-umprofile=micro\"/>\n"
+
+                    if str(acquisition_link.exefile).lower().endswith('.epub') or \
+                        str(acquisition_link.exefile).lower().endswith('.epub'):
+                        if preview_path != None and preview_path != "":
+                            xmlreturn += "<link rel=\"http://ustadmobile.com/epubrunner\"\n\
+                               href=\"" + preview_path + "\" \n\
+                                type=\"text/html;profile=opds-catalog;kind=acquisition\"/>"
+            except Exception, e:
+                print("Error in Acquiring links.")
+                print(str(e))
+
 
             xmlreturn += "\n"
             xmlreturn += "</entry>\n"
