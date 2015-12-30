@@ -92,7 +92,7 @@ def blockToAcquisitionLink(request):
 	    title = every_block.name
 	    preview_path = get_package_url(every_block)
 	    if preview_path == "" or preview_path ==None:
-		preview_path = everyblock.url
+		preview_path = every_block.url
 	    try:
 	        acquisition_link = AcquisitionLink(exefile=every_block.exefile,\
 	        mimetype=mimetype, length=size, title=title, md5=md5hash,\
@@ -165,6 +165,7 @@ def get_package_url(block):
     #hostname = request.get_host()
     serverlocation=appLocation+'/../'
     mainappstring = "UMCloudDj/"
+    package_url = ""
 
     filename=str(block.exefile)
     if filename.lower().endswith(".epub") or filename.lower().endswith(".elp"):
