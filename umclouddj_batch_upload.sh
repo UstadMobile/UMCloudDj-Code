@@ -2,15 +2,15 @@
 
 if [ $# -eq 0 ]; then
     echo " Please give the arguments with the script. They are: " 
-    echo "Usage is :  <sh> FILE USERNAME PASSWORD forceNew blockCourse gradeLevel category noAutoassign"
+    echo "Usage is :  <sh> FILE USERNAME PASSWORD forceNew blockCourse gradeLevel category noAutoassign entryId URL"
     echo " Make sure to have empty strings where no value required. Eg: \"\" "
     exit 1;
 fi
 
-if [ $# -ne 8 ];then
+if [ $# -ne 10 ];then
     echo " Please give all 8 arguments. Even if they are empty"
     echo ""
-    echo "Usage is :  <sh> FILE USERNAME PASSWORD forceNew blockCourse gradeLevel category noAutoassign"
+    echo "Usage is :  <sh> FILE USERNAME PASSWORD forceNew blockCourse gradeLevel category noAutoassign entryId URL"
     echo " Make sure to have empty strings where no value required. Eg: \"\" "
     exit 1;
 fi
@@ -24,8 +24,10 @@ blockCourse=$5
 gradeLevel=$6
 category=$7
 noAutoassign=$8
+entryId=$9
+URL=$10
 
-URL="http://umcloud1.ustadmobile.com/uploadeXe/upload/"
+#URL="http://umcloud1.ustadmobile.com/uploadeXe/upload/"
 FWORD="exefile"
 OPFILE="op.html"
 
@@ -55,6 +57,10 @@ if [ ! -z "$category" -a "$category" != " " ]; then
 fi 
 if [ ! -z "$noAutoassign" -a "$noAutoassign" != " " ]; then
    FORM="${FORM} ${FORMPREFIX} noAutoassign=True"
+fi
+#entryId
+if [ ! -z "$entryId" -a "$entryId" != " " ]; then
+   FORM="${FORM} ${FORMPREFIX} entryId=${entryId}"
 fi
 
 echo ""
