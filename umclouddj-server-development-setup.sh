@@ -35,7 +35,7 @@ DATE=`date +%Y-%m-%d-%H-%M-%S`
 echo "Starting installation of UMCDjCloud."
 echo "Sorting and installing dependencies.."
 sudo apt-get -y update
-sudo apt-get install -y screen libjpeg-dev apache2 python python-pip python-virtualenv tree git sqlite3 build-essential unzip ant git fabric postgresql python-setuptools postgresql-server-dev-all python-dev libxml2-dev libxslt-dev libpq-dev sudo python-pip
+sudo apt-get install -y screen libjpeg-dev apache2 python python-pip python-virtualenv tree git sqlite3 build-essential unzip ant git fabric postgresql python-setuptools postgresql-server-dev-all python-dev libxml2-dev libxslt-dev libpq-dev python-pip
 
 #sudo apt-get -y dist-upgrade #Added 31/12/2014 to make sure every distribution gets updated
 #sudo apt-get -y update

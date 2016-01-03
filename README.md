@@ -21,7 +21,9 @@ Steps to set up UMCloudDj on your system.
 1. Install dependencies in your Linux environment (Tested in Ubuntu and Raspberry Pi2)
 
 	sudo apt-get -y update
-sudo apt-get install -y screen libjpeg-dev apache2 python python-pip python-virtualenv tree git sqlite3 build-essential unzip ant git fabric postgresql python-setuptools postgresql-server-dev-all python-dev libxml2-dev libxslt-dev libpq-dev sudo python-pip
+
+	sudo apt-get install -y screen libjpeg-dev apache2 python python-pip python-virtualenv tree git sqlite3 build-essential unzip ant git fabric postgresql python-setuptools postgresql-server-dev-all python-dev libxml2-dev libxslt-dev libpq-dev python-pip
+
 	sudo apt-get install -y python-pygraphviz
 
 
