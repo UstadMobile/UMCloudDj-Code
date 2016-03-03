@@ -1202,6 +1202,7 @@ def get_allclass_students(request, pk):
 			    {
 			    	'id':str(o.id),
 			    	'username':str(o.username),
+				'full_name':str(o.first_name) + " " + str(o.last_name),
 			    }for o in all_students])
 		    	return HttpResponse(json_allstudents, mimetype="application/json")
 		    else:
