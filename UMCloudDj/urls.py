@@ -54,6 +54,7 @@ urlpatterns = patterns('',
 	url(r'^isteacher/$', 'UMCloudDj.views.is_teacher', name='is_teacher'),
 	url(r'^teacherclasses/$', 'UMCloudDj.views.get_teacher_allclasses', name='get_teacher_allclasses'),
 	url(r'^allclassstudents/(?P<pk>\d+)$', 'UMCloudDj.views.get_allclass_students', name='get_allclass_students'),
+	url(r'^umlrs/teacher_enroll_student/$', 'UMCloudDj.views.teacher_enroll_student', name='teacher_enroll_student'), #Public facing API for teachers enrolling students from within the APP
 
 	#url(r'^updatelastactivity/$', 'report_statement.views.update_lastactivity', name='update_lastactivity'), #Internal fix only
 	url(r'^reports/noactivity/$', 'report_statement.views.last_activity_inactive', name='last_activity_inactive'), #showing inactive users inactive for x days

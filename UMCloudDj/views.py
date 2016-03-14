@@ -2339,6 +2339,259 @@ def phone_inapp_registration(request):
     authresponse.write("Test")
     return authresponse
 
+
+from opds.views import login_basic_auth
+@csrf_exempt
+def teacher_enroll_student(request):
+    if request.method !='POST':
+        logger.info("Not a POST request")
+        #Bad request: 400.
+        authresponse = HttpResponse(status=400)
+        authresponse.write("Not POST")
+        return authresponse
+    
+    try:
+        version = request.META['UM-In-App-Registration-Version']
+    except:
+        try:
+            version = request.META['HTTP_UM_IN_APP_REGISTRATION_VERSION']
+        except:
+            version = request.META.get('UM-In-App-Registration-Version',\
+                                         None)
+            if not version:
+                import urllib
+                bdy = urllib.unquote_plus(request.body)
+                v = re.search(\
+                    'UM\WIn\WApp\WRegistration\WVersion=(?P<num>[\d\.]*)\&?', bdy)
+                if v:
+                    version = v.group('num')
+    if version:
+        regex = re.compile("^1\.0(\.\d+)?$")
+        if regex.match(version):
+            pass
+        else:
+            return HttpResponseBadRequest(\
+                "UM-In-App-Registration-Version is not supported")
+    else:
+        return HttpResponseBadRequest(\
+            "UM-In-App-Registration-Version header missing")
+
+    post = request.POST
+
+    class_id = post.get('class_id', None)
+    if class_id is None and class_id == '':
+        logger.info("Class id is none")
+        authresponse = HttpResponse(status=401)
+        authresponse.write("No class id specified")
+        return authresponse
+
+    user = None
+    
+    #Check basic authentication (for teacher user)
+    state, authresponse = login_basic_auth(request)
+    if state == False:
+        return authresponse
+    if state == True:
+        user = authresponse
+
+    #Check user is ok
+    if user is None:
+        authresponse = HttpResponse(status=401)
+        authresponse.write("User is invalid")
+        return authresponse
+    
+    #Check if user is a teacher
+    try:
+        teacher_role = Role.objects.get(role_name='Teacher')
+        user_role = User_Roles.objects.get(user_userid=user).role_roleid
+        if teacher_role != user_role:
+            logger.info("Not a teacher")
+            authresponse = HttpResponse(status=401)
+            authresponse.write("User is not a teacher")
+            return authresponse
+    except:
+	authresponse = HttpResponse(status=401)
+	authresponse.write("Couldnt get role of user.")
+	return authresponse
+
+    #Check if class with class id is valid
+    try:
+        this_class = Allclass.objects.get(pk=class_id)
+    except:
+        logger.info("Not a valid class id")
+        authresponse = HttpResponse(status=401)
+        authresponse.write("Not a valid class id: " + str(class_id))
+        return authresponse
+
+
+    #Check if user is a teacher of the class
+    this_class_teachers = this_class.teachers.all()
+    if user not in this_class_teachers:
+        logger.info("Teacher not a teacher of this class.")
+        authresponse = HttpResponse(status=401)
+        authresponse.write("Teacher not a teacher of this class.")
+        return authresponse
+
+    #All good. Now we can take in information to creat the Student user. 
+            
+
+    phonenumber = post.get('phonenumber', None)
+    
+    #if not phonenumber:
+    #    logger.info("No Phone number in request")
+    #    return HttpResponseBadRequest("No phone number in request")
+
+    name = post.get('name', None)
+    email = post.get('email', None)
+    username = post.get('username', None)
+    usernamegiven = False
+    if username is not None:
+        usernamegiven = True
+    password = post.get('password', None)
+    code = post.get('regcode', None)
+    #Check quality of phone number
+
+    # Create random username and password (6 digits)
+    if password is None:
+        password = random.randrange(100000,999999)
+    if username is None:
+        username = ''.join(random.choice(string.ascii_lowercase) for x in range(5))\
+                                             + str(random.randrange(1000,9999))
+    usernames = User.objects.all().values_list('username', flat=True)
+    while (username in usernames):
+        if usernamegiven == False :
+            username = ''.join(random.choice(string.ascii_letters) for x in range(5))\
+                                             + str(random.randrange(1000,9999))
+        else:
+            #Return "this username has already been created error"
+            print("Error: Username already exists..");
+            errormessage = "Username already taken. Please choose another one!"
+            json_credentials = simplejson.dumps( {'errormessage': errormessage})
+        return HttpResponse(json_credentials, mimetype="application/json", status=400)
+
+    print("Created username:" + username)
+    if not name:
+        name = username
+
+    #Organisation mapping.
+    if phonenumber:
+        if phonenumber.startswith("+"):
+            clean_number = phonenumber[1:]
+        elif phonenumber.startswith("00"):
+            clean_number = phonenumber[2:]
+        elif phonenumber.startswith("0"):
+            clean_number = phonenumber[1:]
+
+    if not email:
+        email = str(username) + "@ustadmobile.email"
+    first_name = str(name)
+    last_name = "TeacherEnrollStudent"
+
+    new_user = User(username=username, email=email, first_name=first_name,\
+                 last_name=last_name)
+    new_user.set_password(password)
+    new_user.save()
+    logger.info("User object created..")
+
+    
+
+    logger.info("Creating User profile..")
+
+    if phonenumber:
+        phonenumber = phonenumber.strip()
+        if not phonenumber.startswith("+"):
+            if not phonenumber.startswith("00"):
+                phonenumber = "+" + str(phonenumber)
+            else:
+                phonenumber = phonenumber[2:]
+                phonenumber = "+" + str(phonenumber)
+
+    #Organisation will be the same as the teachers organisation in this case..
+    organisation = User_Organisations.objects.get(user_userid=user).organisation_organisationid;
+    
+    gender = post.get('gender', None)
+    if not gender:
+        gender = ""
+    gender = str(gender)
+    try:
+	if phonenumber:
+            user_profile = UserProfile(user=new_user, website="www.ustadmobile.com", \
+                job_title="In-App Phone Registration", \
+                gender=gender, phone_number=phonenumber,\
+                organisation_requested=organisation)
+	elif not phonenumber and gender:
+	    user_profile = UserProfile(user=new_user, website="www.ustadmobile.com", \
+                job_title="In-App Phone Registration", \
+                gender=gender,\
+                organisation_requested=organisation)
+	elif not phonenumber and not gender:
+	    user_profile = UserProfile(user=new_user, website="www.ustadmobile.com", \
+                job_title="In-App Phone Registration", \
+                organisation_requested=organisation)
+
+
+        user_profile.save()
+    except Exception, e:
+        errormessage = str(e)
+	logger.info("Something went wrong in making user profile")
+        json_credentials = simplejson.dumps( {'errormessage': errormessage})
+        return HttpResponse(json_credentials, mimetype="application/json", status=500)
+
+        #authresponse = HttpResponse(status=500)
+        #authresponse.write("Internal Error in making user profile")
+        #return authresponse
+    try:
+        student_role = Role.objects.get(pk=6)
+        new_role_mapping = User_Roles(name="teacher_enroll_student", \
+                            user_userid=new_user, role_roleid=student_role)
+
+        new_organisation_mapping = User_Organisations(user_userid=new_user, \
+                    organisation_organisationid=organisation)
+
+        user_profile.save()
+        logger.info("User profile created..")
+
+        new_role_mapping.save()
+        logger.info("Role Mapping created..")
+
+
+        new_organisation_mapping.save()
+        logger.info("Organisation mapping created..")
+
+        #Check if previous were a success.
+        logger.info("User Role mapping (website) success.")
+
+        user_profile.admin_approved=True
+        user_profile.save()
+	
+	#Add student to class
+	this_class.students.add(new_user)
+	this_class.save()
+	
+
+    except Exception, e:
+        errormessage = str(e)
+        logger.info("Something went wrong in making user profile")
+        json_credentials = simplejson.dumps( {'errormessage': errormessage})
+        return HttpResponse(json_credentials, mimetype="application/json", status=500)
+        #authresponse = HttpResponse(status=500)
+        #authresponse.write("Internal Error in Role mapping, organisation mapping.")
+        #return authresponse
+
+    try:
+        json_credentials = simplejson.dumps( {'username': username,
+                           'password': password,
+                            })
+        return HttpResponse(json_credentials, mimetype="application/json")
+    except Exception, e:
+        print("Internal Error")
+        print(str(e))
+        errormessage = str(e)
+        logger.info("Something went wrong in making user profile")
+        json_credentials = simplejson.dumps( {'errormessage': errormessage})
+        return HttpResponse(json_credentials, mimetype="application/json", status=500)
+
+
 """View to log out existing user and redirect back to login page
 """
 def logout_view(request):
