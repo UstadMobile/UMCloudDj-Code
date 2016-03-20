@@ -2199,7 +2199,7 @@ def phone_inapp_registration(request):
 	    print("Error: Username already exists..");
 	    errormessage = "Username already taken. Please choose another one!"
 	    json_credentials = simplejson.dumps( {'errormessage': errormessage})
-        return HttpResponse(json_credentials, mimetype="application/json", status=400)
+            return HttpResponse(json_credentials, mimetype="application/json", status=400)
 
     print("Created username:" + username)
     if not name:
@@ -2442,19 +2442,25 @@ def teacher_enroll_student(request):
     #    return HttpResponseBadRequest("No phone number in request")
 
     name = post.get('name', None)
+    if name is None or name == "":
+	print("no name provided")
+	errormessage = "Please fill in a name"
+	json_credentials = simplejson.dumps( {'errormessage':errormessage} )
+	return HttpResponse(json_credentials, mimetype="application/json", status=400)
+
     email = post.get('email', None)
     username = post.get('username', None)
     usernamegiven = False
-    if username is not None:
+    if username is not None and username != "":
         usernamegiven = True
     password = post.get('password', None)
     code = post.get('regcode', None)
     #Check quality of phone number
 
     # Create random username and password (6 digits)
-    if password is None:
+    if password is None or password == "":
         password = random.randrange(100000,999999)
-    if username is None:
+    if username is None or username =="":
         username = ''.join(random.choice(string.ascii_lowercase) for x in range(5))\
                                              + str(random.randrange(1000,9999))
     usernames = User.objects.all().values_list('username', flat=True)
@@ -2467,7 +2473,7 @@ def teacher_enroll_student(request):
             print("Error: Username already exists..");
             errormessage = "Username already taken. Please choose another one!"
             json_credentials = simplejson.dumps( {'errormessage': errormessage})
-        return HttpResponse(json_credentials, mimetype="application/json", status=400)
+            return HttpResponse(json_credentials, mimetype="application/json", status=400)
 
     print("Created username:" + username)
     if not name:

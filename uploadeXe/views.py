@@ -2312,6 +2312,8 @@ def course_update(request, pk, template_name='myapp/course_form.html'):
 
     if form.is_valid():
         form.save()
+    if request.method == 'POST':
+        post = request.POST;
         print("Going to update the assigned packages..")
         packagesidspicklist=request.POST.getlist('target')
         print(packagesidspicklist)
