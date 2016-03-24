@@ -47,6 +47,10 @@ from django.forms.models import model_to_dict
 import os
 import subprocess
 import dateutil.parser
+import zipfile
+from xml.dom import minidom
+from lxml import etree
+import xml.etree.ElementTree as ET
 
 # This uses the lrs logger for LRS specific information
 logger = logging.getLogger(__name__)
@@ -2086,5 +2090,292 @@ def usage_report_data_ajax_handler(request):
     else:
         logger.info("Not a POST request brah, check your code.")
 	return HttpResponse(False)
+
+"""Report: Registration Report 
+   This report will be made for registration event statements 
+   that are part of the organisation. 
+"""
+@login_required(login_url="/login/") 
+def registration_statements_tincanxml(request,\
+ 	template_name='registration_statements_tincanxml.html'):
+    logger.info("User="+request.user.username+\
+	" accessed /reports/statements_registration/")
+    organisation = User_Organisations.objects.get(\
+	user_userid=request.user).organisation_organisationid;
+
+    """
+    if organisation.id != 22: #Changed to RTI #Actually it could apply to any organisation.
+	return redirect('reports')
+    """
+
+
+    """	
+	1. Get all users in this organisation
+	2. Get all statements for every user
+	3. Get all statements that have reqistration
+	4. Get all unique registrations from the statements and group them
+	5. 
+
+    OR:
+	1. Get all users and get all statements with registration id
+	
+
+    """
+
+    all_org_users= User.objects.filter(pk__in=\
+	User_Organisations.objects.filter(\
+	    organisation_organisationid=organisation\
+		).values_list('user_userid', flat=True))
+    s_date = datetime.strptime('20160321', '%Y%m%d')
+    s_date = datetime.strptime('201603211700', '%Y%m%d%H%M%S')
+    #e_date = datetime.strptime('20100106', '%Y%m%d')
+    all_statements = models.Statement.objects.filter(user__in=all_org_users, timestamp__gte=s_date)
+
+
+    print("Trying to fix statements if needed..")
+   
+    """
+    Fix for statements (new) that don't get assigned to any block. 
+    """
+    for every_statement in all_statements:
+        statement_json=every_statement.full_statement
+        blockn=models.StatementInfo.objects.get(statement=\
+						every_statement).block
+        try:
+            blockname=blockn.name        
+	    try:
+		coursen=models.StatementInfo.objects.get(statement=\
+						every_statement).course
+		try:
+		    coursename=coursen.name
+		except:	
+		    esi=models.StatementInfo.objects.get(\
+					statement=every_statement)
+		    esicourse = Course.objects.get(packages=esi.block)
+		    if esi.course == None and esicourse != None:
+                        esi.course = esicourse
+                        esi.save()
+	    except:
+		print("Something went wrong in fixing statements.")
+	
+        except: #If no block is assigned to this statementinfo
+            #("Trying for Statement: " + str(every_statement.id))
+	    #("Statement id: " + str(every_statement.id))
+            try:
+                context_parent = statement_json[u'context'][u'registration']
+                #("Reg id:" + str(context_parent))
+                activity_id=statement_json[u'object']['id']
+                elpid=activity_id.rsplit('/',1)[1]
+		#("Statement id: " + str(every_statement.id))
+                try:
+                    if "um_assessment" in elpid or unicode("um_assessment") in elpid:
+                        elpid=elpid[:-13]
+                        block = Block.objects.get(elpid=elpid, success="YES",\
+			  publisher__in=User.objects.filter(\
+			    pk__in=User_Organisations.objects.filter(\
+				organisation_organisationid=organisation\
+				    ).values_list('user_userid', flat=True)))
+                        si = models.StatementInfo.objects.get(
+						statement=every_statement)
+                        if si.block == None and block != None:
+                            print("Statement is going to be updated and \
+				assigned block: " + block.name)
+                            si.block = block
+                            si.save()
+
+                            for e in all_statements:
+                                fs = e.full_statement
+                                try:
+                                    registrationid=\
+					fs[u'context'][u'registration']
+                                    if str(registrationid) == \
+					str(context_parent) and block != None:
+                                        esi = models.StatementInfo.objects.get(\
+						statement=e)
+                                        if esi.block == None:
+                                            esi.block = block
+                                            print("Statement: " + \
+						str(e.id) + \
+						    " should be of block: " +\
+							 block.name)
+                                            esi.save()
+                                except:
+				    print("Unable to assign")
+			else:
+			    print("elp id unmatch..")
+		except:
+			print("Unable to fix that.")
+
+            except:
+	        logger.info("Something went wrong in getting activity id " +\
+			"and or context parent " + str(every_statement.id))
+
+
+
+    print("Fix statements ended. Now on to generating the report..")
+
+    dict_reg = dict() #This is all the registration statements grouped by red id.
+    school_dict = dict() #These are all the registration ids grouped by school id.
+    #Group this by registration id 
+    appLocation=(os.path.dirname(os.path.realpath(__file__)))
+    timestamp=time.strftime("%Y%m%d%H%M%S")
+
+
+    registration_report_file = appLocation + \
+	'/../UMCloudDj/media/registration_report/registration_report_tincan_' + timestamp + '.csv'
+    registration_report_filename = 'registration_report/registration_report_tincan_' + timestamp + '.csv'
+
+    g = open(registration_report_file, 'w')
+    now = time.strftime("%c")
+    g.write("Registration Report for " + now + '\n')
+    g.write('\n'+"ID|Item|Value|User|Block|Date"+'\n');
+
+    logger.info("Generating Registration report (based on tincan.xml)")
+    for every_statement in all_statements:
+
+	#Get statement JSON for processing and the user
+	statement_json=every_statement.full_statement
+	user=every_statement.user
+
+	#Get block name
+ 	try:
+	    blockn=models.StatementInfo.objects.get(statement=\
+					every_statement).block
+	    blockname=blockn.name
+	except:
+	    blockname="-"
+	    continue
+	
+
+	#Get Context Parent
+        try:
+            context_parent = statement_json[u'context'][u'registration']
+	except:
+	    context_parent = None
+	    continue #Not in this statement iteration. Go to the next one
+
+	if context_parent == None or context_parent == "":
+	    continue
+
+	#Get the activity Name
+	try:
+	    activity_name = statement_json[u'object'][u'definition'][u'name'][u'en-US']
+	except:
+	    activity_name = ""
+
+	#Get the activity ID
+	try:
+	    activity_id= statement_json[u'object']['id']
+	    username = every_statement.user.username
+	except:
+	    continue #No id then can't do anything.
+	
+	#Get the Result and Score
+	try:
+	    result = statement_json[u'result'][u'response']
+	    result_score = statement_json[u'result'][u'score'][u'raw']
+	except:
+	    result = ""
+	    result_score = ""
+
+
+	#dict_reg is grouped by the registration id. 
+	#If this is for an existing registration, we add the activity id to it.
+	if context_parent in dict_reg:
+	    dict_reg[context_parent].append(\
+		activity_name + "|" + result + "|" + str(result_score) + "|" + activity_id +\
+	    	  "|"+username+"|" + str(blockn.id) + "|" + blockname+"|"+\
+		    every_statement.timestamp.strftime(\
+			"%B %d %Y %H:%M"))
+		   
+	else:
+	    dict_reg[context_parent] = [activity_name + "|" + \
+		result + "|" + str(result_score) + "|" + activity_id +"|"+username+"|" + \
+		    str(blockn.id) + "|" + blockname+"|"+every_statement.timestamp.strftime(\
+			"%B %d, %Y %H:%M")]
+
+	    
+
+    #Sort out the dict_reg keys
+    #Find the tincan file for every statement group
+    for every_regid in dict_reg:
+        statements = dict_reg.get(every_regid.encode('utf8'))
+  	first_statement = statements[0]
+	blockid = first_statement.split('|')[5]
+	blockn = Block.objects.get(pk=blockid)
+	this_username = first_statement.split('|')[4]
+	timestamp = first_statement.split('|')[7]
+	
+	appLocation = (os.path.dirname(os.path.realpath(__file__)))
+        serverlocation=appLocation+'/../'
+        mainappstring = "UMCloudDj/"
+	epub_file_path = serverlocation + mainappstring \
+                    + settings.MEDIA_URL + str(blockn.exefile)
+	try:
+            epubfilehandle = open(epub_file_path, 'rb')
+            epubasazip = zipfile.ZipFile(epubfilehandle)
+    	except Exception as e:
+            print("!!Could Not open epub file")
+	    print(e)
+	    result = "fail"
+	    return render(request, template_name,{'object_list':dict_reg,\
+                'result':result} )
+
+	activities_inorder = []
+	for eachfile in epubasazip.namelist():
+            if eachfile.find('tincan.xml') != -1:
+                foundTinCanFile = True
+                tincanxmlfile = epubasazip.open(eachfile)
+                tincanxmlfilecontents = tincanxmlfile.read()
+                root = ET.fromstring(tincanxmlfilecontents)
+                for tincanelement in root:
+                    for activitieselement in tincanelement:
+                            try:
+                                activityid = activitieselement.attrib['id']
+				activities_inorder.append(activityid)
+                            except:
+                                epubfilehandle.close()
+
+	try:
+	    print("Closing the epub file")
+	    epubfilehandler.close()
+	except:
+	    pass
+
+	statements_inorder=[]
+	statements_activities_inorder = []
+        for every_statement in statements:
+	    statement_activityid = every_statement.split('|')[3]
+	    # A very crude way of sorting.
+	    activity_index = activities_inorder.index(statement_activityid)
+	    statements_inorder.insert(activity_index, every_statement)
+	    statements_activities_inorder.insert(activity_index, statement_activityid)
+
+	g.write('\n' + every_regid + "|" + "New" + "|Registration|" + this_username + "|" + blockn.name + "|" + timestamp + '\n')
+ 	for every_statement in statements_inorder:
+	    result = every_statement.split('|')[1]
+	    result_score = every_statement.split('|')[2]
+	    activity_name = every_statement.split('|')[0]
+	    exact_timestamp = every_statement.split("|")[7]
+	    result_on_report = ""
+	    if result_score != "":
+		result_on_report = result + " Score: " + result_score
+		activity_name = "MCQ"
+	    g.write("|" + activity_name + "|" + result_on_report + "|" + this_username + "|" + blockn.name + "|" + exact_timestamp + '\n')
+
+	g.write('\n' + '\n')
+	dict_reg[every_regid] = statements_inorder
+
+    all_reg_ids=dict_reg.keys()
+    regidsalldone=[]
+    regidsdone=[]
+
+    g.close()
+
+    result="success"
+    return render(request, template_name,{'object_list':dict_reg,\
+    	'result':result, 'registration_report_filename':registration_report_filename} )
+
+
 
 # Create your views here.
