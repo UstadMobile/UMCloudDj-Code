@@ -25,3 +25,4 @@ exelearning-ustadmobile-work/
 git_pull.sh
 .coverage
 *.tar.gz
+*.csv

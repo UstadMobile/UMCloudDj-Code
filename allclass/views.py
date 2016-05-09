@@ -29,6 +29,9 @@ import os
 import urllib
 import urllib2, base64, json
 from django import forms #To fix issue #12
+import logging
+
+logger = logging.getLogger(__name__)
 
 ###################################
 # Allclass CRUD
@@ -311,6 +314,14 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 
 	print("Going to update the assigned course")
 	courseidspicklist=request.POST.getlist('target3')
+	
+
+	if courseidspicklist:
+		logger.info("Got to clear class courses before re adding..")
+		allassignedcourses = Course.objects.filter(allclasses__in=[allclass])
+		for everycourse in allassignedcourses:
+			everycourse.allclasses.remove(allclass)
+
 	for everycourseid in courseidspicklist:
 		everycourse = Course.objects.get(\
 					pk=everycourseid)

@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from datetime import datetime, timedelta as td
+from datetime import date, datetime, timedelta as td
 import time
 import json
 import logging
@@ -51,6 +51,8 @@ import zipfile
 from xml.dom import minidom
 from lxml import etree
 import xml.etree.ElementTree as ET
+from urlparse import urlparse
+from opds.views import login_basic_auth
 
 # This uses the lrs logger for LRS specific information
 logger = logging.getLogger(__name__)
@@ -1398,7 +1400,206 @@ def attendance_registration_students(request, registration_id, template_name='at
 
 
 
+"""Report: Public Attendance Report"""
+@login_required(login_url='/login/')
+def attendance_process(request):
+	authresponse = HttpResponse(status=500)
+	authresponse.write("Nothing to show here..");
+	return authresponse
+
+
+
+"""Report: Attendance Report
+"""
+@csrf_exempt
+def attendance_api(request):
+	#Keeping it at POST because of BASIC Auth being present 
+	if request.method != 'POST':
+		#authresponse = HttpResponse(status=401)
+        	#authresponse.write("Not a post request");
+		#return authresponse
+		json_response = simplejson.dumps( {
+                           'error': "Not a post request"}  )
+        	return HttpResponse(json_response, mimetype="application/json")
+	try:
+		#Get the date param filter
+		date_since = request.POST['since_1_alt']
+		date_until = request.POST['until_1_alt']
+	except:
+		#Default dates for a month before today.
+		date_since = date.today() - td(days=31)
+		date_until = datetime.now()	
+
+	#If User is not in request (not from Django)
+	if request.user is None or request.user.is_anonymous():
+		#Authenticate from Basic Authentication
+		state, authresponse = login_basic_auth(request)
+		if state == False:
+			#Must be authenticated. This isn't public API
+			logger.info("Didn't get user.")
+			return authresponse
+		if state == True:
+			#set the user in request..
+			request.user = authresponse
+			logger.info("Got user!")
+		else:
+			logger.info("Umm. tia")
+	
+	try:
+		#If organisation is explicitly declared. 
+		organisation_id = request.POST['organisation_id']
+		organisation = Organisation.objects.get(pk=organisation_id)
+	except:
+
+		#If org id not given, get logged in users org
+		try:
+			organisation = User_Organisations.objects.get(\
+                       	user_userid=request.user).organisation_organisationid
+		except Exception as orgex:
+			logger.info(str(orgex))
+			json_response = simplejson.dumps({ \
+                           'error': "No organisation selected or not logged in."})
+			return HttpResponse(json_response, mimetype="application/json")
+		
+        try:
+	    	#If Classes are explicitly given
+            	allclass_ids = request.POST['allclass_ids']
+	except: 
+		#The class ids are not given..
+		#Get all classes in the organisation:
+		logger.info("Getting all classes in the organisation..")
+		allclass_list=Allclass.objects.filter(school__in=\
+			School.objects.filter(organisation=organisation));
+			
+		if allclass_list is None:
+			json_response = simplejson.dumps( {\
+				'error': "No classes in organisation"}  )
+			return HttpResponse(json_response, mimetype="application/json")
+			
+		allclass_ids=[]
+		for everyclass in allclass_list:
+			allclass_ids.append(everyclass.id);
+			
+		#ToDo: remove Class duplicates (if any)
+				
+	logger.info("Getting attendance for classes..")
+	attendance_dict = {}
+	try:	
+            for every_class in allclass_list:
+		allclass_id = str(every_class.id)
+		allclass_dict = {}
+		logger.info("In class: " + str(every_class.allclass_name))
+				
+            	#Get all registrations unique for that class
+            	#allclass_statements = models.Statement.objects.filter(\
+            	#    , timestamp__range=[date_since, date_until])
+            	attended_activity_string = \
+				"http://www.ustadmobile.com/activities/attended-class/"
+  	        activity_id_string = attended_activity_string + allclass_id
+                all_activity_id_string = []
+                activity_id_string2 = activity_id_string + "/"
+                all_activity_id_string.append(activity_id_string)
+                all_activity_id_string.append(activity_id_string2)
+                all_hosted_verb_id = []
+                hosted_verb_id = "http://activitystrea.ms/schema/1.0/host"
+                hosted_verb_id2 = "http://activitystrea.ms/schema/1.0/host/"
+                all_hosted_verb_id.append(hosted_verb_id)
+                all_hosted_verb_id.append(hosted_verb_id2)
+                hosted_verb = \
+			models.Verb.objects.filter(verb_id__in=all_hosted_verb_id)
+            	#logger.info("all hosted verbs:")
+            	#logger.info(hosted_verb)
+            	#logger.info("here we go..")
+            	attendance_activity = models.Activity.objects.filter(\
+                    activity_id__in=all_activity_id_string)
+            	#logger.info("Got it")
+            	#logger.info(attendance_activity)
+
+            	#Get all registrations
+            	all_registrations = models.Statement.objects.filter(\
+                  timestamp__range = [date_since, date_until],\
+                    object_activity__in = attendance_activity,\
+                        verb__in=hosted_verb).values_list(\
+                                'context_registration', flat=True).distinct()
+            	#print("I think I got the registrations")
+            	#print(all_registrations)
+		registration_dict = {}
+            	for every_registration in all_registrations:
+		    #registration_dict = {}
+		    #allclass_dict[every_registration]
+                    allclass_statements_per_registration = models.Statement.objects.filter(\
+                      timestamp__range = [date_since, date_until],\
+                        object_activity__in = attendance_activity,\
+                            context_registration = every_registration).exclude(\
+                                verb__in = hosted_verb)
+            	    logger.info("In Registration : " + \
+				str(every_registration))
+     	    	    #logger.info(allclass_statements_per_registration)
+		    allclass_registration_students_attendance = []
+                    for every_statement in allclass_statements_per_registration:
+			#allclass_registration_students_attendance = []
+                        actor = every_statement.actor
+                        actor_name = actor.name
+                        if not actor_name:
+                            actor_name = actor.account_name
+                        verb = every_statement.verb.get_display()
+                        context_extensions = every_statement.context_extensions
+                        #context_extensions_json = json.loads(context_extensions)
+			try:
+                            fingerprinted = context_extensions[u'http://www.ustadmobile.com/fingerprinted']
+			except:
+			    fingerprinted = None
+	
+                    	if not fingerprinted:
+			    studentAttendance =  Student(actor_name, verb, "")
+			    studentAttendanceData = json.dumps(studentAttendance.__dict__)
+			    allclass_registration_students_attendance.append(studentAttendanceData)
+	
+			    #allclass_registration_students_attendance.append(\
+			    #	Student(actor_name, verb, "") )
+                    	else:
+			    studentAttendance = Student(actor_name, verb, fingerprinted)
+			    studentAttendanceData = json.dumps(studentAttendance.__dict)
+			    allclass_registration_students_attendance.append(studentAttendanceData)
+
+			    #allclass_registration_students_attendance.append(\
+			    #	Student(actor_name, verb, fingerprinted) )
+
+							
+		    registration_dict[every_registration] = \
+			    allclass_registration_students_attendance
+				
+		attendance_dict[allclass_id] = registration_dict
+							
+		#Not sure why this is here..
+		"""
+            	allclass_statements = models.Statement.objects.filter(\
+               	timestamp__range = [date_since, date_until],\
+                object_activity__in = attendance_activity).exclude(\
+                      verb__in=hosted_verb)
+            	print("Got all statements too")
+            	print(allclass_statements)
+		"""
+			
+	    #logger.info(str(attendance_dict))
+
+
+	    json_response = json.dumps(attendance_dict)
+	    return HttpResponse(json_response, mimetype="application/json")
+	    authresponse = HttpResponse(status=200)
+	    authresponse.write("Yay")
+	    return authresponse
+        
+        except Exception as e:
+            print(e)
+	    logger.info(str(e))
+            authresponse = HttpResponse(status=500)
+            authresponse.write("Reporting exception: " + e.message + " Please check!")
+            return authresponse
+
+
 """Report: Attendance Report 
+"""
 """
 @login_required(login_url='/login/')
 def attendance_process(request):
@@ -1484,6 +1685,7 @@ def attendance_process(request):
 	authresponse = HttpResponse(status=200)
         authresponse.write("Reporting exception: " + e.message + " Please check!")
         return authresponse
+"""
 
 
 	
@@ -2126,14 +2328,10 @@ def registration_statements_tincanxml(request,\
 	User_Organisations.objects.filter(\
 	    organisation_organisationid=organisation\
 		).values_list('user_userid', flat=True))
-    s_date = datetime.strptime('20160321', '%Y%m%d')
-    s_date = datetime.strptime('201603211700', '%Y%m%d%H%M%S')
-    #e_date = datetime.strptime('20100106', '%Y%m%d')
-    all_statements = models.Statement.objects.filter(user__in=all_org_users, timestamp__gte=s_date)
+    s_date = datetime.strptime('201603250000', '%Y%m%d%H%M%S')
+    #all_statements = models.Statement.objects.filter(user__in=all_org_users, timestamp__gte=s_date)
+    all_statements = models.Statement.objects.filter(user__in=all_org_users)
 
-
-    print("Trying to fix statements if needed..")
-   
     """
     Fix for statements (new) that don't get assigned to any block. 
     """
@@ -2207,12 +2405,11 @@ def registration_statements_tincanxml(request,\
 			print("Unable to fix that.")
 
             except:
-	        logger.info("Something went wrong in getting activity id " +\
-			"and or context parent " + str(every_statement.id))
+		pass
+	        #logger.info("Something went wrong in getting activity id " +\
+	        #	"and or context parent " + str(every_statement.id))
 
-
-
-    print("Fix statements ended. Now on to generating the report..")
+    logger.info("On to generating the report..")
 
     dict_reg = dict() #This is all the registration statements grouped by red id.
     school_dict = dict() #These are all the registration ids grouped by school id.
@@ -2295,10 +2492,11 @@ def registration_statements_tincanxml(request,\
 			"%B %d, %Y %H:%M")]
 
 	    
-
+    #logger.info(dict_reg)
     #Sort out the dict_reg keys
     #Find the tincan file for every statement group
     for every_regid in dict_reg:
+	logger.info("In reg..")
         statements = dict_reg.get(every_regid.encode('utf8'))
   	first_statement = statements[0]
 	blockid = first_statement.split('|')[5]
@@ -2315,13 +2513,15 @@ def registration_statements_tincanxml(request,\
             epubfilehandle = open(epub_file_path, 'rb')
             epubasazip = zipfile.ZipFile(epubfilehandle)
     	except Exception as e:
-            print("!!Could Not open epub file")
-	    print(e)
+            logger.info("!!Could Not open epub file")
+	    logger.info(e)
 	    result = "fail"
 	    return render(request, template_name,{'object_list':dict_reg,\
                 'result':result} )
 
 	activities_inorder = []
+	tincanprefix = ""
+	
 	for eachfile in epubasazip.namelist():
             if eachfile.find('tincan.xml') != -1:
                 foundTinCanFile = True
@@ -2333,11 +2533,26 @@ def registration_statements_tincanxml(request,\
                             try:
                                 activityid = activitieselement.attrib['id']
 				activities_inorder.append(activityid)
+				typeid = activitieselement.attrib['type']
+	
                             except:
                                 epubfilehandle.close()
 
+                            else:
+                                if activityid != "" and activityid != None and typeid != "" and typeid != None:
+                                    for activityelement in activitieselement:
+                                        if "description" in activityelement.tag:
+                                            description = str(activityelement.text)
+                                            lang = (activityelement.attrib['lang'])
+				    if typeid=="http://adlnet.gov/expapi/activities/course":
+					tincanprefix = activityid
+				    
+                                    if tincanprefix != "":
+                                        logger.info("Found prefix!" + str(tincanprefix))
+					
+
 	try:
-	    print("Closing the epub file")
+	    logger.info("Closing the epub file")
 	    epubfilehandler.close()
 	except:
 	    pass
@@ -2356,11 +2571,14 @@ def registration_statements_tincanxml(request,\
 	    result = every_statement.split('|')[1]
 	    result_score = every_statement.split('|')[2]
 	    activity_name = every_statement.split('|')[0]
+	    activity_id = every_statement.split('|')[3]
 	    exact_timestamp = every_statement.split("|")[7]
+	    if activity_id.startswith(tincanprefix):
+		activity_id = activity_id[len(tincanprefix):]
 	    result_on_report = ""
 	    if result_score != "":
 		result_on_report = result + " Score: " + result_score
-		activity_name = "MCQ"
+		activity_name = "MCQ " + activity_id
 	    g.write("|" + activity_name + "|" + result_on_report + "|" + this_username + "|" + blockn.name + "|" + exact_timestamp + '\n')
 
 	g.write('\n' + '\n')

@@ -73,10 +73,13 @@ urlpatterns = patterns('',
         url(r'^reports/usage_report','report_statement.views.test_usage_report'),  #Usage Report (Testing)
   	url(r'^reports/responsereport_selection/$', 'report_statement.views.response_report_selection', name='response_report_selection'), #Usage Report (Mockups)
 	url(r'^reports/breakdown_report/$', 'report_statement.views.test_heather_report', name='heather_report'), #Breakdown report
+
 	url(r'^reports/attendance_selection/$', 'report_statement.views.attendance_selection', name='attendance_selection'), #Attendance Report Selection
 	url(r'^reports/attendance_process/$', 'report_statement.views.attendance_process', name='attendance_process'), #Processing the attendance !
+ 	url(r'^reports/attendance_api/$', 'report_statement.views.attendance_api', name='attendance_api'), #Processing the attendance !
 	url(r'^reports/attendance_registrations/$', 'report_statement.views.attendance_get_registration', name='attendance_get_registration'), #Show all registrations 
 	url(r'^reports/attendance_registrations/(?P<registration_id>[-\w]+)/$', 'report_statement.views.attendance_registration_students', name='attendance_registration_students'),
+
 	url(r'^reports/registrations_report_tincanxml/$' ,'report_statement.views.registration_statements_tincanxml', name='registration_statements_tincanxml'),
 
 	#For ajax fetchings
