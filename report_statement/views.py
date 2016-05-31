@@ -1428,7 +1428,7 @@ def attendance_api(request):
 	except:
 		#Default dates for a month before today.
 		date_since = date.today() - td(days=31)
-		date_until = datetime.now()	
+		date_until = datetime.now().date()
 
 	#If User is not in request (not from Django)
 	if request.user is None or request.user.is_anonymous():
@@ -1481,6 +1481,14 @@ def attendance_api(request):
 			allclass_ids.append(everyclass.id);
 			
 		#ToDo: remove Class duplicates (if any)
+
+	alldays_in_daterange=[]
+	time_delta = (date_until - date_since)
+	for i in range(time_delta.days + 1):
+		this_date = date_since + td(days=i)
+		alldays_in_daterange.append(this_date)
+	logger.info(alldays_in_daterange)
+		
 				
 	logger.info("Getting attendance for classes..")
 	attendance_dict = {}
@@ -1490,6 +1498,10 @@ def attendance_api(request):
 		allclass_dict = {}
 		logger.info("In class: " + str(every_class.allclass_name))
 				
+
+		teacher = every_class.teachers.all().order_by('-id')[0]
+		logger.info(teacher)
+
             	#Get all registrations unique for that class
             	#allclass_statements = models.Statement.objects.filter(\
             	#    , timestamp__range=[date_since, date_until])
@@ -1507,13 +1519,8 @@ def attendance_api(request):
                 all_hosted_verb_id.append(hosted_verb_id2)
                 hosted_verb = \
 			models.Verb.objects.filter(verb_id__in=all_hosted_verb_id)
-            	#logger.info("all hosted verbs:")
-            	#logger.info(hosted_verb)
-            	#logger.info("here we go..")
             	attendance_activity = models.Activity.objects.filter(\
                     activity_id__in=all_activity_id_string)
-            	#logger.info("Got it")
-            	#logger.info(attendance_activity)
 
             	#Get all registrations
             	all_registrations = models.Statement.objects.filter(\
@@ -1521,6 +1528,21 @@ def attendance_api(request):
                     object_activity__in = attendance_activity,\
                         verb__in=hosted_verb).values_list(\
                                 'context_registration', flat=True).distinct()
+
+
+		day_stuff_dict={}
+		#Lets loop through every single day in that date range..
+		for each_day in alldays_in_daterange:
+			logger.info("For day:" + str(each_day));
+			all_registrations_thatday = models.Statement.objects.filter(\
+			  timestamp__contains=each_day,\
+				object_activity__in = attendance_activity,\
+					verb__in=hosted_verb).values_list(\
+						'context_registration', flat=True).distinct()
+			if all_registrations_thatday:
+				logger.info(all_registrations_thatday)
+
+
             	#print("I think I got the registrations")
             	#print(all_registrations)
 		registration_dict = {}
@@ -2293,7 +2315,7 @@ def usage_report_data_ajax_handler(request):
         logger.info("Not a POST request brah, check your code.")
 	return HttpResponse(False)
 
-"""Report: Registration Report 
+"""Report: Registration Report (Survey Report)
    This report will be made for registration event statements 
    that are part of the organisation. 
 """
@@ -2301,12 +2323,12 @@ def usage_report_data_ajax_handler(request):
 def registration_statements_tincanxml(request,\
  	template_name='registration_statements_tincanxml.html'):
     logger.info("User="+request.user.username+\
-	" accessed /reports/statements_registration/")
+	" accessed /reports/registrations_report_tincanxml/")
     organisation = User_Organisations.objects.get(\
 	user_userid=request.user).organisation_organisationid;
 
     """
-    if organisation.id != 22: #Changed to RTI #Actually it could apply to any organisation.
+    if organisation.id #Actually it could apply to any organisation.
 	return redirect('reports')
     """
 
@@ -2323,14 +2345,18 @@ def registration_statements_tincanxml(request,\
 	
 
     """
-
+    #Get all users in the current organisation
     all_org_users= User.objects.filter(pk__in=\
 	User_Organisations.objects.filter(\
 	    organisation_organisationid=organisation\
 		).values_list('user_userid', flat=True))
-    s_date = datetime.strptime('201603250000', '%Y%m%d%H%M%S')
-    #all_statements = models.Statement.objects.filter(user__in=all_org_users, timestamp__gte=s_date)
+
+    #Get all statements made by those users
     all_statements = models.Statement.objects.filter(user__in=all_org_users)
+	
+    #If you need it by date..
+    #s_date = datetime.strptime('201603250000', '%Y%m%d%H%M%S')
+    #all_statements = models.Statement.objects.filter(user__in=all_org_users, timestamp__gte=s_date)
 
     """
     Fix for statements (new) that don't get assigned to any block. 
@@ -2409,6 +2435,10 @@ def registration_statements_tincanxml(request,\
 	        #logger.info("Something went wrong in getting activity id " +\
 	        #	"and or context parent " + str(every_statement.id))
 
+    """
+    End of fix.
+    """
+
     logger.info("On to generating the report..")
 
     dict_reg = dict() #This is all the registration statements grouped by red id.
@@ -2425,9 +2455,15 @@ def registration_statements_tincanxml(request,\
     g = open(registration_report_file, 'w')
     now = time.strftime("%c")
     g.write("Registration Report for " + now + '\n')
-    g.write('\n'+"ID|Item|Value|User|Block|Date"+'\n');
+    column_names = "ID|Item|Value|User|Block|Date"
+    column_readable_names = column_names
+    #g.write('\n' + column_names + '\n');
+    #g.write('\n'+"ID|Item|Value|User|Block|Date"+'\n');
 
     logger.info("Generating Registration report (based on tincan.xml)")
+
+    #This loop will ready all relevant registration statements for this report
+    # and ggroup them by registration id and store it in a dict
     for every_statement in all_statements:
 
 	#Get statement JSON for processing and the user
@@ -2452,7 +2488,7 @@ def registration_statements_tincanxml(request,\
 	    continue #Not in this statement iteration. Go to the next one
 
 	if context_parent == None or context_parent == "":
-	    continue
+	    continue #Not in this statement iteration. Go to the next one
 
 	#Get the activity Name
 	try:
@@ -2465,7 +2501,7 @@ def registration_statements_tincanxml(request,\
 	    activity_id= statement_json[u'object']['id']
 	    username = every_statement.user.username
 	except:
-	    continue #No id then can't do anything.
+	    continue #No id then can't do anything. Go to the next iteration
 	
 	#Get the Result and Score
 	try:
@@ -2491,10 +2527,16 @@ def registration_statements_tincanxml(request,\
 		    str(blockn.id) + "|" + blockname+"|"+every_statement.timestamp.strftime(\
 			"%B %d, %Y %H:%M")]
 
+    made_column_name_row = False
+    column_name_number_mapping = {}
+    activity_id_name_mapping = {}
 	    
-    #logger.info(dict_reg)
-    #Sort out the dict_reg keys
-    #Find the tincan file for every statement group
+    #This loop will loop through every registration and get all
+    # activities from all associated epub blocks's tincan.xml
+    #   and order them. 
+    #It will then arrange the statements in that order so that they
+    # look ordered.
+    #Update: We want to order the added MCQ columns
     for every_regid in dict_reg:
 	logger.info("In reg..")
         statements = dict_reg.get(every_regid.encode('utf8'))
@@ -2533,40 +2575,118 @@ def registration_statements_tincanxml(request,\
                             try:
                                 activityid = activitieselement.attrib['id']
 				activities_inorder.append(activityid)
-				typeid = activitieselement.attrib['type']
+				#typeid = activitieselement.attrib['type']
+				typeid="test"
 	
                             except:
+				logger.info("exception..")
                                 epubfilehandle.close()
 
                             else:
+				
                                 if activityid != "" and activityid != None and typeid != "" and typeid != None:
                                     for activityelement in activitieselement:
                                         if "description" in activityelement.tag:
-                                            description = str(activityelement.text)
-                                            lang = (activityelement.attrib['lang'])
+					    pass
+                                            #description = str(activityelement.text)
+                                            #lang = str(activityelement.attrib['lang'])
+					if "name" in activityelement.tag:
+					    name = activityelement.text
+					    #name = activityelement.text
+
+						
+					    epub_id_bit=activityid[activityid.find("epub:")+len("epub:"):activityid.find("/")]
+                        		    a = activityid.find("/")
+                        		    if a < 0:
+                                		continue
+                        		    if not epub_id_bit:
+                                		continue
+                          		    epub_id = "epub:" + epub_id_bit;
+                        		    rel_activity_id = activityid.split(epub_id)[1]
+
+					    if activityid in activity_id_name_mapping:
+						pass
+					    else:
+						activity_id_name_mapping[rel_activity_id] = name
+					    pass
 				    if typeid=="http://adlnet.gov/expapi/activities/course":
 					tincanprefix = activityid
 				    
                                     if tincanprefix != "":
                                         logger.info("Found prefix!" + str(tincanprefix))
+			    try:
+				#logger.info("Closing the epub file")
+				epubfilehandle.close()
+			    except:
+				logger.info("Cant close epubfilehandle")
+				
 					
 
 	try:
-	    logger.info("Closing the epub file")
+	    #logger.info("Closing the epub file")
 	    epubfilehandler.close()
 	except:
 	    pass
 
+	logger.info("Name-Activity ID mapping: ") 
+	logger.info(activity_id_name_mapping)
+
+	#Arranging statements in order (to make it look better)
 	statements_inorder=[]
 	statements_activities_inorder = []
         for every_statement in statements:
 	    statement_activityid = every_statement.split('|')[3]
-	    # A very crude way of sorting.
-	    activity_index = activities_inorder.index(statement_activityid)
-	    statements_inorder.insert(activity_index, every_statement)
-	    statements_activities_inorder.insert(activity_index, statement_activityid)
+	    try:
+	    	# A very crude way of sorting.
+	    	activity_index = activities_inorder.index(statement_activityid)
+	    	statements_inorder.insert(activity_index, every_statement)
+	    	statements_activities_inorder.insert(activity_index, statement_activityid)
+	    except ValueError:
+		#For somereason the actuvuty id with page might not be in the list
+		# of activities from the tincan.xml file. We ignore this
+		pass
 
-	g.write('\n' + every_regid + "|" + "New" + "|Registration|" + this_username + "|" + blockn.name + "|" + timestamp + '\n')
+	
+	#Updating column name, count and populating dict to link activity id with column number
+	if made_column_name_row == False:
+		logger.info("Updating column name row..")
+		column_number = 7
+		for every_activity in activities_inorder:
+			#Reminder:
+			#column_names = "ID|Item|Value|User|Block|Date"
+
+			#Getting relative activity id 
+			epub_id_bit=every_activity[every_activity.find("epub:")+len("epub:"):every_activity.find("/")]
+			a = every_activity.find("/")
+			if a < 0:
+				continue
+			if not epub_id_bit:
+				continue
+			epub_id = "epub:" + epub_id_bit;
+			relative_activity_id = every_activity.split(epub_id)[1]
+			
+			readable_name = activity_id_name_mapping.get(relative_activity_id)
+			column_names = column_names + "|" + relative_activity_id;
+
+			#Make readable names for report
+			if not readable_name:
+				readable_name = relative_activity_id
+			column_readable_names = column_readable_names + "|" + readable_name
+			#column_name_number_mapping[column_number] = relative_activity_id 
+			column_name_number_mapping[column_number] = every_activity #note we didnt use relative because below we search by the whole activiy id
+			#CBB changing it.
+			
+			column_number = column_number + 1
+
+			
+    		g.write('\n' + column_readable_names.encode('utf8') + '\n');
+		made_column_name_row = True
+
+	logger.info("Column Name-Column Number mapping:")
+	logger.info(column_name_number_mapping)
+
+	reg_activity_score_mapping = {}
+	#g.write('\n' + every_regid + "|" + "New" + "|Registration|" + this_username + "|" + blockn.name + "|" + timestamp + '\n')
  	for every_statement in statements_inorder:
 	    result = every_statement.split('|')[1]
 	    result_score = every_statement.split('|')[2]
@@ -2579,7 +2699,37 @@ def registration_statements_tincanxml(request,\
 	    if result_score != "":
 		result_on_report = result + " Score: " + result_score
 		activity_name = "MCQ " + activity_id
-	    g.write("|" + activity_name + "|" + result_on_report + "|" + this_username + "|" + blockn.name + "|" + exact_timestamp + '\n')
+
+	    logger.info("Getting sum for activity id: " + activity_id)
+	    if activity_id in reg_activity_score_mapping:
+		try:
+		    activity_id_score = int(reg_activity_score_mapping[activity_id])
+		    reg_activity_score_mapping[activity_id] = int(reg_activity_score_mapping[activity_id]) + int(result_score)
+		except:
+		    pass
+	    else:
+		try:
+		    reg_activity_score_mapping[activity_id] = int(result_score)
+		except:
+		    pass
+		
+
+
+	    #g.write("|" + activity_name + "|" + result_on_report + "|" + this_username + "|" + blockn.name + "|" + exact_timestamp + '\n')
+
+	logger.info("Registration's Activity - Score mapping")
+	logger.info(reg_activity_score_mapping)
+
+	column_score = ""
+	for every_column_number in column_name_number_mapping:
+		#activity_id = column_name_number_mapping[every_column]
+		activity_id = column_name_number_mapping.get(every_column_number)
+		total_score = reg_activity_score_mapping.get(activity_id.encode('utf8'))
+		#total_score = reg_activity_score_mapping[activity_id]
+		if total_score:
+			column_score = column_score + "|" + str(total_score)
+		
+	g.write("|" + "New" + "|Registration|" + this_username + "|" + blockn.name + "|" + timestamp  + column_score + '\n' )
 
 	g.write('\n' + '\n')
 	dict_reg[every_regid] = statements_inorder
