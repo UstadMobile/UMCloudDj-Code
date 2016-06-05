@@ -1,3 +1,6 @@
+v1.0.900
+-Progres on Public Attendance Report
+
 v1.0.800
 -Added epub update support
 

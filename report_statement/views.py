@@ -1295,12 +1295,19 @@ class Student(object):
     name = ""
     verb = "" 
     fingerprinted = ""
+    gender=""
 
     # The class "constructor" - It's actually an initializer 
     def __init__(self, name, verb, fingerprinted):
         self.name = name
         self.verb = verb
         self.fingerprinted = fingerprinted
+    #Anlther one
+    def __init__(self, name, verb, fingerprinted, gender):
+        self.name = name
+        self.verb = verb
+        self.fingerprinted = fingerprinted
+        self.gender = gender
 
 
 """Report: Student Attendance Report by Registration ID
@@ -2747,3 +2754,540 @@ def registration_statements_tincanxml(request,\
 
 
 # Create your views here.
+
+		
+		
+class AttendanceRepresentation(object):
+	students_male = 0;
+	students_female = 0;
+	teachers_male = 0;
+	teachers_female = 0;
+	
+	days_attended_teachers_male = 0;
+	days_absent_teachers_male = 0;
+	days_attended_teachers_female = 0;
+	days_absent_teachers_female = 0;
+	
+	days_attended_students_male = 0;
+	days_absent_students_male = 0;
+	days_attended_students_female = 0;
+	days_absent_students_female = 0;
+	
+	def __init__(self, sm, sf, tm, tf, datm, dabtm, datf, dabtf, dasm, dabsm, dasf, dabsf):
+		self.students_male = sm;
+		self.students_female = sf;
+		self.teachers_male = tm;
+		self.teachers_female = tf;
+		
+		self.days_attended_teachers_male = datm;
+		self.days_absent_teachers_male = dabtm;
+		self.days_attended_teachers_female = datf;
+		self.days_absent_teachers_female = dabtf;
+		
+		self.days_attended_students_male = dasm;
+		self.days_absent_students_male = dabsm;
+		self.days_attended_students_female = dasf;
+		self.days_absent_students_female = dabsf;
+
+	
+
+"""Report: Attendance Public API Report
+	OUTPUT JSON:
+		{
+		   "schools":[
+			  {
+				 "name":"Pluto School",
+				 "gps":"latlong",
+				 "attendance":[
+					{
+					   "date":"yyyy-mm-dd",
+					   "teachers":{
+						  "male":{
+							 "days_attended":50,
+							 "days_absent":10
+						  },
+						  "female":{
+							 "days_attended":50,
+							 "days_absent":10
+						  }
+					   },
+					   "students":{
+						  "male":{
+							 "days_attended":50,
+							 "days_absent":10
+						  },
+						  "female":{
+							 "days_attended":50,
+							 "days_absent":10
+						  }
+					   }
+					}
+				 ]
+			  }
+		   ]
+		}
+"""
+@csrf_exempt
+def attendance_public_api(request):
+        #Keeping it at POST because of BASIC Auth being present
+        if request.method != 'POST':
+                json_response = simplejson.dumps( {
+                           'error': "Not a post request"}  )
+		#Skipping for now
+                return HttpResponse(json_response, mimetype="application/json")
+        try:
+                #Get the date param filter
+                date_since = request.POST['since_1_alt']
+                date_until = request.POST['until_1_alt']
+        except:
+                #Default dates for a month before today.
+                date_since = date.today() - td(days=31)
+                date_until = datetime.now().date();
+
+		
+		#Disabling for public api - Data open to public
+		#Checks basic auth and authenticates it.
+        #If User is not in request (not from Django)
+        if request.user is None or request.user.is_anonymous():
+                #Authenticate from Basic Authentication
+                state, authresponse = login_basic_auth(request)
+                if state == False:
+                        #Must be authenticated.
+						#If no user, basic auth in request then org id should be there.
+                        logger.info("Didn't get user. Organisation id must be specified")
+
+                if state == True:
+                        #set the user in request..
+                        request.user = authresponse
+                        logger.info("Got user!")
+                else:
+                        logger.info("Umm. tia")
+		
+
+		#Get organisation if explicitly declared in POST param
+		# else get logged in user's organisation
+        try:
+                #If organisation is explicitly declared.
+                organisation_id = request.POST['organisation_id']
+                organisation = Organisation.objects.get(pk=organisation_id)
+        except:
+                #If org id not given, get logged in users org 
+				#Will always go here in Public API
+                try:
+						#This will fail in public API: We need a  organisation ID
+                        organisation = User_Organisations.objects.get(\
+                        user_userid=request.user).organisation_organisationid
+                except Exception as orgex:
+                        logger.info(str(orgex))
+                        json_response = simplejson.dumps({ \
+                           'error': "No organisation selected or not logged in."})
+                        return HttpResponse(json_response, mimetype="application/json")
+
+		#In the future we have to group by schools.
+		#TODO: Group by School
+		#This may have been done below.
+		
+		#Group by Class:
+		#Get classes if classes are explicitly declared in POST param
+        try:
+                #If Classes are explicitly given
+                allclass_ids = request.POST['allclass_ids']
+        except:
+                #The class ids are not given..
+                #Get all classes in the organisation:
+                logger.info("Getting all classes in the organisation..")
+                allclass_list=Allclass.objects.filter(school__in=\
+                        School.objects.filter(organisation=organisation));
+
+                if allclass_list is None:
+                        json_response = simplejson.dumps( {\
+                                'error': "No classes in organisation"}  )
+                        return HttpResponse(json_response, mimetype="application/json")
+
+                allclass_ids=[]
+                for everyclass in allclass_list:
+                        allclass_ids.append(everyclass.id);
+        	#TODO: remove Class duplicates (if any) from the list 
+			
+		#Group by School:
+		#Get all schools if schools are explicitly declared in POST param
+		try:
+                	#If Schools are explicitly given
+                	school_ids = request.POST['school_ids']
+        	except:
+                	#The school ids are not given..
+                	#Get all schools in the organisation:
+                	logger.info("Getting all schools in the organisation..")
+                	school_list=School.objects.filter(organisation=organisation);
+			#school_list = School.objects.filter(organisation=organisation);
+			if not school_list:
+				json_response = simplejson.dumps( {\
+					'error': "No schools in organisation"}  )
+				return HttpResponse(json_response, mimetype="application/json")
+				
+                	if school_list is None:
+                        	json_response = simplejson.dumps( {\
+                                	'error': "No schools in organisation"}  )
+                        	return HttpResponse(json_response, mimetype="application/json")
+
+                	school_ids=[]
+                	for everyschool in school_list:
+                        	school_ids.append(everyschool.id);
+				
+		#ToDo: remove School duplicates (if any) from the list
+				
+
+		#Get attendance by school
+		
+		#For every day between the two dates
+		#ToDo: excluding weekends ?
+		
+		alldays_in_daterange=[]
+        	time_delta = (date_until - date_since)
+        	for i in range(time_delta.days + 1):
+                	this_date = date_since + td(days=i)
+                	alldays_in_daterange.append(this_date)
+		
+		for each_day in alldays_in_daterange:
+			print("For day:" + str(each_day));
+			#yeah we know this works. Delete this.
+		
+		#Start here..
+		
+		#Get the attendance by School
+		try:
+			school_dict={}
+			for every_school_id in school_ids:
+				try:
+					every_school = School.objects.get(pk=every_school_id)
+					logger.info("In School: " )
+					logger.info(every_school)
+				except Exception as e:
+					print(e)
+					logger.info(str(e))
+					authresponse = HttpResponse(status=500)
+					authresponse.write("Invalid school id:" + \
+						str(every_school_id) + " given: " + e.message + " Please check!")
+					return authresponse
+				
+				every_schools_allclass_list = Allclass.objects.filter(school=every_school)
+				if not every_schools_allclass_list: #No classes in school
+					logger.info("School: " + str(every_school_id) + " has no classes in it. Skipping")
+					continue #..to next for every school loop 
+					
+				"""
+				every_school_total_students_male = 0;
+				every_school_total_students_female = 0;
+				every_school_total_teachers_male = 0;
+				every_school_total_teachers_female = 0;
+				
+				every_school_total_students_present_male = 0;
+				every_school_total_students_present_female = 0;
+				every_school_total_teachers_present_male = 0;
+				every_school_total_teachers_present_female = 0;
+				every_school_total_students_absent_male = 0;
+				every_school_total_students_absent_female = 0;
+				every_school_total_teachers_absent_male=0;
+				every_school_total_teachers_absent_female=0;
+				
+				#(self, sm, sf, tm, tf, datm, dabtm, datf, dabtf, dasm, dabsm, dasf, dabsf):
+				every_school_total_attendance = AttendanceRepresentation(\
+					every_school_total_students_male, every_school_total_students_female,\
+					every_school_total_teachers_male, every_school_total_teachers_female,\
+					every_school_total_teachers_present_male, every_school_total_teachers_absent_male,\
+					every_school_total_teachers_present_female, every_school_total_teachers_absent_female,\
+					every_school_total_students_present_male, every_school_total_students_absent_male,\
+					every_school_total_students_present_female, every_school_total_students_absent_female);
+				every_school_total_attendance = AttendanceRepresentation(0,0,0,0,0,0,0,0,0,0,0,0);
+				"""
+				#school_dict[every_school] = every_school_total_attendance
+				
+				date_dict = {}
+				#date_dict[date] = Attendance data 
+				#Lets loop through every single day in that date range..
+				for each_day in alldays_in_daterange:
+					every_school_each_day_students_male = 0;
+					every_school_each_day_students_female = 0;
+					every_school_each_day_teachers_male = 0;
+					every_school_each_day_teachers_female = 0;
+					
+					every_school_each_day_students_present_male = 0;
+					every_school_each_day_students_present_female = 0;
+					every_school_each_day_teachers_present_male = 0;
+					every_school_each_day_teachers_present_female = 0;
+					
+					every_school_each_day_students_absent_male = 0;
+					every_school_each_day_students_absent_female = 0;
+					every_school_each_day_teachers_absent_male=0;
+					every_school_each_day_teachers_absent_female=0;
+					
+					every_school_each_day_attendance = AttendanceRepresentation(\
+							every_school_each_day_students_male, every_school_each_day_students_female,\
+							every_school_each_day_teachers_male, every_school_each_day_teachers_female,\
+							every_school_each_day_teachers_present_male, every_school_each_day_teachers_absent_male,\
+							every_school_each_day_teachers_present_female, every_school_each_day_teachers_absent_female,\
+							every_school_each_day_students_present_male, every_school_each_day_students_absent_male,\
+							every_school_each_day_students_present_female, every_school_each_day_students_absent_female);
+					every_school_each_day = AttendanceRepresentation(0,0,0,0,0,0,0,0,0,0,0,0);
+					each_day_dict={}
+					
+					#Loop through all classes in the school (for every day as this is in everyday loop)
+					for every_class in every_schools_allclass_list:
+						
+						#That starts with a date group by object:
+						every_class_attendance_data_by_date = {}
+							
+						every_class_students_male = 0;
+						every_class_students_female = 0;
+						every_class_teachers_male = 0;
+						every_class_teachers_female = 0;
+						
+						every_class_students_present_male = 0;
+						every_class_students_present_female = 0;
+						every_class_teachers_present_male = 0;
+						every_class_teachers_present_female = 0;
+						
+						every_class_students_absent_male = 0;
+						every_class_students_absent_female = 0;
+						every_class_teachers_absent_male=0;
+						every_class_teachers_absent_female=0;
+						
+						every_class_each_day_attendance = AttendanceRepresentation(\
+							every_class_students_male, every_class_students_female,\
+							every_class_teachers_male, every_class_teachers_female,\
+							every_class_teachers_present_male, every_class_teachers_absent_male,\
+							every_class_teachers_present_female, every_class_teachers_absent_female,\
+							every_class_students_present_male, every_class_students_absent_male,\
+							every_class_students_present_female, every_class_students_absent_female);
+						every_class_each_day_attendance = AttendanceRepresentation(0,0,0,0,0,0,0,0,0,0,0,0);
+						
+						allclass_id = str(every_class.id)
+						allclass_dict = {}
+
+						#Get the objects needed for class attendance data:
+						attended_activity_string = \
+										"http://www.ustadmobile.com/activities/attended-class/"
+						activity_id_string = attended_activity_string + allclass_id
+						all_activity_id_string = []
+						activity_id_string2 = activity_id_string + "/"
+						all_activity_id_string.append(activity_id_string)
+						all_activity_id_string.append(activity_id_string2)
+						all_hosted_verb_id = []
+						hosted_verb_id = "http://activitystrea.ms/schema/1.0/host"
+						hosted_verb_id2 = "http://activitystrea.ms/schema/1.0/host/"
+						all_hosted_verb_id.append(hosted_verb_id)
+						all_hosted_verb_id.append(hosted_verb_id2)
+						hosted_verb = \
+								models.Verb.objects.filter(verb_id__in=all_hosted_verb_id)
+
+						attendance_activity = models.Activity.objects.filter(\
+							activity_id__in=all_activity_id_string)
+							
+						#Get all registrations made
+						all_registrations_thatday = models.Statement.objects.filter(\
+						  timestamp__contains=each_day,\
+								object_activity__in = attendance_activity,\
+										verb__in=hosted_verb).values_list(\
+												'context_registration', flat=True).distinct()
+						if all_registrations_thatday:
+							#logger.info(all_registrations_thatday)
+							pass
+						if not all_registrations_thatday:
+							#Teacher didn't do it. So he/she is absent 
+							#TODO: Account for holidays and weekend!
+							#okay thinking here. what if there are more than one teacher assigned to the same class.
+							# In that case who is the one who is absent ? Are all teachers everyday or not ?
+							
+							#Solution: Just assume one teacher per class for now. 
+							teachers_in_class = every_class.teachers.all()
+							teacher_in_class = teachers_in_class[0]
+							teacher_in_class_gender = UserProfile.objects.get(user=teacher_in_class).gender
+							if teacher_in_class_gender == "M":
+								every_class_each_day_attendance.days_absent_teachers_male = \
+									every_class_each_day_attendance.days_absent_teachers_male + 1;
+								#ToDo: replace others..
+								every_class_teachers_absent_male = every_class_teachers_absent_male + 1;
+							elif teacher_in_class_gender == "F" :
+								every_class_each_day_attendance.days_absent_teachers_female = \
+									every_class_each_day_attendance.days_absent_teachers_female + 1;
+								every_class_teachers_absent_female = every_class_teachers_absent_female + 1;
+							
+							
+						registration_dict = {}
+						
+						for every_registration in all_registrations_thatday:
+							allclass_statements_per_registration = models.Statement.objects.filter(\
+							  #timestamp__contains = each_day,\ #Why limit . maybe rest of the stms came later
+								object_activity__in = attendance_activity,\
+									context_registration = every_registration).exclude(\
+										verb__in = hosted_verb)
+							#logger.info("In Registration : " + \
+							#	str(every_registration))
+							allclass_registration_students_attendance = []
+							
+							for every_statement in allclass_statements_per_registration:
+								actor = every_statement.actor
+								actor_name = actor.name
+								if not actor_name:
+									actor_name = actor.account_name
+								verb = every_statement.verb.get_display()
+								context_extensions = every_statement.context_extensions
+								student_username = every_statement.actor.account_name
+								try:
+									student_user = User.objects.get(username=student_username)
+									student_gender = UserProfile.objects.get(user=student_user).gender;
+								except:
+									student_gender = "M";
+								
+								if student_gender == "M":
+									every_class_each_day_attendance.students_male = \
+										every_class_each_day_attendance.students_male + 1;
+									#every_class_students_male = each_day_students_male + 1;
+									if verb == "Skipped":
+										every_class_students_present_male = every_class_students_present_male + 1;
+									elif verb == "Attended":
+										every_class_students_absent_male = every_class_students_absent_male + 1;
+									
+								elif student_gender == "F":
+									every_class_students_female = every_class_students_female + 1;
+									if verb == "Skipped":
+										every_class_students_present_female = every_class_students_present_female + 1;
+									elif verb == "Attended":
+										every_class_students_absent_female = every_class_students_absent_female + 1;
+								
+								teacher = every_statement.user
+								teacher_gender = UserProfile(user=teacher).gender
+								if teacher_gender == "M":
+									every_class_teachers_male = every_class_teachers_male + 1;
+									every_class_teachers_present_male = every_class_teachers_present_male + 1;
+								elif teacher_gender == "F":
+									every_class_teachers_female = every_class_teachers_female +1;
+									every_class_teachers_present_female = every_class_teachers_present_female + 1;
+								
+								#Quesiton is how to mark teachers as absent ?
+									
+								#context_extensions_json = json.loads(context_extensions)
+								try:
+									fingerprinted = context_extensions[u'http://www.ustadmobile.com/fingerprinted']
+								except:
+									fingerprinted = None
+
+								if not fingerprinted:
+									studentAttendance =  Student(actor_name, verb, "", student_gender)
+									studentAttendanceData = json.dumps(studentAttendance.__dict__)
+									allclass_registration_students_attendance.append(studentAttendanceData)
+
+									#allclass_registration_students_attendance.append(\
+									#   Student(actor_name, verb, "") )
+								else:
+									studentAttendance = Student(actor_name, verb, fingerprinted, student_gender)
+									studentAttendanceData = json.dumps(studentAttendance.__dict)
+									allclass_registration_students_attendance.append(studentAttendanceData)
+
+									#allclass_registration_students_attendance.append(\
+									#   Student(actor_name, verb, fingerprinted) )
+								# We have studentAttendance object
+							
+						#Add an attendance by date
+						
+						every_class_each_day_attendance = AttendanceRepresentation(\
+							every_class_students_male, every_class_students_female,\
+							every_class_teachers_male, every_class_teachers_female,\
+							every_class_teachers_present_male, every_class_teachers_absent_male,\
+							every_class_teachers_present_female, every_class_teachers_absent_female,\
+							every_class_students_present_male, every_class_students_absent_male,\
+							every_class_students_present_female, every_class_students_absent_female);
+						
+						"""
+						#datm, dabtm, datf, dabtf, dasm, dabsm, dasf, dabsf
+						every_class_attendance_data_by_date[each_day] = \
+							AttendanceRepresentation(every_class_teachers_male,\
+								every_class_teachers_absent_male, every_class_teachers_female,\
+								every_class_students_male, every_class_students_absent_male,\
+										every_class_students_female, every_class_students_absent_female);
+																					
+						"""
+						
+						every_school_each_day_students_male = \
+							every_school_each_day_students_male + every_class_students_male;
+						every_school_each_day_students_female = \
+							every_school_each_day_students_female + every_class_students_female;
+						every_school_each_day_teachers_male = \
+							every_school_each_day_teachers_male + every_class_teachers_male ;
+						every_school_each_day_teachers_female = \
+							every_school_each_day_teachers_female + every_class_teachers_female;
+
+						every_school_each_day_students_present_male = \
+							every_school_each_day_students_present_male + every_class_students_present_male;
+						every_school_each_day_students_present_female = \
+							every_school_each_day_students_present_female + every_class_students_present_female ;
+							
+						every_school_each_day_teachers_present_male =\
+							every_school_each_day_teachers_present_male + every_class_teachers_present_male;
+						every_school_each_day_teachers_present_female = \
+							every_school_each_day_teachers_present_female + every_class_teachers_present_female;
+
+						every_school_each_day_students_absent_male = \
+							every_school_each_day_students_absent_male + every_class_students_absent_male;
+						every_school_each_day_students_absent_female = \
+							every_school_each_day_students_absent_female + every_class_students_absent_female;
+						every_school_each_day_teachers_absent_male = \
+							every_school_each_day_teachers_absent_male + every_class_teachers_absent_male;
+						every_school_each_day_teachers_absent_female = \
+							every_school_each_day_teachers_absent_female + every_class_teachers_absent_female;
+					
+	
+					every_school_each_day_attendance = AttendanceRepresentation(\
+							every_school_each_day_students_male, every_school_each_day_students_female,\
+							every_school_each_day_teachers_male, every_school_each_day_teachers_female,\
+							every_school_each_day_teachers_present_male, every_school_each_day_teachers_absent_male,\
+							every_school_each_day_teachers_present_female, every_school_each_day_teachers_absent_female,\
+							every_school_each_day_students_present_male, every_school_each_day_students_absent_male,\
+							every_school_each_day_students_present_female, every_school_each_day_students_absent_female);
+					
+					"""
+					#Add all dates to make a class representation
+					
+					every_class_students_male = every_class_students_male + every_class_students_male;
+					every_class_students_female = every_class_students_female + every_class_students_female;
+					every_class_teachers_male = every_class_teachers_male + every_class_teachers_male;
+					every_class_teachers_female = every_class_teachers_female + every_class_teachers_female;
+					every_class_students_present_male = every_class_students_present_male + every_class_students_present_male;
+					every_class_students_present_female = every_class_students_present_female + every_class_students_present_female;
+					every_class_teachers_present_male =  every_class_teachers_present_male + every_class_teachers_present_male;
+					every_class_teachers_present_female = every_class_teachers_present_female + every_class_teachers_present_female;
+					every_class_students_absent_male = every_class_students_absent_male + every_class_students_absent_male;
+					every_class_students_absent_female = every_class_students_absent_female + every_class_students_absent_female;
+					every_class_teachers_absent_male= every_class_teachers_absent_male + every_classs.each_day_teachers_absent_male;
+					every_class_teachers_absent_female= every_class_teachers_absent_female + every_classs.each_day_teachers_absent_female;
+					"""
+
+					#studentAttendanceData = json.dumps(studentAttendance.__dict__) 
+					every_school_each_day_attendance_data = \
+						json.dumps(every_school_each_day_attendance.__dict__)
+					
+					#This as a whole object:
+					#date_dict[each_day] = every_school_each_day_attendance
+					#This as string:
+					date_dict[str(each_day)] = every_school_each_day_attendance_data
+				#We have date_dict completely filled.
+				
+				school_dict[str(every_school_id)] = date_dict
+			authresponse = HttpResponse(status=200)
+			authresponse.write("Reporting calc done. This should go..")
+			authresponse.write("\n")
+			authresponse.write(school_dict)
+			logger.info(school_dict)
+			#return authresponse
+			json_response = json.dumps(school_dict)
+			return HttpResponse(json_response, mimetype="application/json")
+					
+		
+		except Exception as e:
+            		print(e)
+            		logger.info(str(e))
+            		authresponse = HttpResponse(status=500)
+            		authresponse.write("Reporting exception: " + e.message + " Please check!")
+            		return authresponse
+	
+		
