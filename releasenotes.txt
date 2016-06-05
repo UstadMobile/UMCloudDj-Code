@@ -1,3 +1,6 @@
+v1.0.800
+-Added epub update support
+
 v1.0.700
 -Added Survey report
 

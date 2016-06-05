@@ -45,6 +45,7 @@ from subprocess import call
 import simplejson
 from epubresizer import EPUBResizer
 from os.path import basename
+from urlparse import urlparse
 
 
 ######################################################################
@@ -265,12 +266,14 @@ def edit(request, pk, template_name='myapp/update.html'):
     mainappstring = "UMCloudDj/"
     http_prefix = "http://"
 
+    #Update in ignoring port:
+    hostname = urlparse(http_prefix + hostname).hostname #Ignores the port in hostname
+
     package_url = get_package_url(document)
     if package_url != "":
 	package_url = http_prefix + hostname + package_url
         url="/media/epubrunner/ustad_contentepubrunner.html?src=" + package_url + "&output=embed";
     else:
-	print("else")
 	url = settings.MEDIA_URL + str(document.exefile)
 
     if form.is_valid():
@@ -384,12 +387,14 @@ def get_epub_blockid_name(epubpath):
 			epubassetfolder=packagepath.rsplit('/',1)[0]
 		    else:
 			epubassetfolder=""
-                    #package File: pf
+                    	#package File: pf
                     try:
                         pf=epubasazip.open(packagepath)
-                    except:
+                    except Exception as ex:
                         packageFound=False
+			print(ex)
                     else:
+			print("Package found!")
                         packageFound=True
                         pfc=pf.read()
                         pfcroot=ET.fromstring(pfc)
@@ -410,6 +415,7 @@ def get_epub_blockid_name(epubpath):
                             elpiname=title
 			    #Get TinCan Prefix:
                             tincanprefix, description, lang=get_prefix_from_tincanxml(epubpath)
+			    print("Hey, found prefix.. returning values..")
                             return elplomid, elpiname, tincanprefix, description, lang, subject
 
                         else:
@@ -609,7 +615,7 @@ def upload(request, template_name='myapp/upload_handle.html'):
 	    print("In file.." + str(exefile))
             #This is the new thing
             return_value, newdoc, data_updated = handle_block_upload(exefile, data)
-
+	    print("Handle block upload done.")
             #If block failed to upload and / or validatinon failed
             if return_value == False or return_value is None:
                 return render(request, template_name, data_updated)
@@ -940,6 +946,7 @@ def handle_block_upload(blockfile, data):
 
 	#Updated to get description and lang from the epub.
 	entryid, entryname, tincanprefix, description, lang, subject = get_epub_blockid_name(elpfile)
+	#print("Post get epub blockid")
 
 	if entryid == None and entryname == None :
 	    setattr(newdoc, 'success', 'NO')
@@ -1111,7 +1118,7 @@ def handle_block_upload(blockfile, data):
 
     if entryid == None:
         entryid="-"
-    
+
     if not uid.lower().endswith('.elp') or not uid.lower().endswith('.epub'):
         if entryname == None or entryname == "-":
 	    entryname = str(uid).rsplit('/',1)[1].rsplit('.um.',1)[1]
@@ -1630,6 +1637,32 @@ def list(request, template_name='myapp/list.html'):
                 setattr(newdoc, 'success', "NO")
 		setattr(newdoc, 'active', False)
                 newdoc.save()
+
+
+		"""
+		
+		#Maybe create an Acquisition Link
+		old_entry = Entry.objects.filter(elpid=elplomid, success="YES").latest('id')
+		old_acquisition_link = AcquisitionLink.objects.get(entry=entry).latest('id')
+		old_acquisition_link.active = False
+		if (entry.exefile.lower().endswith('.epub')):
+                	mimetype="application/epub+zip"
+            	elif (entry.exefile.lower().endswith('.elp')):
+               		mimetype="application/elp+zip"
+            	else:
+                	mimetype=""
+		new_acquisition_link = AcquisitionLink(exefile=newdoc.exefile,\
+			mimetype=mimetype, .....)
+
+		#acquisition_link = AcquisitionLink(exefile=every_block.exefile,\
+                #mimetype=mimetype, length=size, title=title, md5=md5hash,\
+                #    preview_path=preview_path)
+		new_acquisition_link.entry = old_entry
+		new_acquisition_link.save()
+		"""
+
+
+
 		newdoc.delete()
                 # Redirect to the document list after POST
                 return HttpResponseRedirect(reverse(\
@@ -1684,6 +1717,7 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
     appLocation = (os.path.dirname(os.path.realpath(__file__)))
     print("Checking block id..")
     found=Entry.objects.filter(elpid=elplomid, success="YES", active=True)
+    elplomidDB = elplomid
     elplomid=None
     if found and not forceNew:
         print("Block ID already exists in the system." + \
@@ -1691,6 +1725,142 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
         #To get the folder of previous export:
         folder_url=found[0].url.rsplit('/',2)[0]
 	
+	#Here goes the logic for epub
+	print("*************************")
+	print("uurl: " + uurl)
+	print("unid: " + unid)
+	print("name: " + name)
+	print("elplomid: " + str(elplomidDB))
+	print("forceNew: " + str(forceNew))
+	print("folder_url: " + folder_url)
+	print("**************************")
+
+	if uurl.lower().endswith(".epub"):
+		print("we have an epub over here to update..")
+
+
+		#Move previous epub to old directory..
+		entry = Entry.objects.filter(elpid=elplomidDB, success="YES").latest('id')
+		entry_id = entry.id
+		print("Entry id: " + str(entry_id))
+		acquisition_link = AcquisitionLink.objects.filter(entry=entry).latest('id') #Only getting by latest.
+		preview_path = acquisition_link.preview_path
+		#OR you could have just used entry.url
+
+		print("preview path: ")
+		print(preview_path)
+		print("Moving previous export. Command is:")
+		if preview_path == None or preview_path == "":
+			return "updatefail", None 
+			
+		if not preview_path.startswith('/'):
+			preview_path = "/" + preview_path
+
+		export_folder = '/' + preview_path.split('/')[1] + '/'+ preview_path.split('/')[2] +\
+			'/' + preview_path.split('/')[3] + ''
+
+		if os.system('mv ' + appLocation + '/../UMCloudDj' +\
+			export_folder + ' ' + appLocation + '/../UMCloudDj' +\
+			   export_folder  + '_old'):
+			print("Moved successfully to: " + appLocation + '/../UMCloudDj' +\
+			    export_folder + '_old')
+		else:
+			print("Error moving in command: ")
+			print('mv ' + appLocation + '/../UMCloudDj' +\
+			   export_folder + ' ' + appLocation + '/../UMCloudDj' +\
+				export_folder + '_old')
+
+		#Start the unzip..
+		print("Going to export an EPUB file..")
+            	print("Possible command:")
+            	print('unzip -q ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + " -d " +\
+                	"\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+                        	  unid + "/" + "\"")
+
+		if os.system('unzip -q ' + "\"" + appLocation + '/../UMCloudDj/media/' + uurl + "\"" + " -d " +\
+                	"\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
+                        	 unid + "/" + "\"") == 0:
+
+                	try:
+                    		epubfile=appLocation + '/../UMCloudDj/media/' + uurl
+                    		epubfilehandle = open(epubfile, 'rb')
+                    		epubzipfile = zipfile.ZipFile(epubfilehandle)
+                	except:
+                    		print("!!Unable to open the epub file for getting block info!!")
+                    		return "updatefail", None
+
+			foundFlag=False
+                	for filename in epubzipfile.namelist():
+                    		#As per EPUB standard, META-INF/container.xml (the
+                    		#container file) must be present and includes the
+                    		#directory of assets and package file.
+                    		if filename.find('META-INF/container.xml') != -1:
+                      	 		foundFlag=True
+                        		print("found cf")
+                       	 		#Container File: cf
+                        		cf=epubzipfile.open(filename)
+                        		cfc=cf.read() #Container file contents
+                       		 	root=ET.fromstring(cfc)
+                        		packagepage=None
+                        		for child in root:
+                            			for chi in child:
+                                			if ".opf" in chi.attrib['full-path']:
+                                    				packagepath=chi.attrib['full-path']
+                                    				break #We got the package file..
+
+                	print("1. Exported to folder.")
+                	#Get Folder name  from : META-INF/container.xml
+
+                	if packagepath != None or packagepath != "":
+				print("new package path: " + packagepath)
+                    		epubassetfolder=packagepath.rsplit('/',1)[0]
+                    		splitpp = packagepath.rsplit('/',1)
+                    		if len(splitpp) > 1:
+                        		epubassetfolder=packagepath.rsplit('/',1)[0]
+                    		else:
+                        		epubassetfolder=""
+                	else:
+                  		return "newfail", None
+		
+			"""
+                	if epubassetfolder == "":
+                    		return "newsuccess", None
+                	else:
+                    		print("Not in root. Skipping move and copy anyway..")
+                    		return "newsuccess", None
+			"""
+
+
+			new_export_folder = "/media/eXeExport/" + unid + "/"
+			new_opf_url = packagepath
+			new_preview_path = new_export_folder + new_opf_url
+			print("new preview path: " + new_preview_path)
+			
+			print("Already existing entry's url: " + entry.url)
+			#Update existing block entry with new preview path and exefile
+			#If not creating new Acquisition Link, update entry of existing one
+			entry.url = new_export_folder
+                        entry.exefile = uurl
+                        entry.save()
+			print("Already existing entry's url: " + entry.url)
+			print(" Updating al's entry..")	
+			acquisition_link.entry=entry
+			
+			return "updatesuccess", None
+
+			try:
+				print("Starting old EPUB update..")
+
+			except:
+				print("!!Updating old EPUB on update failed.!!")
+				return "updatefail", None
+			
+		else:
+                	print("!!EPUB failed to extract.!!")
+                	return "updatefail", None
+		
+		    
+
 	print("Moving previous export. Command is:")
 	print('mv ' + appLocation + '/../UMCloudDj' +\
                     folder_url + ' ' + appLocation + '/../UMCloudDj' +\
@@ -1842,6 +2012,7 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 		    print("Not in root. Skipping move and copy anyway..")
 		    return "newsuccess", None
 
+		#Disabled micro version bit
 		if False:
 		    print("possible move command: " + 'mv ' + "\"" + appLocation + '/../UMCloudDj/media/eXeExport/' +\
                         unid+"/"+epubassetfolder+"\"" + " " +  "\"" + appLocation+'/../UMCloudDj/media/eXeExport/'+\
