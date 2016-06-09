@@ -300,7 +300,7 @@
     }
     $(function() {
          // Get the context of the canvas element we want to select
-         var ctx = document.getElementById("usagereport").getContext("2d");
+         var ctx = document.getElementById("usagereportcanvas").getContext("2d");
          var data = {
 		labels: [
                         {% for child in root.child_groups %}
@@ -424,8 +424,9 @@
 	    <input type="radio" id="radio2" name="radio" ><label for="radio2">Class</label>
 	    <input type="radio" id="radio3" name="radio"><label for="radio3">User</label>
      </div>-->
-     <!--<canvas style="margin-right:0px;" id="usagereport" width="400" height="400"></canvas>-->
+     <canvas style="margin-right:0px;" id="usagereport" width="400" height="400"></canvas>
  </div>
+ <canvas style="margin-right:0px;" id="usagereportcanvas" width="400" height="400"></canvas>
  <p></p>
  <br></br>
   <div style="float: right; width:50%;" id="remoteinfinite"></div>

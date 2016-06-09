@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+{% block title %}Generate a Usage Report {% endblock %}
+{% if form.errors %}
+    <p class="error"> Sorry, that is not a valid selection</p>
+{% endif %}
+
+{% block scriptjs %}
+  <script type="text/javascript" src="{{ STATIC_URL }}js/moment.min.js"></script>
+  <!--<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart.js"></script>-->
+  <script type="text/javascript" src="{{ STATIC_URL }}js/chart.js/dist/Chart.js"></script>
+  <!--<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart-config.js"></script>-->
+  <!--<script type="text/javascript" src="{{ STATIC_URL}}js/chart.js/dist/Chart-config.js"></script>-->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/jstree/dist/themes/default/style.min.css" />
+  <script src="{{ STATIC_URL }}jscss/jstree/dist/jstree.min.js"></script>
+  <style>
+    #ajaxSpinnerContainer {height:51px;}
+    #ajaxSpinnerImage {display:none;}
+  </style>
+  <script type="text/javascript">
+    String.prototype.toHHMMSS = function () {
+    	var sec_num = parseInt(this, 10); // don't forget the second param
+    	var hours   = Math.floor(sec_num / 3600);
+    	var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+	var seconds = sec_num - (hours * 3600) - (minutes * 60);
+
+    	if (hours   < 10) {hours   = "0"+hours;}
+    	if (minutes < 10) {minutes = "0"+minutes;}
+    	if (seconds < 10) {seconds = "0"+seconds;}
+    	var time    = hours+':'+minutes+':'+seconds;
+    	return time;
+    }
+
+    function getChildren(obj){
+        var getchild_json;
+        var getchildren_json=[];
+        for (var c in obj){
+            getchild_json={"data":{
+                "objectName":obj[c].objectName,
+                "total_duration":obj[c].total_duration
+		},
+		"children":getChildren(obj[c].children)
+            }
+            getchildren_json.push(getchild_json);
+	}
+	if (JSON.stringify(getchildren_json) == "[null]"){
+		return []
+	}
+        return getchildren_json;
+    }
+
+    $(document).ready(function(){
+	$('#since_1').datetimepicker({
+                //defaultValue: "09/29/2014",
+                altField: "#since_1_alt",
+                altFieldTimeOnly: false,
+                altFormat: "yy-mm-dd",
+                altTimeFormat: "h:m",
+                altSeparator: "T",
+                defaultDate: +31
+        });
+        $('#until_1').datetimepicker({
+                //defaultValue: "09/29/2014",
+                altField: "#until_1_alt",
+                altFieldTimeOnly: false,
+                altFormat: "yy-mm-dd",
+                altTimeFormat: "h:m",
+                altSeparator: "T",
+                maxDate: "2",
+                setDate: "1"
+        });
+
+	//Gets triggered only when submit is pressed..
+        $('#usagereportform').on('submit', function (e) {
+	    /*
+	    if ($("input[type=checkbox]:checked").length === 0) {
+      		e.preventDefault();
+      		alert('Please select an indicator');
+      		return false;
+       	    }
+	    */
+  	    console.log("Starting..");
+	    /*
+	    var selectedElmsIds = [];
+            var selectedElms=$('#coursesjstree').jstree("get_selected", true);
+            $.each(selectedElms, function(){
+            	selectedElmsIds.push(this.id + "|"+ this.icon.substring(this.icon.lastIndexOf('/') +1));
+            });
+            document.getElementById('coursesjstreefields').value = selectedElmsIds.join(",");
+            var selectedElmsUIds = [];
+            var selectedUElms=$('#usersjstree').jstree("get_selected", true);
+            $.each(selectedUElms, function(){
+           	selectedElmsUIds.push(this.id + "|"+ this.icon.substring(this.icon.lastIndexOf('/') +1));
+            });
+            document.getElementById('usersjstreefields').value = selectedElmsUIds.join(",");
+	    */
+	    e.preventDefault(); //Stops the form from submitting.
+	    var f = $('#usagereportform');
+    	    var action = f.attr("action");
+	    console.log("action: " + action);
+	    console.log("f: " + f);
+    	    var serializedForm = f.serialize();
+	    
+	    $.ajax( {
+                    type: 'post',
+                    data: serializedForm,
+		    data: {
+			'organisation_id': "{{organisation.id}}"
+		    },
+                    url:  '/reports/attendance_public_api/',
+		    complete: function(response){
+			console.log("complete");
+		    },
+                    success: function(response){
+                        var root=response;
+			myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
+			console.log("Main server JSON:");
+                        //console.log(JSON.stringify(root));
+			console.log("\n");
+			var nodes=[];
+			var school_dict = {}
+			var total_teacher_attendance_male = 0;
+			var total_teacher_attendance_female =0;
+			
+			var total_student_attendance_male = 0;
+			var total_student_attendance_female = 0;
+
+			var total_students_male = 0;
+			var total_students_female = 0;
+			
+			var total_teachers_male = 0;
+			var total_teachers_female = 0;
+			for (var key in response){
+				//Key is school id
+				console.log("key: " + key); 
+				//console.log(response[key]);
+				var total_values = {}
+				var days = 0;
+				for (var everydate in response[key]){
+					days = days + 1;
+					//console.log("date: " + everydate);
+					//console.log("date's attendance: " + response[key][everydate]);
+
+					teacher_attendance_male = response[key][everydate].days_attended_teachers_male;
+					teacher_attendance_female = response[key][everydate].days_attended_teachers_female;
+					total_teacher_attendance_male = total_teacher_attendance_male + teacher_attendance_male;
+					total_teacher_attendance_female = total_teacher_attendance_female + teacher_attendance_female;
+
+					student_attendance_male = response[key][everydate].days_attended_students_male;
+					student_attendance_female = response[key][everydate].days_attended_students_female;
+					total_student_attendance_male = total_student_attendance_male + student_attendance_male;
+					total_student_attendance_female = total_student_attendance_female + student_attendance_female;
+
+
+					var students_male = response[key][everydate].students_male;
+					var students_female = response[key][everydate].students_female;
+					total_students_male = total_students_male + students_male;
+					total_students_female = total_students_female + students_female;
+
+					var teachers_male = response[key][everydate].teachers_male;
+					var teachers_female = response[key][everydate].teachers_female;
+					total_teachers_male = total_teachers_male + teachers_male;
+					total_teachers_female = total_teachers_female + teachers_female;
+					for (var attendance in response[key][everydate].children){
+						//console.log("attendance: " + attendance);
+					}
+				}
+				console.log("Total Students Present Male:   " + total_student_attendance_male + "/" + total_students_male);
+				console.log("Total Students Present Female: " + total_student_attendance_female + "/" + total_students_female);
+				console.log("Total Teachers Present Male:   " + total_teacher_attendance_male + "/" + total_teachers_male + "/" + days);
+				console.log("Total Teachers Present Female: " + total_teacher_attendance_female + "/" + total_teachers_female + "/" + days);
+				
+			}
+       		    }//end of ajax success
+            }); //end of ajax
+	}); //end of form submit event
+
+
+	//Set default values..
+	var since = new Date();
+	since.setDate(since.getDate()-31);
+	since = since.getFullYear() + "-" + (since.getMonth() + 1) + "-" + since.getDate();
+	var until = new Date();
+	until.setDate(until.getDate()+7);
+	until = until.getFullYear() + "-" + (until.getMonth() + 1) + "-" + until.getDate();
+	document.getElementById("since_1_alt").value = since; 
+        document.getElementById("until_1_alt").value = until;
+
+
+    }); //end of document ready function
+
+    function hideAjaxSpinnerImage(){
+	    $('#ajaxSpinnerImage').hide();
+    }
+
+    //Set up the buttons and stuff
+    $(function() { 
+	$('#totalduration').puicheckbox();	
+	$('#avgduration').puicheckbox();
+	$('#avgscore').puicheckbox();
+	$('#alluserscheckbox').puicheckbox();
+	$('#allcoursescheckbox').puicheckbox();
+	$('#searchcourses').puiinputtext();
+	$('#searchusers').puiinputtext();
+	$("#radio").buttonset();
+	$("#radiotype").buttonset();
+	$('#default').puitabview();
+	$('#ajaxSpinnerImage').puipanel();
+	$('#container').jstree(/* optional config object here */);
+	$('#since_1').puiinputtext();
+	$('#until_1').puiinputtext();
+	$('#brand').puidropdown();
+	$('#submit').puibutton();
+			
+    }); 
+
+    var prevcolor="";
+    function getRandomColor() {
+   	var letters = '0123456789ABCDEF'.split('');
+    	var color = '#';
+    	for (var i = 0; i < 6; i++ ) {
+            color += letters[Math.floor(Math.random() * 16)];
+    	} 
+    	prevcolor=color;
+    	return color;
+    }
+
+    //New Chart stuff
+    $(function() {
+	var ctxta = document.getElementById("teacher_attendance").getContext("2d");
+	var ctxtg = document.getElementById("teacher_gender").getContext("2d");
+	var data = {
+		labels: [ 
+			"Present",
+			"Absent"
+			],
+		datasets: [
+			{
+				data: [80,20],
+				backgroundColor:[
+					"#FF6384",
+					"#36A2EB"
+				],
+				hoverBackgroundColor: [
+					"#FF6384",
+					"#36A2EB"
+				]
+			}
+			]
+			
+	}
+	var options;
+	var options2 = {
+		//maintainAspectRatio: false,
+		responsive: true
+		};
+	var teacherAttendancePie = new Chart(ctxta, {
+			type: 'pie',
+			data: data,
+			options: options
+		});
+	var teacherGenderPie = new Chart(ctxtg, {
+			type: 'pie', 
+			data: data,
+			options: options
+		});
+    });
+
+    //Old Chart stuff
+    $(function() {
+         // Get the context of the canvas element we want to select
+         var ctx = document.getElementById("usagereport").getContext("2d");
+         var data = {
+		labels: [
+                        {% for child in root.child_groups %}
+                                "{{child.objectType.school_name}}"{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                ],
+
+                datasets: [
+		   	{
+            		label: "My First dataset",
+            		fillColor: "rgba(220,220,220,0.5)",
+            		strokeColor: "rgba(220,220,220,0.8)",
+			//fillColor: getRandomColor(),
+            		highlightFill: "rgba(220,220,220,0.75)",
+            		highlightStroke: "rgba(220,220,220,1)",
+			data:[ 
+			    {% for child in root.child_groups %}
+                                "{{child.total_duration}}"{% if not forloop.last %},{% endif %}
+                            {% endfor %}
+			]
+            		//data: [65, 59, 80 ]
+                    },
+                ]
+         };
+         var options = {
+  		legendTemplate : '<ul>'
+                  +'<% for (var i=0; i<datasets.length; i++) { %>'
+                    +'<li>'
+                    +'<span style=\"background-color:<%=datasets[i].strokeColor %>\">&nbsp;&nbsp;&nbsp; </span>&nbsp;&nbsp;'
+                    +'<% if (datasets[i].label) { %><%= datasets[i].label %><% } %>'
+                  +'</li>'
+                +'<% } %>'
+              +'</ul>',
+  	 }
+         var myLineChart = new Chart(ctx).Bar(data,options);
+    });
+
+
+  </script>
+{% endblock %}
+
+{% block content %}
+<form id="usagereportform" name="usagereportform" action="" method="POST"> {% csrf_token %}
+    <h3>Public Attendance Report
+    {% if organisation %}
+	for organisation : {{organisation}}</h3>
+    {% endif %}
+    <div style="float:left" id="selection" name="selection">
+     <div style="padding-bottom:10px;">
+  		Start date 
+	<input type="text" name="since_1" id="since_1" style="height: 30px; width: 130px;" placeholder="Since" value="" />
+		&nbsp;End date 
+	<input type="text" name="until_1" id="until_1" style="height: 30px; width: 130px;" placeholder="Until"  value="" /> 
+        <select name="allclass" id="allclass" required>
+            <option selected value="Z" required>All Schools</option>
+                {% for every_school in school_list %}
+                    <option value="{{ every_school.id}}">{{ every_school.school_name }}</option>
+                {% endfor %}
+        </select>
+
+	<button id="submit" type="submit" name="submit" value="submit-value">Submit</button>
+	<p></p>
+	<i>Default selection: One month from today</i>
+     </div>
+
+     <div style="display: none;">
+    	<input type="text" name="since_1_alt" id="since_1_alt" value="" style="cursor: pointer;">
+     </div>
+    
+
+    <div style="display: none;">
+        <input type="text" name="until_1_alt" id="until_1_alt" value="" style="cursor: pointer;">
+    </div>
+
+
+    </div> 
+ </form>
+
+   
+ <div id="report-chart" name="report-chart" style="width:25%;">
+	<center>Teachers</center>
+	<canvas style="" id="teacher_attendance" ></canvas>
+	<canvas style="" id="teacher_gender"  ></canvas>
+ </div>
+
+
+ <div id="ajaxSpinnerContainer" class="spinner">
+  <div id="ajaxSpinnerImage" title="Crunching report..">
+   <img src="{{MEDIA_URL}}/spinner.gif" title="working...">
+  </div>
+ </div>
+
+{% endblock %}

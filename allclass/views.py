@@ -255,6 +255,8 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 
     assignedstudents=allclass.students.all();
 
+    unassigned_students = list(set(allstudents) - set(assignedstudents))
+
     #Assigned Teachers mapping
     teacher_role = Role.objects.get(pk=5)
     if teacher_role.role_name != "Teacher":
@@ -337,7 +339,8 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 			'assignedschool':assignedschool, \
 			'all_courses':allcourses, \
 			'assigned_courses':assignedcourses, \
-			'all_students':allstudents,\
+			#'all_students':allstudents,\
+			'all_students' : unassigned_students,\
 			'assigned_students':assignedstudents,\
 			'all_teachers':allteachers,\
 			'assigned_teachers':assignedteachers\

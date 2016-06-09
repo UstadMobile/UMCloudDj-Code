@@ -80,8 +80,8 @@ urlpatterns = patterns('',
 	url(r'^reports/attendance_public_api/$', 'report_statement.views.attendance_public_api', name='attendance_public_api'), #Attendance Public API
 	url(r'^reports/attendance_registrations/$', 'report_statement.views.attendance_get_registration', name='attendance_get_registration'), #Show all registrations 
 	url(r'^reports/attendance_registrations/(?P<registration_id>[-\w]+)/$', 'report_statement.views.attendance_registration_students', name='attendance_registration_students'),
-
 	url(r'^reports/registrations_report_tincanxml/$' ,'report_statement.views.registration_statements_tincanxml', name='registration_statements_tincanxml'),
+	url(r'^reports/public_attendance_report/$', 'report_statement.views.public_attendance_report', name='public_attendance_report'),
 
 	#For ajax fetchings
     	url(r'^fetch/allcategories/$','uploadeXe.views.allrootcategories', name='allcategories'),

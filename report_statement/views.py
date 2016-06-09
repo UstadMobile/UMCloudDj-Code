@@ -3140,9 +3140,9 @@ def attendance_public_api(request):
 									student_gender = "M";
 								
 								if student_gender == "M":
+									every_class_students_male = every_class_students_male + 1;
 									every_class_each_day_attendance.students_male = \
 										every_class_each_day_attendance.students_male + 1;
-									#every_class_students_male = each_day_students_male + 1;
 									if verb == "Skipped":
 										every_class_students_present_male = every_class_students_present_male + 1;
 									elif verb == "Attended":
@@ -3156,7 +3156,7 @@ def attendance_public_api(request):
 										every_class_students_absent_female = every_class_students_absent_female + 1;
 								
 								teacher = every_statement.user
-								teacher_gender = UserProfile(user=teacher).gender
+								teacher_gender = UserProfile.objects.get(user=teacher).gender
 								if teacher_gender == "M":
 									every_class_teachers_male = every_class_teachers_male + 1;
 									every_class_teachers_present_male = every_class_teachers_present_male + 1;
@@ -3269,7 +3269,7 @@ def attendance_public_api(request):
 					#This as a whole object:
 					#date_dict[each_day] = every_school_each_day_attendance
 					#This as string:
-					date_dict[str(each_day)] = every_school_each_day_attendance_data
+					date_dict[str(each_day)] = json.loads(every_school_each_day_attendance_data)
 				#We have date_dict completely filled.
 				
 				school_dict[str(every_school_id)] = date_dict
@@ -3277,7 +3277,6 @@ def attendance_public_api(request):
 			authresponse.write("Reporting calc done. This should go..")
 			authresponse.write("\n")
 			authresponse.write(school_dict)
-			logger.info(school_dict)
 			#return authresponse
 			json_response = json.dumps(school_dict)
 			return HttpResponse(json_response, mimetype="application/json")
@@ -3291,3 +3290,23 @@ def attendance_public_api(request):
             		return authresponse
 	
 		
+
+
+
+"""Report: Usage Report Selection Render
+"""
+#@login_required(login_url="/login/")
+def public_attendance_report(request):
+    logger.info(" A User="+" accessed /reports/public_attendance_report/")
+    try:
+        org_id = request.GET.get('orgid')
+	organisation = Organisation.objects.get(pk=org_id)
+	school_list = School.objects.filter(organisation = organisation)
+    except:
+	#No org id specified
+	school_list = None
+	organisation = None
+	
+    return render_to_response('public_attendance_report.html', {'school_list' : school_list, 'organisation':organisation},
+                                context_instance = RequestContext(request))
+

@@ -1,3 +1,11 @@
+v1.1.100
+-Fix assigned students bug in Class edit
+
+v1.1.00
+-Updated school to take in longitude and latitude and if exact location or no location is set.
+- Bug fixes on Public Attendance Report
+- Updated static files for some report like usage report to look  and function better
+
 v1.0.900
 -Progres on Public Attendance Report
 
