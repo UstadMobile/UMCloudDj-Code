@@ -43,7 +43,7 @@ sudo apt-get install -y screen libjpeg-dev apache2 python python-pip python-virt
 
 #sudo easy_install pip
 
-sudo pip install virtualenv Django==1.6.6 requests coverage Image django_extensions gunicorn==0.14.2 pytz==2012c supervisor==3.0a12 oauth2==1.5.170 bencode==1.0 psycopg2==2.5 isodate==0.4.9 python-dateutil==1.5 unipath==1.0 pycrypto==2.5 lxml==2.3.4 jsonfield==0.9.19 graphviz simplejson phonenumbers
+sudo pip install virtualenv Django==1.6.6 requests coverage Image django_extensions gunicorn==0.14.2 pytz==2012c supervisor==3.0a12 oauth2==1.5.170 bencode==1.0 psycopg2==2.5 isodate==0.4.9 python-dateutil==1.5 unipath==1.0 pycrypto==2.5 lxml==2.3.4 jsonfield==0.9.19 graphviz simplejson phonenumbers reportlab xlsxwriter
 
 sudo apt-get install -y python-pygraphviz
 

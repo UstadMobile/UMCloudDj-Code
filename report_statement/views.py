@@ -53,6 +53,7 @@ from lxml import etree
 import xml.etree.ElementTree as ET
 from urlparse import urlparse
 from opds.views import login_basic_auth
+import xlsxwriter
 
 # This uses the lrs logger for LRS specific information
 logger = logging.getLogger(__name__)
@@ -1361,10 +1362,10 @@ def attendance_registration_students(request, registration_id, template_name='at
 	    except:
 		fingerprinted = ""
             if not fingerprinted:
-		all_students_attendance.append(Student(actor_name, verb, ""))
+		all_students_attendance.append(Student(actor_name, verb, "",""))
                 print("For student: " + actor_name + "->" + verb +  " " )
             else:
-		all_students_attendance.append(Student(actor_name, verb, fingerprinted))
+		all_students_attendance.append(Student(actor_name, verb, fingerprinted, ""))
                 print("For student: " + actor_name + " -> " + verb + " -> fingerprinted: " + fingerprinted +  " " )
 
 
@@ -2322,6 +2323,16 @@ def usage_report_data_ajax_handler(request):
         logger.info("Not a POST request brah, check your code.")
 	return HttpResponse(False)
 
+"""Add values to workshet row
+"""
+def worksheet_add_values_to_row(worksheet,values, row, format):
+    i=0;
+    for every_value in values:
+	i=i+1;
+	worksheet.write(row, i, every_value, format);
+    return worksheet
+    
+
 """Report: Registration Report (Survey Report)
    This report will be made for registration event statements 
    that are part of the organisation. 
@@ -2457,15 +2468,37 @@ def registration_statements_tincanxml(request,\
 
     registration_report_file = appLocation + \
 	'/../UMCloudDj/media/registration_report/registration_report_tincan_' + timestamp + '.csv'
+    registration_report_xlsx_file = appLocation + \
+	'/../UMCloudDj/media/registration_report/registration_report_tincan_' + timestamp + '.xlsx'
+	
     registration_report_filename = 'registration_report/registration_report_tincan_' + timestamp + '.csv'
+    registration_report_xlsx_filename = 'registration_report/registration_report_tincan_' + timestamp + '.xlsx'
 
     g = open(registration_report_file, 'w')
     now = time.strftime("%c")
     g.write("Registration Report for " + now + '\n')
     column_names = "ID|Item|Value|User|Block|Date"
     column_readable_names = column_names
-    #g.write('\n' + column_names + '\n');
-    #g.write('\n'+"ID|Item|Value|User|Block|Date"+'\n');
+    column_names_list = ["ID", "Item", "Value", "User", "Block", "Date"]
+
+    #"Testing the workbook"
+    workbook = xlsxwriter.Workbook(registration_report_xlsx_file)
+    worksheet_report = workbook.add_worksheet("Report")
+    worksheet_report.write('A1', 'Registration Report for ' + now)
+    worksheet_test = workbook.add_worksheet("Test")
+    bold = workbook.add_format({'bold':True})
+    format = workbook.add_format()
+    format.set_align('justify')
+    worksheet_report.set_column('A:F', 10, format)
+    worksheet_report.set_column('G:Z', 25, format)
+    worksheet_report.set_row(1, 45)
+    worksheet_test.write('A1', 'Hello', bold)
+    worksheet_test.write('A2', 'World')
+    worksheet_test.write(3,0,123)
+    worksheet_test.write(3,1,456)
+    #workbook.close()
+    
+    #worksheet_report.write(1,1,"Registration Report for " + now)
 
     logger.info("Generating Registration report (based on tincan.xml)")
 
@@ -2544,7 +2577,9 @@ def registration_statements_tincanxml(request,\
     #It will then arrange the statements in that order so that they
     # look ordered.
     #Update: We want to order the added MCQ columns
+    every_regid_index = 3
     for every_regid in dict_reg:
+	every_regid_index = every_regid_index + 1
 	logger.info("In reg..")
         statements = dict_reg.get(every_regid.encode('utf8'))
   	first_statement = statements[0]
@@ -2635,8 +2670,8 @@ def registration_statements_tincanxml(request,\
 	except:
 	    pass
 
-	logger.info("Name-Activity ID mapping: ") 
-	logger.info(activity_id_name_mapping)
+	#logger.info("Name-Activity ID mapping: ") 
+	#logger.info(activity_id_name_mapping)
 
 	#Arranging statements in order (to make it look better)
 	statements_inorder=[]
@@ -2684,16 +2719,18 @@ def registration_statements_tincanxml(request,\
 			#CBB changing it.
 			
 			column_number = column_number + 1
+			column_names_list.append(readable_name)
 
 			
+		logger.info("column_readable_names: " + column_readable_names);
     		g.write('\n' + column_readable_names.encode('utf8') + '\n');
+		worksheet_report = worksheet_add_values_to_row(worksheet_report, column_names_list, 1, format)
 		made_column_name_row = True
 
-	logger.info("Column Name-Column Number mapping:")
-	logger.info(column_name_number_mapping)
+	#logger.info("Column Name-Column Number mapping:")
+	#logger.info(column_name_number_mapping)
 
 	reg_activity_score_mapping = {}
-	#g.write('\n' + every_regid + "|" + "New" + "|Registration|" + this_username + "|" + blockn.name + "|" + timestamp + '\n')
  	for every_statement in statements_inorder:
 	    result = every_statement.split('|')[1]
 	    result_score = every_statement.split('|')[2]
@@ -2707,7 +2744,7 @@ def registration_statements_tincanxml(request,\
 		result_on_report = result + " Score: " + result_score
 		activity_name = "MCQ " + activity_id
 
-	    logger.info("Getting sum for activity id: " + activity_id)
+	    #logger.info("Getting sum for activity id: " + activity_id)
 	    if activity_id in reg_activity_score_mapping:
 		try:
 		    activity_id_score = int(reg_activity_score_mapping[activity_id])
@@ -2722,12 +2759,13 @@ def registration_statements_tincanxml(request,\
 		
 
 
-	    #g.write("|" + activity_name + "|" + result_on_report + "|" + this_username + "|" + blockn.name + "|" + exact_timestamp + '\n')
 
-	logger.info("Registration's Activity - Score mapping")
-	logger.info(reg_activity_score_mapping)
+	#logger.info("Registration's Activity - Score mapping")
+	#logger.info(reg_activity_score_mapping)
 
+	new_registration_list = ["","New", "Registration", this_username, blockn.name, timestamp]
 	column_score = ""
+	column_score_list = []
 	for every_column_number in column_name_number_mapping:
 		#activity_id = column_name_number_mapping[every_column]
 		activity_id = column_name_number_mapping.get(every_column_number)
@@ -2735,10 +2773,18 @@ def registration_statements_tincanxml(request,\
 		#total_score = reg_activity_score_mapping[activity_id]
 		if total_score:
 			column_score = column_score + "|" + str(total_score)
+			column_score_list.append(total_score)
+			new_registration_list.append(total_score)
+		
 		
 	g.write("|" + "New" + "|Registration|" + this_username + "|" + blockn.name + "|" + timestamp  + column_score + '\n' )
-
 	g.write('\n' + '\n')
+	
+	#Add to index: every_regid_index
+	#new_registration_list = ["","New", "Registration", this_username, blockn.name, timestamp, column_score]
+	worksheet_report = worksheet_add_values_to_row(worksheet_report, new_registration_list, every_regid_index, format)
+	every_regid_index = every_regid_index + 1;
+
 	dict_reg[every_regid] = statements_inorder
 
     all_reg_ids=dict_reg.keys()
@@ -2746,10 +2792,12 @@ def registration_statements_tincanxml(request,\
     regidsdone=[]
 
     g.close()
+    workbook.close()
 
     result="success"
     return render(request, template_name,{'object_list':dict_reg,\
-    	'result':result, 'registration_report_filename':registration_report_filename} )
+    	'result':result, 'registration_report_filename':registration_report_filename,\
+	'registration_report_xlsx_filename':registration_report_xlsx_filename} )
 
 
 

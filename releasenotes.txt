@@ -1,3 +1,10 @@
+
+
+v1.1.250
+- Fixed issue with registration id attedance report
+- Updated set up install build scripts to add reportlab as well as xlsxwriter
+- Added excel report output for Survey Report
+
 v1.1.200
 - Added Pdf generation on classes and school edit.
 - Added count of Students (Available, Selected) on allclass edit

@@ -86,6 +86,8 @@ sudo pip install pygraphviz==1.2
 sudo pip install graphviz
 sudo pip install simplejson
 sudo pip install pytz
+sudo pip install reportlab
+sudo pip install xlsxwriter
 
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
