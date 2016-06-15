@@ -31,6 +31,11 @@ import urllib2, base64, json
 from django import forms #To fix issue #12
 import logging
 
+from reportlab.pdfgen import canvas
+from reportlab.pdfgen.canvas import Canvas
+from reportlab.lib.pagesizes import letter, A4
+from sheetmaker.attendancesheet import AttendanceSheet
+
 logger = logging.getLogger(__name__)
 
 ###################################
@@ -44,7 +49,7 @@ class AllclassForm(ModelForm):
     allclass_location = forms.CharField(required = False) #To fix issue #12
     class Meta:
         model = Allclass
-	fields = ('allclass_name','allclass_desc','allclass_location')
+	fields = ('id','allclass_name','allclass_desc','allclass_location')
 
 """
 This view renders all classes in loged in user's organisation and
@@ -227,6 +232,66 @@ def allclass_create(request, template_name='allclass/allclass_create.html'):
 
     return render(request, template_name, data)
 
+"""Splits an Array in chunks by chunk size
+"""
+def split_list(list, chunk_size):
+	result_list = []
+	while list:
+		result_list.append(list[:chunk_size])
+		list = list[chunk_size:]
+	return result_list
+
+"""
+This will start the Class Attendance Sheet PDF generation for class given
+"""
+@login_required(login_url='/login/')
+def allclass_makepdf(request, allclass_id):
+    logger.info("Making pdf")
+    organisation = User_Organisations.objects.get(\
+                        user_userid=request.user\
+                        ).organisation_organisationid;
+    allclass = get_object_or_404(Allclass, pk=allclass_id)
+    #Check if you have access to do this.
+    logger.info("Checking permissions..")
+    allclass_org = allclass.school.organisation
+    if allclass_org != organisation:
+	return redirect('allclass_table')
+    logger.info("Generating pdf..")
+    student_list = allclass.students.all()
+	
+    logger.info(len(student_list))
+    student_name_list = []
+
+    for every_student in student_list:
+	student_name_list.append(every_student.first_name + " " + every_student.last_name)
+
+    logger.info("Number of students: " + str(len(student_name_list)))
+    response = HttpResponse(content_type = "application/pdf")
+
+    split_student_name_list = split_list(student_name_list, 66)
+    logger.info("Number of sheets: " + str(len(split_student_name_list)))
+    if split_student_name_list is None or split_student_name_list == "" or split_student_name_list == []:
+        return redirect('allclass_table')
+
+    canvas = Canvas(response, pagesize = A4)    
+    i=0;
+    for every_sheet in split_student_name_list:
+	i = i + 1;
+	logger.info("Sheet: " + str(i))
+	sheet = AttendanceSheet( student_names = every_sheet, \
+			status_labels = ["Present", None, None, "Absent"], \
+			title = str(allclass.allclass_name + \
+				" Class Page " + str(i) +"/"+ \
+				str(len(split_student_name_list))))
+	sheet.render_to_canvas(canvas)
+	logger.info("Sheet Created")
+    #sheet.make_canvas(response)
+    canvas.save()
+    logger.info("returning sheet..")
+    return response
+
+
+
 """
 This view will update a new alclass update form and take in the form 
 to update a new class as per POST parameters using Allclass Model Form.
@@ -339,11 +404,11 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 			'assignedschool':assignedschool, \
 			'all_courses':allcourses, \
 			'assigned_courses':assignedcourses, \
-			#'all_students':allstudents,\
 			'all_students' : unassigned_students,\
 			'assigned_students':assignedstudents,\
 			'all_teachers':allteachers,\
-			'assigned_teachers':assignedteachers\
+			'assigned_teachers':assignedteachers,\
+			'allclass':allclass\
 		})
 
 """

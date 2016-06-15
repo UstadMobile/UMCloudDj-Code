@@ -83,6 +83,10 @@ urlpatterns = patterns('',
 	url(r'^reports/registrations_report_tincanxml/$' ,'report_statement.views.registration_statements_tincanxml', name='registration_statements_tincanxml'),
 	url(r'^reports/public_attendance_report/$', 'report_statement.views.public_attendance_report', name='public_attendance_report'),
 
+	#Testing the pdfgen:
+	url(r'^fetch/make_attendance_pdf/(?P<allclass_id>\d+)$', 'allclass.views.allclass_makepdf', name='allclass_makepdf'), #Attendance Sheet PDF gen test
+	url(r'^fetch/make_school_attendance_pdf/(?P<school_id>\d+)$', 'school.views.attendance_pdf', name='school_attendance_pdf'), #Make School Attendance PDF
+
 	#For ajax fetchings
     	url(r'^fetch/allcategories/$','uploadeXe.views.allrootcategories', name='allcategories'),
 	url(r'^fetch/allcategories/(?P<pk>\d+)$','uploadeXe.views.allsubcategories', name='allcategoriespk'),

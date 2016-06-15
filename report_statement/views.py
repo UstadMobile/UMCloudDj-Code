@@ -2829,6 +2829,7 @@ class AttendanceRepresentation(object):
 """
 @csrf_exempt
 def attendance_public_api(request):
+	logger.info("Public Attendance API request..")
         #Keeping it at POST because of BASIC Auth being present
         if request.method != 'POST':
                 json_response = simplejson.dumps( {
@@ -2839,7 +2840,18 @@ def attendance_public_api(request):
                 #Get the date param filter
                 date_since = request.POST['since_1_alt']
                 date_until = request.POST['until_1_alt']
+		logger.info("Dates got:")
+		logger.info(date_since)
+		logger.info(date_until)
+		logger.info(type(date_since))
+		logger.info("To Date converstion: ")
+		date_since = datetime.strptime(date_since[:10], '%Y-%m-%d').date()
+        	date_until = datetime.strptime(date_until[:10], '%Y-%m-%d').date()
+		logger.info(date_since)
+		logger.info(date_until)
+		logger.info(type(date_since))
         except:
+		logger.info("Getting date exception. Taking default one month..")
                 #Default dates for a month before today.
                 date_since = date.today() - td(days=31)
                 date_until = datetime.now().date();
@@ -2912,11 +2924,34 @@ def attendance_public_api(request):
 		#Group by School:
 		#Get all schools if schools are explicitly declared in POST param
 		try:
+			removed = False
+			logger.info("Getting school ids in POST request..");
                 	#If Schools are explicitly given
-                	school_ids = request.POST['school_ids']
-        	except:
+                	school_ids = request.POST.getlist('school_ids[]')
+			logger.info("School IDs Given:")
+			logger.info(school_ids)
+			for every_id in school_ids:
+				try:
+					this_school = School.objects.get(pk=every_id)
+					#Optional (in future for non public to check if authorized.
+				except:
+					logger.info("Couldn't find that school. Skipping.")
+					if every_id == 'Z':
+						raise Exception("All Schools selected.");
+					school_ids.remove(every_id)
+					removed = True
+			if not school_ids:
+				logger.info("School list is empty. Throwing exception")
+				raise Exception("School list is empty, Not valid ids or unauthorized access.");
+			if removed:
+				logger.info("Some Schools were removed becuase they were not valid schools.")
+			
+				
+        	except Exception as school_ex:
                 	#The school ids are not given..
                 	#Get all schools in the organisation:
+			logger.info("Can't get school ids in POST:");
+			logger.info(str(school_ex))
                 	logger.info("Getting all schools in the organisation..")
                 	school_list=School.objects.filter(organisation=organisation);
 			#school_list = School.objects.filter(organisation=organisation);
@@ -3107,10 +3142,15 @@ def attendance_public_api(request):
 									every_class_each_day_attendance.days_absent_teachers_male + 1;
 								#ToDo: replace others..
 								every_class_teachers_absent_male = every_class_teachers_absent_male + 1;
+
+
+								#Also mark all students absent
 							elif teacher_in_class_gender == "F" :
 								every_class_each_day_attendance.days_absent_teachers_female = \
 									every_class_each_day_attendance.days_absent_teachers_female + 1;
 								every_class_teachers_absent_female = every_class_teachers_absent_female + 1;
+							
+								#Also mark all students absent
 							
 							
 						registration_dict = {}
@@ -3291,6 +3331,14 @@ def attendance_public_api(request):
 	
 		
 
+class SchoolNumbers(object):
+	total_students = 0;
+	total_teachers = 0;
+	total_classes = 0;
+	def __init__(self, ts, tt, tc):
+		self.total_students = ts
+		self.total_teachers = tt
+		self.total_classes = tc
 
 
 """Report: Usage Report Selection Render
@@ -3298,15 +3346,36 @@ def attendance_public_api(request):
 #@login_required(login_url="/login/")
 def public_attendance_report(request):
     logger.info(" A User="+" accessed /reports/public_attendance_report/")
-    try:
+    #try:
+    if True:
         org_id = request.GET.get('orgid')
 	organisation = Organisation.objects.get(pk=org_id)
 	school_list = School.objects.filter(organisation = organisation)
-    except:
+	school_deets = {}
+	#Calculate number of students
+	for every_school in school_list:
+
+		allclasses = Allclass.objects.filter(school=every_school)
+		student_count = 0
+		teacher_count = 0
+		allclass_count = 0
+		for every_class in allclasses:
+			student_list = every_class.students.all()
+			student_count = student_count + len(student_list)
+			teacher_list = every_class.teachers.all()
+			teacher_count = teacher_count + len(teacher_list)
+		allclass_count = len(allclasses)
+		every_school_number = SchoolNumbers(student_count, teacher_count, allclass_count)
+		school_deets[str(every_school.id)] = every_school_number
+	
+	#calculate number of Teachers
+    #except:
+    else:
 	#No org id specified
 	school_list = None
 	organisation = None
-	
-    return render_to_response('public_attendance_report.html', {'school_list' : school_list, 'organisation':organisation},
+	school_deets = None
+
+    return render_to_response('public_attendance_report.html', {'school_list' : school_list, 'organisation':organisation, 'school_number' : school_deets},
                                 context_instance = RequestContext(request))
 

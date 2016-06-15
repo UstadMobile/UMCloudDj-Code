@@ -44,12 +44,13 @@
                 {field:'allclass_desc', headerText: 'Description', sortable:true},
                 {field:'allclass_location', headerText: 'Location', sortable:true},
 		{field:'school', headerText: 'School', sortable:true},
+		//{field:'makepdf', headerText: 'Attendance Sheet', sortable:false}
 
             ],
             datasource: [
                 {% if allclasses_as_json %}
                         {% for c in allclasses_as_json %}
-                        {"pk":"{{c.pk}}","allclass_name":"{{c.pk}}: {{c.fields.allclass_name}}","allclass_desc":"{{c.fields.allclass_desc}}", "allclass_location":"{{c.fields.allclass_location}}","school":"{{c.fields.school}}"}{% if not forloop.last %},{% endif %}
+                        {"pk":"{{c.pk}}","allclass_name":"{{c.pk}}: {{c.fields.allclass_name}}","allclass_desc":"{{c.fields.allclass_desc}}", "allclass_location":"{{c.fields.allclass_location}}","school":"{{c.fields.school}}", "makepdf":'<button>Generate</button>'}{% if not forloop.last %},{% endif %}
                         {% endfor %}
                 {% endif %}
                 ],

@@ -67,8 +67,8 @@
                                 effect: 'clip',  
                                 showSourceControls: true,  
                                 showTargetControls: true,  
-                                sourceCaption: 'Available',  
-                                targetCaption: 'Selected',  
+                                sourceCaption: 'Available ({{all_students|length}})',  
+                                targetCaption: 'Selected ({{assigned_students|length}})',  
                                 filter: true,  
 				filterMatchMode: 'contains',
                                 sourceData:all_students,  
@@ -97,16 +97,25 @@
 		        $('#id_school').puidropdown();
 			
                         $('#submit').puibutton();
+			$('#makepdf').puibutton();
                 }
           ); 
+    function generateAttendanceSheet(){
+	//document.getElementById('allclassedit').submit;
+	location.href="/fetch/make_attendance_pdf/{{allclass.id}}";
+    }
 </script>
 {% endblock %}
 {% block title %}Edit Class{% endblock %}
 {% block content %}
 <p cass="error" style="color:red;"><i>{{state}}</i></p>
+
+<div style="margin-left: 35%">
+        <button id="makepdf" type="" name="makepdf" onclick="generateAttendanceSheet();">Generate Attendance Sheet</button>
+        <p></p>
+    </div>
 <form id="allclassedit" method="post">{% csrf_token %}
     <!--{{ form.as_p }}-->
-
     <label>Class Name</label>
 	{{form.allclass_name}}
     <p></p>

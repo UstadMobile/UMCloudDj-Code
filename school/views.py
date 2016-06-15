@@ -24,6 +24,12 @@ import os
 import urllib
 import urllib2, base64, json
 
+from allclass.models import Allclass
+from allclass.views import split_list
+from reportlab.pdfgen.canvas import Canvas
+from reportlab.lib.pagesizes import letter, A4
+from sheetmaker.attendancesheet import AttendanceSheet
+
 ###################################
 # School CRUD
 
@@ -125,7 +131,7 @@ def school_update(request, pk, template_name='school/school_form.html'):
     if form.is_valid():
         form.save()
         return redirect('school_table')
-    return render(request, template_name, {'form':form})
+    return render(request, template_name, {'form':form, 'school': school})
 
 """
 This view will delete a school for the user that belongs to the same org.
@@ -151,4 +157,43 @@ def school_delete(request, pk, template_name='school/school_confirm_delete.html'
         return redirect('school_table')
     return render(request, template_name, {'object':school})
 
+"""School Attendance Pdf generation
+"""
+def attendance_pdf(request, school_id):
+    school = get_object_or_404(School, pk=school_id)
+    user_organisation = User_Organisations.objects.get(\
+	user_userid=request.user\
+	).organisation_organisationid;
+    school_organisation = school.organisation
+    if user_organisation != school_organisation:
+	print("You do not have access")
+	return redirect('school_table')
+
+    response = HttpResponse(content_type = "application/pdf")
+    canvas = Canvas(response, pagesize = A4)
+    #Generate student_name_list
+    #Get all classes in this school:
+    allclasses = Allclass.objects.filter(school=school)
+    student_name_list = []
+    for every_class in allclasses:
+	student_name_list=[]
+	allstudents = every_class.students.all()
+	for every_student in allstudents:
+		student_name_list.append(every_student.first_name + " " + every_student.last_name)
+	split_student_name_list = split_list(student_name_list, 66)
+	if split_student_name_list is None or split_student_name_list == "" or split_student_name_list == []:
+		continue
+	i=0;
+	print("Class: " + every_class.allclass_name + " has " + str(len(student_name_list)) + " studnets.")
+	for every_sheet in split_student_name_list:
+		i = i + 1;
+		sheet = AttendanceSheet( student_names = every_sheet, \
+                        status_labels = ["Present", None, None, "Absent"], \
+			title = str(every_class.allclass_name + \
+				" Class, Page " + str(i) + "/" + \
+				str(len(split_student_name_list))))
+		sheet.render_to_canvas(canvas)
+    canvas.save()
+    print("returning school sheet..")
+    return response
 # Create your views here.

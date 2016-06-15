@@ -1,3 +1,9 @@
+v1.1.200
+- Added Pdf generation on classes and school edit.
+- Added count of Students (Available, Selected) on allclass edit
+- Added Pdf multi page support 
+- Update on Public Attendance View
+
 v1.1.100
 -Fix assigned students bug in Class edit
 

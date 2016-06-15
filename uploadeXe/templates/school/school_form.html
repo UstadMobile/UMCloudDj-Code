@@ -16,14 +16,18 @@
                         $('#id_school_desc').puiinputtext();
                         $('#id_organisation').puidropdown();
                         $('#submit').puibutton();
+			$('#makepdf').puibutton();
                 }
           ); 
+	function generateAttendanceSheet(){
+		location.href="/fetch/make_school_attendance_pdf/{{school.id}}";
+	}
 </script>
 {% endblock %}
 
 {% block title %}Edit School{% endblock %}
 {% block content %}
-
+<button id="makepdf" type="" name="makepdf" onclick="generateAttendanceSheet();">Generate Attendance Sheet</button>
 <form method="post">{% csrf_token %}
     {{ form.as_p }}
     <button id="submit" type="submit" name="submit" value="Create">Submit</button>

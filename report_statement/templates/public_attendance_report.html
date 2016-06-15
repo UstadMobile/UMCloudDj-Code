@@ -1,20 +1,57 @@
-{% extends "base.html" %}
-{% block title %}Generate a Usage Report {% endblock %}
+{% extends "newbase.html" %}
+{% block title %}Public Attendance Dashboard {% endblock %}
 {% if form.errors %}
     <p class="error"> Sorry, that is not a valid selection</p>
 {% endif %}
 
 {% block scriptjs %}
+  
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap/css/bootstrap.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap/js/bootstrap.min.js"></script>
+
+  <!-- Chart.js -->
   <script type="text/javascript" src="{{ STATIC_URL }}js/moment.min.js"></script>
-  <!--<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart.js"></script>-->
   <script type="text/javascript" src="{{ STATIC_URL }}js/chart.js/dist/Chart.js"></script>
-  <!--<script type="text/javascript" src="{{ STATIC_URL}}jscss/chart.js/Chart-config.js"></script>-->
-  <!--<script type="text/javascript" src="{{ STATIC_URL}}js/chart.js/dist/Chart-config.js"></script>-->
-  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/jstree/dist/themes/default/style.min.css" />
-  <script src="{{ STATIC_URL }}jscss/jstree/dist/jstree.min.js"></script>
+
+  <!-- Bootstrap-multiselect -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap-multiselect/dist/css/bootstrap-multiselect.css" />
+  <script type="text/javascript" src="{{ STATIC_URL}}jscss/bootstrap-multiselect/dist/js/bootstrap-multiselect.js"></script>
+  
   <style>
-    #ajaxSpinnerContainer {height:51px;}
-    #ajaxSpinnerImage {display:none;}
+    	#ajaxSpinnerContainer {height:51px;}
+    	#ajaxSpinnerImage {display:none;}
+
+    	canvas {
+    	}
+
+        .half {
+                width: 25%;
+                min-width: 200px;
+                height: 20%;
+                float: left;
+                padding-bottom: 20px;
+        }
+
+        .left{
+                float: left;
+        }
+
+        #map {
+                width: 100%;
+                height: 400px;
+        }
+
+        #map_wrapper {
+                /*height: 400px;*/
+        }
+
+        #map_canvas {
+                width: 90%;
+                height: 400px;
+                margin-left: 5%;
+
+        }
   </style>
   <script type="text/javascript">
     String.prototype.toHHMMSS = function () {
@@ -48,7 +85,11 @@
         return getchildren_json;
     }
 
+
+    //ready (jQuery) called before. In Between HTML documents loaded and bbefore all content(images) have been loaded.
     $(document).ready(function(){
+	console.log("Ready..");
+	$('#school').multiselect();
 	$('#since_1').datetimepicker({
                 //defaultValue: "09/29/2014",
                 altField: "#since_1_alt",
@@ -56,7 +97,8 @@
                 altFormat: "yy-mm-dd",
                 altTimeFormat: "h:m",
                 altSeparator: "T",
-                defaultDate: +31
+                defaultDate: -31,
+		showTimepicker: false
         });
         $('#until_1').datetimepicker({
                 //defaultValue: "09/29/2014",
@@ -66,127 +108,197 @@
                 altTimeFormat: "h:m",
                 altSeparator: "T",
                 maxDate: "2",
-                setDate: "1"
+                setDate: "1",
+		showTimepicker: false
         });
+	//Set default values..
+	var teacherAttendancePie = null;
+    	var teacherGenderPie = null;
+    	var studentAttendancePie = null;
+    	var studentGenderPie = null;
 
-	//Gets triggered only when submit is pressed..
-        $('#usagereportform').on('submit', function (e) {
-	    /*
-	    if ($("input[type=checkbox]:checked").length === 0) {
-      		e.preventDefault();
-      		alert('Please select an indicator');
-      		return false;
-       	    }
-	    */
-  	    console.log("Starting..");
-	    /*
-	    var selectedElmsIds = [];
-            var selectedElms=$('#coursesjstree').jstree("get_selected", true);
-            $.each(selectedElms, function(){
-            	selectedElmsIds.push(this.id + "|"+ this.icon.substring(this.icon.lastIndexOf('/') +1));
-            });
-            document.getElementById('coursesjstreefields').value = selectedElmsIds.join(",");
-            var selectedElmsUIds = [];
-            var selectedUElms=$('#usersjstree').jstree("get_selected", true);
-            $.each(selectedUElms, function(){
-           	selectedElmsUIds.push(this.id + "|"+ this.icon.substring(this.icon.lastIndexOf('/') +1));
-            });
-            document.getElementById('usersjstreefields').value = selectedElmsUIds.join(",");
-	    */
+        var since = new Date();
+        since.setDate(since.getDate()-31);
+        since = since.getFullYear() + "-" + (since.getMonth() + 1) + "-" + since.getDate();
+        var until = new Date();
+        until.setDate(until.getDate()+1);
+        until = until.getFullYear() + "-" + (until.getMonth() + 1) + "-" + until.getDate();
+        document.getElementById("since_1_alt").value = since;
+        document.getElementById("until_1_alt").value = until;
+	document.getElementById("since_1").value = since;
+	document.getElementById("until_1").value = until;
+
+	$('#public_attendance_form').on('submit', function(e) {
+	    console.log("Getting DATA from API..");
+	    $('#ajaxSpinnerImage').show();
 	    e.preventDefault(); //Stops the form from submitting.
-	    var f = $('#usagereportform');
-    	    var action = f.attr("action");
-	    console.log("action: " + action);
-	    console.log("f: " + f);
+	    var f = $('#public_attendnace_form');
     	    var serializedForm = f.serialize();
-	    
+	    var success = false;
+	    var org_total_teacher_attendance_male = 0;
+            var org_total_teacher_attendance_female =0;
+
+	    var org_total_teacher_absent_male = 0;
+	    var org_total_teacher_absent_female = 0;
+
+            var org_total_student_attendance_male = 0;
+            var org_total_student_attendance_female = 0;
+
+            var org_total_students_male = 0;
+            var org_total_students_female = 0;
+
+            var org_total_teachers_male = 0;
+            var org_total_teachers_female = 0;
+		
+	    var org_teacher_present_percentage;
+	    var org_teacher_female_percentage;
+	    var org_student_present_percentage;
+	    var org_student_female_percentage;
+	    var organistaion_id = {{organisation.id}};
+	    schoolids = [];
+
+	    school_ids = $('#school').val();
+	    for (var i = 0; i < school_ids.length; i++) {
+		schoolids.push(school_ids[i]);
+	    }
+	
 	    $.ajax( {
                     type: 'post',
                     data: serializedForm,
 		    data: {
-			'organisation_id': "{{organisation.id}}"
+			'organisation_id' : {{organisation.id}},
+			'since_1_alt':document.getElementById("since_1_alt").value,
+			'until_1_alt':document.getElementById("until_1_alt").value,
+			'school_ids' : schoolids
 		    },
                     url:  '/reports/attendance_public_api/',
 		    complete: function(response){
-			console.log("complete");
+			if (success == true){
+				console.log("succesfully completed post calculations.");
+				console.log("Teacher Present %: " + org_teacher_present_percentage);
+				console.log("Teacher Female %:  " + org_teacher_female_percentage);
+                        	console.log("Student Present %: " + org_student_present_percentage);
+                        	console.log("Student Female %:  " + org_student_female_percentage);
+				teacherStudentPie(org_teacher_present_percentage, org_teacher_female_percentage, org_student_present_percentage, org_student_female_percentage, school_dict);
+				initializeMap();
+				hideAjaxSpinnerImage();
+			}
 		    },
                     success: function(response){
+			success = true;
                         var root=response;
-			myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
-			console.log("Main server JSON:");
-                        //console.log(JSON.stringify(root));
-			console.log("\n");
+			//myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
 			var nodes=[];
-			var school_dict = {}
-			var total_teacher_attendance_male = 0;
-			var total_teacher_attendance_female =0;
-			
-			var total_student_attendance_male = 0;
-			var total_student_attendance_female = 0;
-
-			var total_students_male = 0;
-			var total_students_female = 0;
-			
-			var total_teachers_male = 0;
-			var total_teachers_female = 0;
+			console.log("Looping through api response..");
+			var total_days =0
 			for (var key in response){
-				//Key is school id
-				console.log("key: " + key); 
-				//console.log(response[key]);
 				var total_values = {}
 				var days = 0;
+			
+				//New addition:
+				var total_teacher_attendance_male = 0;
+                        	var total_teacher_attendance_female =0;
+
+                        	var total_teacher_absent_male = 0;
+                        	var total_teacher_absent_female = 0;
+
+                        	var total_student_attendance_male = 0;
+                        	var total_student_attendance_female = 0;
+
+                        	var total_students_male = 0;
+                        	var total_students_female = 0;
+
+                        	var total_teachers_male = 0;
+                        	var total_teachers_female = 0;
+
+	
 				for (var everydate in response[key]){
 					days = days + 1;
-					//console.log("date: " + everydate);
-					//console.log("date's attendance: " + response[key][everydate]);
 
-					teacher_attendance_male = response[key][everydate].days_attended_teachers_male;
-					teacher_attendance_female = response[key][everydate].days_attended_teachers_female;
+					var teacher_attendance_male = response[key][everydate].days_attended_teachers_male;
+					var teacher_attendance_female = response[key][everydate].days_attended_teachers_female;
+
+					var teacher_absent_male = response[key][everydate].days_absent_teachers_male;
+					var teacher_absent_female = response[key][everydate].days_absent_teachers_female;
+					
 					total_teacher_attendance_male = total_teacher_attendance_male + teacher_attendance_male;
 					total_teacher_attendance_female = total_teacher_attendance_female + teacher_attendance_female;
 
-					student_attendance_male = response[key][everydate].days_attended_students_male;
-					student_attendance_female = response[key][everydate].days_attended_students_female;
+					total_teacher_absent_male = total_teacher_absent_male + teacher_absent_male;
+					total_teacher_absent_female = total_teacher_absent_female + teacher_absent_female;
+
+					var student_attendance_male = response[key][everydate].days_attended_students_male;
+					var student_attendance_female = response[key][everydate].days_attended_students_female;
 					total_student_attendance_male = total_student_attendance_male + student_attendance_male;
 					total_student_attendance_female = total_student_attendance_female + student_attendance_female;
 
 
 					var students_male = response[key][everydate].students_male;
 					var students_female = response[key][everydate].students_female;
+
 					total_students_male = total_students_male + students_male;
 					total_students_female = total_students_female + students_female;
 
 					var teachers_male = response[key][everydate].teachers_male;
 					var teachers_female = response[key][everydate].teachers_female;
+
 					total_teachers_male = total_teachers_male + teachers_male;
 					total_teachers_female = total_teachers_female + teachers_female;
 					for (var attendance in response[key][everydate].children){
 						//console.log("attendance: " + attendance);
 					}
 				}
-				console.log("Total Students Present Male:   " + total_student_attendance_male + "/" + total_students_male);
-				console.log("Total Students Present Female: " + total_student_attendance_female + "/" + total_students_female);
-				console.log("Total Teachers Present Male:   " + total_teacher_attendance_male + "/" + total_teachers_male + "/" + days);
-				console.log("Total Teachers Present Female: " + total_teacher_attendance_female + "/" + total_teachers_female + "/" + days);
-				
+				total_days = total_days + days;
+
+				org_total_teacher_attendance_male = org_total_teacher_attendance_male + total_teacher_attendance_male;
+                        	org_total_teacher_attendance_female = org_total_teacher_attendance_female + total_teacher_attendance_female;
+		
+				org_total_teacher_absent_male = org_total_teacher_absent_male + total_teacher_absent_male;
+				org_total_teacher_absent_female = org_total_teacher_absent_female + total_teacher_absent_female;
+
+                        	org_total_student_attendance_male = org_total_student_attendance_male + total_student_attendance_male;
+                        	org_total_student_attendance_female = org_total_student_attendance_female + total_student_attendance_female;
+
+                        	org_total_students_male = org_total_students_male + total_students_male;
+                        	org_total_students_female = org_total_students_female + total_students_female;
+
+                        	org_total_teachers_male = org_total_teachers_male + total_teachers_male;
+                        	org_total_teachers_female = org_total_teachers_female + total_teachers_female;
+			
+				//School Attendance Percentage:
+				var school_students_attendance_percentage = ((total_student_attendance_male + total_student_attendance_female ) / ( total_students_male + total_students_female) ) * 100;
+				if (isNaN(school_students_attendance_percentage)){
+					school_students_attendance_percentage = 0;
+				}
+					
+				school_dict[key] = school_students_attendance_percentage.toFixed(1);
+				var school_teachers_attendance_percentage = 0;
+
 			}
+			console.log("Org  Finished counting..");
+			console.log("Org Total Students Present Male:   " + org_total_student_attendance_male + "/" + org_total_students_male);
+			console.log("Org Total Students Present Female: " + org_total_student_attendance_female + "/" + org_total_students_female);
+			console.log("Org Total Teachers Present Male:   " + org_total_teacher_attendance_male + "/" + org_total_teachers_male);
+			console.log("Org Total Teachers Present Female: " + org_total_teacher_attendance_female + "/" + org_total_teachers_female);
+
+			
+			console.log("Org Total Teachers Absent Male :   " + org_total_teacher_absent_male + "/" + total_days);
+			console.log("Org Total Teachers Absent Female : " + org_total_teacher_absent_female + "/" + total_days);
+
+			org_teacher_absent_percentage = ( ( org_total_teacher_absent_male + org_total_teacher_absent_female) / (org_total_teachers_male + org_total_teachers_female) ) * 100;
+			org_teacher_present_percentage = (100 - org_teacher_absent_percentage);
+			org_teacher_female_percentage = ( org_total_teachers_female / (org_total_teachers_female + org_total_teachers_male))*100;
+			org_student_present_percentage = ( (org_total_student_attendance_male + org_total_student_attendance_female) / (org_total_students_male + org_total_students_female) ) * 100;
+			org_student_female_percentage = ( org_total_students_female / (org_total_students_female + org_total_students_male) ) * 100;
+
+				
+			//}
        		    }//end of ajax success
             }); //end of ajax
 	}); //end of form submit event
 
+    });//end of jQuery ready
 
-	//Set default values..
-	var since = new Date();
-	since.setDate(since.getDate()-31);
-	since = since.getFullYear() + "-" + (since.getMonth() + 1) + "-" + since.getDate();
-	var until = new Date();
-	until.setDate(until.getDate()+7);
-	until = until.getFullYear() + "-" + (until.getMonth() + 1) + "-" + until.getDate();
-	document.getElementById("since_1_alt").value = since; 
-        document.getElementById("until_1_alt").value = until;
-
-
-    }); //end of document ready function
 
     function hideAjaxSpinnerImage(){
 	    $('#ajaxSpinnerImage').hide();
@@ -205,11 +317,10 @@
 	$("#radiotype").buttonset();
 	$('#default').puitabview();
 	$('#ajaxSpinnerImage').puipanel();
-	$('#container').jstree(/* optional config object here */);
 	$('#since_1').puiinputtext();
 	$('#until_1').puiinputtext();
 	$('#brand').puidropdown();
-	$('#submit').puibutton();
+	$('#attendance_submit').puibutton();
 			
     }); 
 
@@ -224,112 +335,266 @@
     	return color;
     }
 
+    var teacherAttendancePie = null;
+    var teacherGenderPie = null;
+    var studentAttendancePie = null;
+    var studentGenderPie = null;
+    var school_dict = {}
+    var schoolids = [];
+    var school_ids = null;
+
     //New Chart stuff
-    $(function() {
+    //$(function() {
+    function teacherStudentPie(org_teacher_present_percentage, org_teacher_female_percentage, org_student_present_percentage, org_student_female_percentage, school_dict){
+
+	org_teacher_present_percentage = org_teacher_present_percentage.toFixed(1);
+	org_teacher_female_percentage = org_teacher_female_percentage.toFixed(1);
+	org_student_present_percentage = org_student_present_percentage.toFixed(1);
+	org_student_female_percentage = org_student_female_percentage.toFixed(1);
+
 	var ctxta = document.getElementById("teacher_attendance").getContext("2d");
+	var ctxta_canvas = document.getElementById("teacher_attendance");
 	var ctxtg = document.getElementById("teacher_gender").getContext("2d");
-	var data = {
-		labels: [ 
-			"Present",
-			"Absent"
-			],
-		datasets: [
-			{
-				data: [80,20],
-				backgroundColor:[
-					"#FF6384",
-					"#36A2EB"
-				],
-				hoverBackgroundColor: [
-					"#FF6384",
-					"#36A2EB"
-				]
-			}
-			]
-			
+	var ctxtg_canvas = document.getElementById("teacher_gender");
+	var ctxsa = document.getElementById("student_attendance").getContext("2d");
+	var ctxsa_canvas = document.getElementById("student_attendance");
+	var ctxsg = document.getElementById("student_gender").getContext("2d");
+	var ctxsg_canvas = document.getElementById("student_gender");
+
+
+	//Clear canvas first
+	ctxta.clearRect(0, 0, ctxta_canvas.width, ctxta_canvas.height);
+	ctxtg.clearRect(0, 0, ctxtg_canvas.width, ctxtg_canvas.height);
+	ctxsa.clearRect(0, 0, ctxsa_canvas.width, ctxsa_canvas.height);
+	ctxtg.clearRect(0, 0, ctxsg_canvas.width, ctxsg_canvas.height);
+	if(teacherAttendancePie != null){
+		teacherAttendancePie.destroy();
 	}
+	if(teacherGenderPie != null){
+		teacherGenderPie.destroy();
+	}
+	if(studentAttendancePie != null){
+		studentAttendancePie.destroy();
+	}
+	if(studentGenderPie != null){
+		studentGenderPie.destroy();
+	}
+	
+
+	var teacherAttendanceData = { labels: ["Present","Absent"],datasets:[{data:[org_teacher_present_percentage,(100 - org_teacher_present_percentage).toFixed(1)],backgroundColor:["#36A2EB", "#FF6384"],hoverBackgroundColor:["#36A2EB", "#FF6384"]}]};
+	var teacherGenderData = { labels: ["Female","Male"],datasets:[{data:[org_teacher_female_percentage, (100-org_teacher_female_percentage)],backgroundColor:["#50B432", "#FFCE56"],hoverBackgroundColor:["#50B432", "#FFCE56"]}]};
+	var studentAttendanceData = { labels: ["Present","Absent"],datasets:[{data:[org_student_present_percentage, (100-org_student_present_percentage)],backgroundColor:["#36A2EB", "#FF6384"],hoverBackgroundColor:["#36A2EB", "#FF6384"]}]};
+	var studentGenderData = { labels: ["Female","Male"],datasets:[{data:[org_student_female_percentage, (100-org_student_female_percentage)],backgroundColor:["#50b432", "#FFCE56"],hoverBackgroundColor:["#50B432", "#FFCE56"]}]};
+
 	var options;
 	var options2 = {
 		//maintainAspectRatio: false,
 		responsive: true
 		};
-	var teacherAttendancePie = new Chart(ctxta, {
+
+	teacherAttendancePie = new Chart(ctxta, {
 			type: 'pie',
-			data: data,
+			data: teacherAttendanceData,
 			options: options
 		});
-	var teacherGenderPie = new Chart(ctxtg, {
+	teacherGenderPie = new Chart(ctxtg, {
 			type: 'pie', 
-			data: data,
+			data: teacherGenderData,
 			options: options
 		});
+	studentAttendancePie = new Chart(ctxsa, {
+			type: 'pie',
+			data: studentAttendanceData,
+			options: options
+		});
+	studentGenderPie = new Chart(ctxsg, {
+			type: 'pie',
+			data: studentGenderData,
+			options: options
+		});
+
+    //});
+    }
+
+        jQuery(function($) {
+    		// Asynchronously Load the map API
+    		var script = document.createElement('script');
+    		//script.src = "//maps.googleapis.com/maps/api/js?sensor=false&callback=initializeMap";
+    		script.src = "//maps.googleapis.com/maps/api/js?sensor=false";
+    		document.body.appendChild(script);
+	});
+
+  function initializeMap() {
+    console.log("Updating attendance data in initializeMap..");
+
+    var attendance_data = [
+                {% for every_school in school_list %}
+                  {% if every_school.longitude != None %}
+                          {% for key, value in school_number.items %}
+                                {% if every_school.id|slugify == key %}
+                                        ['<h3><center>{{every_school.school_name}} School<center></h3><p>{{value.total_students}} Students</p><p>{{value.total_teachers}} Teacher</p><h3> ' + school_dict[{{key}}] + ' % Attendance</h3><img style="width:30px; height: 30px;" src="/media/images/100px-ArrowIcon.png" alt="Ustad_Mobile_UMCloud_logo" align="right"/>'],
+                                {% endif %}
+                          {% endfor %}
+                  {% endif %}
+                {% endfor %}
+                ];
+
+    console.log("--------------------");
+    var school_list = [];
+    var school_count = {{school_list|length}};
+    console.log("Schools asked:   " + schoolids.length + "/" + school_count + "(" + schoolids + ")");
+
+    var school_list = new Array(school_count);
+    for (i=0;i<school_count; i++){
+	school_list[i] = new Array(4);
+    }
+
+    {% for every_school in school_list %}
+	school_list[{{ forloop.counter0 }}][0] = "{{every_school.id}}";
+	school_list[{{ forloop.counter0 }}][1] = "{{every_school.school_name}}";
+	school_list[{{ forloop.counter0 }}][2] = "{{every_school.longitude}}";
+	school_list[{{ forloop.counter0 }}][3] = "{{every_school.lattitude}}";
+	
+    {% endfor %}
+    //console.log("school_list: " + school_list);
+    for(i=0;i<school_count;i++){
+ 	console.log("School List #" + i + " : " + school_list[i]);
+    }
+
+    var markers_data= new Array(schoolids.length);
+    for(i=0;i<schoolids.length;i++){
+	markers_data[i] = new Array(3);
+    }
+    var j=0;
+    for (i=0;i<school_count;i++){
+	if (schoolids.includes(school_list[i][0])){
+		markers_data[j] = [school_list[i][1], school_list[i][2], school_list[i][3]];
+		j++;
+	}
+    }
+    for(j=0;j<schoolids.length;j++){
+	console.log("Mark School List #" + j + " : " + markers_data[j]);
+    }
+	
+
+    /*
+    var markers = [
+                {% for every_school in school_list %}
+                  {% if every_school.longitude != None %}
+                        ['{{every_school.school_name}}', '{{every_school.longitude}}', '{{every_school.lattitude}}', 'Attendance Data about: {{every_school.school_name}}']{% if not forloop.last %},{% endif %}
+                  {% endif %}
+                {% endfor %}
+        ];
+    console.log(markers);
+    */
+    var markers = markers_data;
+
+    for (everyid in schoolids){
+	if (schoolids[everyid] == "Z"){
+		console.log("Adding all Schools to the Marker list");
+		markers = [
+                {% for every_school in school_list %}
+                  {% if every_school.longitude != None %}
+                        ['{{every_school.school_name}}', '{{every_school.longitude}}', '{{every_school.lattitude}}', 'Attendance Data about: {{every_school.school_name}}']{% if not forloop.last %},{% endif %}
+                  {% endif %}
+                {% endfor %}
+        	];
+	}
+    }
+
+    /*
+    var attendance_data_wip = new Array(schoolids.length);
+    for(i=0;i<schoolids.length;i++){
+	attendance_data_wip[i] = new Array(1);
+    }
+    for (i=0;i<schoolids.length;i++){
+	console.log(".");
+	attendance_data_wip[i][0]='<h3><center> ' + {{every_school.school_name}}+ ' School<center></h3><p>' + {{value.total_students}} + ' Students</p><p>' + {{value.total_teachers}} + ' Teacher</p><h3> ' + school_dict[schoolids[i]] + ' % Attendance</h3><img style="width:30px; height: 30px;" src="/media/images/100px-ArrowIcon.png" alt="Ustad_Mobile_UMCloud_logo" align="right"/>';
+	
+    }
+    for(j=0;j<schoolids.length;j++){
+	console.log("Attendance_data: " + attendance_data_wip[j]);
+    }
+    */
+    
+    console.log("-------------------");
+
+    var map;
+    var bounds = new google.maps.LatLngBounds();
+    var mapOptions = {
+        mapTypeId: 'roadmap'
+    };
+    // Display a map on the page
+    map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+    map.setTilt(45);
+
+    // Display multiple markers on a map
+    var infoWindow = new google.maps.InfoWindow(), marker, i;
+
+    // Loop through our array of markers & place each one on the map
+    for( i = 0; i < markers.length; i++ ) {
+        var position = new google.maps.LatLng(markers[i][1], markers[i][2]);
+        bounds.extend(position);
+        marker = new google.maps.Marker({
+            position: position,
+            map: map,
+            title: markers[i][0]
+        });
+
+        // Allow each marker to have an info window
+        google.maps.event.addListener(marker, 'click', (function(marker, i) {
+            return function() {
+                infoWindow.setContent(attendance_data[i][0]);
+                infoWindow.open(map, marker);
+            }
+        })(marker, i));
+
+        // Automatically center the map fitting all markers on the screen
+        map.fitBounds(bounds);
+    }
+    // Override our map zoom level once our fitBounds function runs (Make sure it only runs once)
+    var boundsListener = google.maps.event.addListener((map), 'bounds_changed', function(event) {
+        //this.setZoom(14);
+        google.maps.event.removeListener(boundsListener);
     });
+  }
 
-    //Old Chart stuff
-    $(function() {
-         // Get the context of the canvas element we want to select
-         var ctx = document.getElementById("usagereport").getContext("2d");
-         var data = {
-		labels: [
-                        {% for child in root.child_groups %}
-                                "{{child.objectType.school_name}}"{% if not forloop.last %},{% endif %}
-                        {% endfor %}
-                ],
-
-                datasets: [
-		   	{
-            		label: "My First dataset",
-            		fillColor: "rgba(220,220,220,0.5)",
-            		strokeColor: "rgba(220,220,220,0.8)",
-			//fillColor: getRandomColor(),
-            		highlightFill: "rgba(220,220,220,0.75)",
-            		highlightStroke: "rgba(220,220,220,1)",
-			data:[ 
-			    {% for child in root.child_groups %}
-                                "{{child.total_duration}}"{% if not forloop.last %},{% endif %}
-                            {% endfor %}
-			]
-            		//data: [65, 59, 80 ]
-                    },
-                ]
-         };
-         var options = {
-  		legendTemplate : '<ul>'
-                  +'<% for (var i=0; i<datasets.length; i++) { %>'
-                    +'<li>'
-                    +'<span style=\"background-color:<%=datasets[i].strokeColor %>\">&nbsp;&nbsp;&nbsp; </span>&nbsp;&nbsp;'
-                    +'<% if (datasets[i].label) { %><%= datasets[i].label %><% } %>'
-                  +'</li>'
-                +'<% } %>'
-              +'</ul>',
-  	 }
-         var myLineChart = new Chart(ctx).Bar(data,options);
-    });
-
+  window.onload = function(){
+	console.log("On load.");
+	$('#ajaxSpinnerImage').show();
+	setTimeout(function () {
+		console.log("Hey this will show up in 5 seconds..");
+		$('#attendance_submit').click();
+    	}, 2000);
+  }
 
   </script>
 {% endblock %}
 
 {% block content %}
-<form id="usagereportform" name="usagereportform" action="" method="POST"> {% csrf_token %}
-    <h3>Public Attendance Report
+
+<form id="public_attendance_form" name="public_attendance_form" action="" method="POST"> {% csrf_token %}
+    <center><h3>Public Attendance Dashboard
     {% if organisation %}
-	for organisation : {{organisation}}</h3>
+	for organisation : {{organisation}}</h3></center>
+    {% else %}
+	</center>
     {% endif %}
-    <div style="float:left" id="selection" name="selection">
-     <div style="padding-bottom:10px;">
+    <p></p>
+    <div style="" id="selection" name="selection">
+     <div style="text-align: center;padding-top:10px;padding-bottom:0px;">
   		Start date 
 	<input type="text" name="since_1" id="since_1" style="height: 30px; width: 130px;" placeholder="Since" value="" />
 		&nbsp;End date 
 	<input type="text" name="until_1" id="until_1" style="height: 30px; width: 130px;" placeholder="Until"  value="" /> 
-        <select name="allclass" id="allclass" required>
+        <select multiple="multiple" name="school" id="school" required>
             <option selected value="Z" required>All Schools</option>
                 {% for every_school in school_list %}
                     <option value="{{ every_school.id}}">{{ every_school.school_name }}</option>
                 {% endfor %}
         </select>
 
-	<button id="submit" type="submit" name="submit" value="submit-value">Submit</button>
+	<button id="attendance_submit" type="submit" name="attendance_submit" value="submit-value">Submit</button>
 	<p></p>
 	<i>Default selection: One month from today</i>
      </div>
@@ -346,19 +611,43 @@
 
     </div> 
  </form>
-
-   
- <div id="report-chart" name="report-chart" style="width:25%;">
-	<center>Teachers</center>
-	<canvas style="" id="teacher_attendance" ></canvas>
-	<canvas style="" id="teacher_gender"  ></canvas>
- </div>
-
-
- <div id="ajaxSpinnerContainer" class="spinner">
+<div id="ajaxSpinnerContainer" class="spinner">
   <div id="ajaxSpinnerImage" title="Crunching report..">
-   <img src="{{MEDIA_URL}}/spinner.gif" title="working...">
+   <img src="{{MEDIA_URL}}/spinner.gif" title="Working..">
   </div>
  </div>
+
+
+<div class="">
+ <div class="half" id="teacher-attendance" name="teacher-attendancec" style="">
+	<p style="float:right;">Teachers</p>
+	<canvas class="left" id="teacher_attendance" width="200" height="175" ></canvas>
+ </div>
+ <div class="half" id="teacher-gender" name="teacher-gender" style="">
+	<p style="float:right;">&nbsp;</p>
+	<canvas class="left" id="teacher_gender" width="200" height="175"></canvas>
+ </div>
+</div>
+
+
+<div class="">
+ <div class="half" id="student-attendance" name="student-attendance" style="">
+	<p style="float:right;">Students</p>
+	<canvas class="left" id="student_attendance" width="200" height="175"></canvas>
+ </div>
+ <div class="half" id="student-gender" name="student-gender" style="">
+	<p style="float:right;">&nbsp;</p>
+	<canvas class="left" id="student_gender" width="200" height="175"></canvas>
+ </div>
+</div>
+
+
+ <div id="map_wrapper">
+    <div id="map_canvas" class="mapping"></div>
+ </div>
+
+ <br></br>
+
+ <footer style="text-align: right;">Powered by <img style="width:10%;min-width:100px;" src="/media/images/logoUMlong.png" alt="Ustad_Mobile_UMCloud_logo" align=""/></footer>
 
 {% endblock %}
