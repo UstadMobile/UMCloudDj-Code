@@ -54,6 +54,9 @@ import xml.etree.ElementTree as ET
 from urlparse import urlparse
 from opds.views import login_basic_auth
 import xlsxwriter
+from uploadeXe.models import Weekday
+from uploadeXe.models import Week_Day_Time
+from uploadeXe.models import DateTime
 
 # This uses the lrs logger for LRS specific information
 logger = logging.getLogger(__name__)
@@ -3058,37 +3061,17 @@ def attendance_public_api(request):
 					logger.info("School: " + str(every_school_id) + " has no classes in it. Skipping")
 					continue #..to next for every school loop 
 					
-				"""
-				every_school_total_students_male = 0;
-				every_school_total_students_female = 0;
-				every_school_total_teachers_male = 0;
-				every_school_total_teachers_female = 0;
-				
-				every_school_total_students_present_male = 0;
-				every_school_total_students_present_female = 0;
-				every_school_total_teachers_present_male = 0;
-				every_school_total_teachers_present_female = 0;
-				every_school_total_students_absent_male = 0;
-				every_school_total_students_absent_female = 0;
-				every_school_total_teachers_absent_male=0;
-				every_school_total_teachers_absent_female=0;
-				
-				#(self, sm, sf, tm, tf, datm, dabtm, datf, dabtf, dasm, dabsm, dasf, dabsf):
-				every_school_total_attendance = AttendanceRepresentation(\
-					every_school_total_students_male, every_school_total_students_female,\
-					every_school_total_teachers_male, every_school_total_teachers_female,\
-					every_school_total_teachers_present_male, every_school_total_teachers_absent_male,\
-					every_school_total_teachers_present_female, every_school_total_teachers_absent_female,\
-					every_school_total_students_present_male, every_school_total_students_absent_male,\
-					every_school_total_students_present_female, every_school_total_students_absent_female);
-				every_school_total_attendance = AttendanceRepresentation(0,0,0,0,0,0,0,0,0,0,0,0);
-				"""
-				#school_dict[every_school] = every_school_total_attendance
 				
 				date_dict = {}
 				#date_dict[date] = Attendance data 
 				#Lets loop through every single day in that date range..
 				for each_day in alldays_in_daterange:
+					weekends = every_school.weekends.all()
+					each_day_dayid = date.weekday(each_day) + 1
+					each_day_day = Weekday.objects.get(pk=each_day_dayid)
+					if each_day_day in weekends:
+						#logger.info("Weekend!")
+						continue
 					every_school_each_day_students_male = 0;
 					every_school_each_day_students_female = 0;
 					every_school_each_day_teachers_male = 0;
@@ -3116,7 +3099,14 @@ def attendance_public_api(request):
 					
 					#Loop through all classes in the school (for every day as this is in everyday loop)
 					for every_class in every_schools_allclass_list:
-						
+						days = every_class.days.all()
+						days_week_days =[]
+						for each_day_time in days: 
+							days_week_days.append(each_day_time.day)
+						if each_day_day not in days_week_days:
+							logger.info("Class not supposed to be active today.")
+							logger.info(days_weeek_days)
+							continue
 						#That starts with a date group by object:
 						every_class_attendance_data_by_date = {}
 							
@@ -3188,7 +3178,8 @@ def attendance_public_api(request):
 							if teacher_in_class_gender == "M":
 								every_class_each_day_attendance.days_absent_teachers_male = \
 									every_class_each_day_attendance.days_absent_teachers_male + 1;
-								#ToDo: replace others..
+								#TODO: replace others (not required)..
+
 								every_class_teachers_absent_male = every_class_teachers_absent_male + 1;
 
 
@@ -3196,10 +3187,29 @@ def attendance_public_api(request):
 							elif teacher_in_class_gender == "F" :
 								every_class_each_day_attendance.days_absent_teachers_female = \
 									every_class_each_day_attendance.days_absent_teachers_female + 1;
+	
 								every_class_teachers_absent_female = every_class_teachers_absent_female + 1;
 							
 								#Also mark all students absent
-							
+
+							#We have to make students as absent. This is because the way we calculate attendance
+							# is based on the absent and present difference. In this case the teacher is absent
+							# So while we dont have absent/present info data about the students, we must assume
+							# that the students are absent since no attendance was taken, no teacher attended,
+							# and hence no students were attended. 
+						
+							#Get student list for this class
+							# Loop through every student, get its gender
+							# Assign a +1 for male, female
+							all_students_in_this_class = every_class.students.all();
+							for every_student in all_students_in_this_class:
+								every_student_gender = UserProfile.objects.get(user=every_student).gender;
+								if every_student_gender == "M":
+									every_class_students_male = every_class_students_male + 1;
+									every_class_students_absent_male   = every_class_students_absent_male   + 1;
+								if every_student_gender == "F":
+									every_class_students_female = every_class_students_female + 1;
+									every_class_students_absent_female = every_class_students_absent_female + 1;
 							
 						registration_dict = {}
 						
@@ -3232,16 +3242,16 @@ def attendance_public_api(request):
 									every_class_each_day_attendance.students_male = \
 										every_class_each_day_attendance.students_male + 1;
 									if verb == "Skipped":
-										every_class_students_present_male = every_class_students_present_male + 1;
-									elif verb == "Attended":
 										every_class_students_absent_male = every_class_students_absent_male + 1;
+									elif verb == "Attended":
+										every_class_students_present_male = every_class_students_present_male + 1;
 									
 								elif student_gender == "F":
 									every_class_students_female = every_class_students_female + 1;
 									if verb == "Skipped":
-										every_class_students_present_female = every_class_students_present_female + 1;
-									elif verb == "Attended":
 										every_class_students_absent_female = every_class_students_absent_female + 1;
+									elif verb == "Attended":
+										every_class_students_present_female = every_class_students_present_female + 1;
 								
 								teacher = every_statement.user
 								teacher_gender = UserProfile.objects.get(user=teacher).gender
@@ -3275,9 +3285,14 @@ def attendance_public_api(request):
 									#allclass_registration_students_attendance.append(\
 									#   Student(actor_name, verb, fingerprinted) )
 								# We have studentAttendance object
+
+								#TODO: What about the students that are assigned to this class but are not
+								# in the attendance statments list. We have to scan through them and mark 
+								# them as absent. The sheet could only be giving the first few students attendance
+								# And we dont then account for the remaining. Although if students are not part of 
+								# the class anymore then we should make sure the teachers remove them from the class.
 							
 						#Add an attendance by date
-						
 						every_class_each_day_attendance = AttendanceRepresentation(\
 							every_class_students_male, every_class_students_female,\
 							every_class_teachers_male, every_class_teachers_female,\
@@ -3286,15 +3301,6 @@ def attendance_public_api(request):
 							every_class_students_present_male, every_class_students_absent_male,\
 							every_class_students_present_female, every_class_students_absent_female);
 						
-						"""
-						#datm, dabtm, datf, dabtf, dasm, dabsm, dasf, dabsf
-						every_class_attendance_data_by_date[each_day] = \
-							AttendanceRepresentation(every_class_teachers_male,\
-								every_class_teachers_absent_male, every_class_teachers_female,\
-								every_class_students_male, every_class_students_absent_male,\
-										every_class_students_female, every_class_students_absent_female);
-																					
-						"""
 						
 						every_school_each_day_students_male = \
 							every_school_each_day_students_male + every_class_students_male;
@@ -3333,22 +3339,6 @@ def attendance_public_api(request):
 							every_school_each_day_students_present_male, every_school_each_day_students_absent_male,\
 							every_school_each_day_students_present_female, every_school_each_day_students_absent_female);
 					
-					"""
-					#Add all dates to make a class representation
-					
-					every_class_students_male = every_class_students_male + every_class_students_male;
-					every_class_students_female = every_class_students_female + every_class_students_female;
-					every_class_teachers_male = every_class_teachers_male + every_class_teachers_male;
-					every_class_teachers_female = every_class_teachers_female + every_class_teachers_female;
-					every_class_students_present_male = every_class_students_present_male + every_class_students_present_male;
-					every_class_students_present_female = every_class_students_present_female + every_class_students_present_female;
-					every_class_teachers_present_male =  every_class_teachers_present_male + every_class_teachers_present_male;
-					every_class_teachers_present_female = every_class_teachers_present_female + every_class_teachers_present_female;
-					every_class_students_absent_male = every_class_students_absent_male + every_class_students_absent_male;
-					every_class_students_absent_female = every_class_students_absent_female + every_class_students_absent_female;
-					every_class_teachers_absent_male= every_class_teachers_absent_male + every_classs.each_day_teachers_absent_male;
-					every_class_teachers_absent_female= every_class_teachers_absent_female + every_classs.each_day_teachers_absent_female;
-					"""
 
 					#studentAttendanceData = json.dumps(studentAttendance.__dict__) 
 					every_school_each_day_attendance_data = \

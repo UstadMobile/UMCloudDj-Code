@@ -17,10 +17,29 @@
                         $('#id_organisation').puidropdown();
                         $('#submit').puibutton();
 			$('#makepdf').puibutton();
+			$('#days').puiselectbutton({
+			    choices: [
+				{label:'Monday', value:1},
+				{label:'Tuesday', value:2},
+				{label:'Wednesday', value:3},
+				{label:'Thursday', value:4},
+				{label:'Friday', value:5},
+				{label:'Saturday', value:6},
+				{label:'Sunday', value:7},
+			    ],
+			    multiple: true,
+			    formfield: 'days'
+			});
+
                 }
           ); 
 	function generateAttendanceSheet(){
 		location.href="/fetch/make_school_attendance_pdf/{{school.id}}";
+	}
+	window.onload = function(){
+		{% for every_day in weekends %}
+			$('#days').puiselectbutton('selectOption', {{every_day.id}} -1);
+		{% endfor %}
 	}
 </script>
 {% endblock %}
@@ -30,7 +49,8 @@
 <button id="makepdf" type="" name="makepdf" onclick="generateAttendanceSheet();">Generate Attendance Sheet</button>
 <form method="post">{% csrf_token %}
     {{ form.as_p }}
+    <label style="margin-top:3px; margin-bottom:5px;" for="days">Weekend Days:</label>
+    <div id="days"/></div><p></p>
     <button id="submit" type="submit" name="submit" value="Create">Submit</button>
 </form>
-
 {% endblock %}

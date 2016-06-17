@@ -1,5 +1,55 @@
 [
   {
+    "model": "uploadeXe.weekday",
+    "pk": 1,
+    "fields": {
+	"name": "Sunday"
+    }
+  },
+  {
+    "model": "uploadeXe.weekday",
+    "pk": 2,
+    "fields": {
+        "name": "Monday"
+    }
+  },
+  {
+    "model": "uploadeXe.weekday",
+    "pk": 3,
+    "fields": {
+        "name": "Tuesday"
+    }
+  },
+  {
+    "model": "uploadeXe.weekday",
+    "pk": 4,
+    "fields": {
+        "name": "Wednesday"
+    }
+  },
+  {
+    "model": "uploadeXe.weekday",
+    "pk": 5,
+    "fields": {
+        "name": "Thursday"
+    }
+  },
+  {
+    "model": "uploadeXe.weekday",
+    "pk": 6,
+    "fields": {
+        "name": "Friday"
+    }
+  },
+  {
+    "model": "uploadeXe.weekday",
+    "pk": 7,
+    "fields": {
+        "name": "Saturday"
+    }
+  },
+  
+  {
     "model": "uploadeXe.role",
     "pk": 1,
     "fields": {

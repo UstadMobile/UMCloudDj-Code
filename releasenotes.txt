@@ -1,4 +1,9 @@
-
+v1.1.300
+- Added Weekend option for School and Days of work in the week for Classes
+- Updated models for the same
+- Updated Public Attendance Report to account for holiday days, working days
+- Updated Public Attendance Dashboard to show proper number
+- Updated Public Attendance Report : fixed calculation logic.
 
 v1.1.250
 - Fixed issue with registration id attedance report

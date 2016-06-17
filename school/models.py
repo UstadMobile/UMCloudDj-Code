@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from organisation.models import Organisation
 from decimal import Decimal
+#from uploadeXe.models import Weekday
 
 """
 This is the model for schools. Schools are directly
@@ -15,6 +16,8 @@ class School(models.Model):
    lattitude = models.DecimalField(max_digits= 9, decimal_places = 6, null = True)
    show_location = models.BooleanField(default = False)
    show_exact_location = models.BooleanField(default = False)
+   weekends = models.ManyToManyField('uploadeXe.Weekday', null = True)
+   #holidays = models.ManyToManyField('uploadeXe.DateTime', null = True)
 
    def __unicode__(self):
 	return u'%s ' % (self.school_name)

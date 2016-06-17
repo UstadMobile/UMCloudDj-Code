@@ -7,6 +7,34 @@ from allclass.models import Allclass
 import os
 import uuid
 import time
+import datetime
+
+"""
+This is a model for days in the week
+"""
+class Weekday(models.Model):
+   name = models.CharField(max_length=300)
+   def __unicode__(self):
+	return u'%s' % (self.name)
+
+
+"""
+This is a model for days of the week.
+"""
+class Week_Day_Time(models.Model):
+   #day_name = models.CharField(max_length=300)
+   day = models.ForeignKey(Weekday, related_name='week_day')
+   from_time = models.TimeField(default = datetime.time(00,00))
+   to_time = models.TimeField(default=datetime.time(23,59))
+
+   def __unicode__(self):
+        return u'%s ' % (self.day + "(" + str(from_time) + "-" + str(to_time) + ")")
+
+"""
+This is a date model
+"""
+class DateTime(models.Model):
+    date = models.DateTimeField()
 
 """used for getting and setting path to elp "blocks" from external
 (eXe) and direc upload from umcloud portal

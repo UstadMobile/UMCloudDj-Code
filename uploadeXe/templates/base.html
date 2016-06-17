@@ -117,12 +117,24 @@
 	<link rel="icon" href="/media/favicon.ico" type="image/x-icon">
 	<!--PrimeUI Stuff-->
 	<link rel="stylesheet" href="{{ STATIC_URL }}jscss/jqui/themes/base/jquery-ui.css" />
+
+	<!-- OLD
         <link rel="stylesheet" href="{{ STATIC_URL }}jscss/primeui/primeui-1.1/themes/aristo/theme.css" />
         <link rel="stylesheet" href="{{ STATIC_URL }}jscss/primeui/um-primeui-1.1-min.css" />
+	-->
+	<link rel="stylesheet" href="{{ STATIC_URL }}jscss/primeui/primeui-1.1/themes/aristo/theme.css" />
+        <link rel="stylesheet" href="{{ STATIC_URL }}jscss/primeui/um-primeui-1.1-min.css" />
+	<!--<link rel="stylesheet" href="{{ STATIC_URL }}jscss/primeui/primeui-4.1.12/primeui-all.min.css"/>-->
+		
         <script type="text/javascript" src="{{ STATIC_URL}}jscss/js/jquery-1.11.0.js"></script>
         <script type="text/javascript" src="{{ STATIC_URL }}jscss/jqui/ui/jquery-ui.js"></script>
-        <!--<script type="text/javascript" src="{{ STATIC_URL }}jscss/primeui/um-primeui-1.1-min.js"></script>-->
+	
+	<!-- OLD
         <script type="text/javascript" src="{{ STATIC_URL }}jscss/primeui/primeui-1.1/development/primeui-1.1.js"></script>
+	-->
+	<script type="text/javascript" src="{{ STATIC_URL }}jscss/primeui/primeui-1.1/development/primeui-1.1.js"></script>
+	<script type="text/javascript" src="{{ STATIC_URL }}jscss/primeui/primeui-4.1.12/puiselectbutton.js" /><!-- The multiselect is here -->
+	
 	<!--PrimeUI Stuff ends.-->
 	
 	<!-- JSON table: MrJSONTable-->
@@ -156,7 +168,7 @@
 <body>
 	<div id="header">
 		<p></p>
-		<a href="/home/"><img src="/media/images/logoUMlong.png" alt="Ustad_Mobile_UMCloud_logo" align=""/></a><i>    (v1.1.250)</i>
+		<a href="/home/"><img src="/media/images/logoUMlong.png" alt="Ustad_Mobile_UMCloud_logo" align=""/></a><i>    (v1.1.300)</i>
 		{% if current_user %}
 			{{current_user}}
 		{% endif %}

@@ -188,6 +188,7 @@
 			success = true;
                         var root=response;
 			//myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
+			console.log(response);
 			var nodes=[];
 			console.log("Looping through api response..");
 			var total_days =0
@@ -285,7 +286,8 @@
 			console.log("Org Total Teachers Absent Male :   " + org_total_teacher_absent_male + "/" + total_days);
 			console.log("Org Total Teachers Absent Female : " + org_total_teacher_absent_female + "/" + total_days);
 
-			org_teacher_absent_percentage = ( ( org_total_teacher_absent_male + org_total_teacher_absent_female) / (org_total_teachers_male + org_total_teachers_female) ) * 100;
+			//org_teacher_absent_percentage = ( ( org_total_teacher_absent_male + org_total_teacher_absent_female) / (org_total_teachers_male + org_total_teachers_female) ) * 100;
+			org_teacher_absent_percentage = ( ( org_total_teacher_absent_male + org_total_teacher_absent_female) / total_days) * 100;
 			org_teacher_present_percentage = (100 - org_teacher_absent_percentage);
 			org_teacher_female_percentage = ( org_total_teachers_female / (org_total_teachers_female + org_total_teachers_male))*100;
 			org_student_present_percentage = ( (org_total_student_attendance_male + org_total_student_attendance_female) / (org_total_students_male + org_total_students_female) ) * 100;

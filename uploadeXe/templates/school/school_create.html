@@ -18,10 +18,25 @@
                         $('#submit').puibutton();
 			$('#submit2').puibutton();
 
-			$('#notifyme').puigrowl();                  
-        			addMessage = function(msg) {  
-            				$('#notifyme').puigrowl('show', msg);  
-        			}  
+			$('#notifyme').puigrowl(); 
+			$('#days').puiselectbutton({
+			    choices: [
+				{label:'Monday', value:1},
+				{label:'Tuesday', value:2},
+				{label:'Wednesday', value:3},
+				{label:'Thursday', value:4},
+				{label:'Friday', value:5},
+				{label:'Saturday', value:6},
+				{label:'Sunday', value:7},
+			    ],
+			    multiple: true,
+			    formfield: 'days'
+			});
+
+			
+        		addMessage = function(msg) {  
+            			$('#notifyme').puigrowl('show', msg);  
+        		}
         		}); 
 	function codeAddress() {
 		var state="{{state}}"
@@ -30,6 +45,10 @@
 	var state="{{state}}";
 	if(state){
 		window.onload = codeAddress;
+	}
+	window.onload = function(){
+		$('#days').puiselectbutton('selectOption',5);
+		$('#days').puiselectbutton('selectOption',6);
 	}
 </script>
 {% endblock %}
@@ -47,6 +66,8 @@
     <div data-role="fieldcontain">
         <label for="school_desc">School Desc:  </label><input type="text" name="school_desc" id="school_desc" value="" />
     </div>
+    <label style="margin-top:3px; margin-bottom:5px;" for="days">Weekend Days:</label>
+    <div id="days"/></div><p></p>
    <!--<label>Organisation:</label> <select id="organisation" form="newschoolform" name="organisationid">
         {% for organisation in object_list %}
         <option value="{{ organisation.id }}">{{ organisation.organisation_name }}</option>

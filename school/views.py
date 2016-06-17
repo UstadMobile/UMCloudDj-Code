@@ -30,6 +30,8 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.pagesizes import letter, A4
 from sheetmaker.attendancesheet import AttendanceSheet
 
+from uploadeXe.models import Weekday
+
 ###################################
 # School CRUD
 
@@ -83,6 +85,7 @@ def school_create(request, template_name='school/school_create.html', rstate='')
         post = request.POST;
         try:
 		name = post['school_name']
+		weekends_id = post.getlist('days')
 		school_count = School.objects.filter(school_name=name).count()
 		if school_count == 0:
                 	print("Creating the School..")
@@ -96,6 +99,14 @@ def school_create(request, template_name='school/school_create.html', rstate='')
     
     			print("Organisation School mapping success.")
 
+			print("School Weekend mapping");
+			if weekends_id:
+			    school.weekends.clear()
+			for day_id in weekends_id:
+			    this_day = Weekday.objects.get(pk=day_id)
+			    school.weekends.add(this_day)
+			    school.save()
+			
 			state="The School has been created."
 			data['state']=state
 			if 'submittotable' in request.POST:
@@ -127,11 +138,21 @@ POST parameters using School Model Form.
 @login_required(login_url='/login/')
 def school_update(request, pk, template_name='school/school_form.html'):
     school = get_object_or_404(School, pk=pk)
+    weekends = school.weekends.all()
     form = SchoolForm(request.POST or None, instance=school)
     if form.is_valid():
         form.save()
+	weekend_ids = request.POST.getlist('days')
+	print("School Weekend mapping");
+        if weekend_ids:
+        	school.weekends.clear()
+        for day_id in weekend_ids:
+               	this_day = Weekday.objects.get(pk=day_id)
+                school.weekends.add(this_day)
+                school.save()
+
         return redirect('school_table')
-    return render(request, template_name, {'form':form, 'school': school})
+    return render(request, template_name, {'form':form, 'school': school, 'weekends':weekends})
 
 """
 This view will delete a school for the user that belongs to the same org.

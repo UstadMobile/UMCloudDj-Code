@@ -36,6 +36,10 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.pagesizes import letter, A4
 from sheetmaker.attendancesheet import AttendanceSheet
 
+from uploadeXe.models import DateTime
+from uploadeXe.models import Weekday
+from uploadeXe.models import Week_Day_Time
+
 logger = logging.getLogger(__name__)
 
 ###################################
@@ -138,6 +142,8 @@ def allclass_create(request, template_name='allclass/allclass_create.html'):
     if request.method == 'POST':
         post = request.POST;
 	class_name = post['class_name']
+	days_ids = post.getlist('days')
+	logger.info("Day IDS: " + str(days_ids))
 	allclass_count = Allclass.objects.filter(\
 			allclass_name=class_name).count()
 	#Creating the class..
@@ -209,6 +215,15 @@ def allclass_create(request, template_name='allclass/allclass_create.html'):
 			allclass.save()
 		except:
 			print("No teacher given")
+
+		print("Mapping days for this class..");	
+
+		for day_id in days_ids:
+			this_day = Weekday.objects.get(pk=day_id)
+			this_week_day_time = Week_Day_Time(day=this_day)
+			this_week_day_time.save()
+			allclass.days.add(this_week_day_time)
+		allclass.save()
 
 		data['state']="The class: " + allclass.allclass_name + " has been created."
 
@@ -340,6 +355,8 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
     assignedcourses=Course.objects.filter(\
 				allclasses__in =[allclass])
 
+    all_days = allclass.days.all();
+    logger.info(all_days)
 
     allschools=School.objects.filter(organisation=organisation)
     assignedschool=allclass.school
@@ -394,6 +411,17 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 					pk=everycourseid)
 		everycourse.allclasses.add(allclass)
 		everycourse.save()
+
+	days_ids = request.POST.getlist('days')
+	print("Mapping days for this class..");
+
+	for day_id in days_ids:
+		this_day = Weekday.objects.get(pk=day_id)
+		this_week_day_time = Week_Day_Time(day=this_day)
+		this_week_day_time.save()
+		allclass.days.add(this_week_day_time)
+	allclass.save()
+
 	
         return redirect('allclass_table')
     else:
@@ -408,7 +436,8 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 			'assigned_students':assignedstudents,\
 			'all_teachers':allteachers,\
 			'assigned_teachers':assignedteachers,\
-			'allclass':allclass\
+			'allclass':allclass,\
+			'alldays':all_days\
 		})
 
 """

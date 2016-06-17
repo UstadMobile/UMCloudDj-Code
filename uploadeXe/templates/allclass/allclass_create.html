@@ -21,6 +21,15 @@
 			"label" : "{{student.first_name}} {{student.last_name}} ({{student.username}})"
 			},
 		{% endfor %}];
+	window.onload = function(){
+		$('#days').puiselectbutton('selectOption',0);
+                $('#days').puiselectbutton('selectOption',1);
+		$('#days').puiselectbutton('selectOption',2);
+		$('#days').puiselectbutton('selectOption',3);
+		$('#days').puiselectbutton('selectOption',4);
+		//$('#days').puiselectbutton('selectOption',5);
+
+	}
           $(function() { 
 			$('#class_name').puiinputtext();
         		$('#class_desc').puiinputtext();
@@ -29,6 +38,19 @@
 			$('#teacher').puidropdown();
 			$('#submit').puibutton();
 			$('#submit2').puibutton();
+			$('#days').puiselectbutton({
+				choices: [
+					{label:'Monday', value:1},
+					{label:'Tuesday', value:2},
+					{label:'Wednesday', value:3},
+					{label:'Thursday', value:4},
+					{label:'Friday', value:5},
+					{label:'Saturday', value:6},
+					{label:'Sunday', value:7},
+				],
+				multiple: true,
+				formfield: 'days'
+			});
 
 			$('#selectstudentsfornewallclass').puipicklist({  
     				effect: 'clip',  
@@ -93,6 +115,8 @@
     <div data-role="fieldcontain">
         <label for="class_location">Class Location:  </label><input type="text" name="class_location" id="class_location" value="" />
     </div>
+    <label style="margin-top:3px; margin-bottom:5px;" for="days">Days:</label>
+    <div id="days" /></div><p><p>
    <label>School:</label> <select id="school" form="newclassform" name="schoolid">
         {% for school in object_list %}
         <option value="{{ school.id }}">{{ school.school_name }}</option>

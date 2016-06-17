@@ -17,7 +17,9 @@ class Allclass(models.Model):
     students = models.ManyToManyField(User, related_name='allclassstudents')
     teachers = models.ManyToManyField(User, related_name='teachers')
     school = models.ForeignKey(School, null=True)
-    
+    #days = models.ManyToManyField('uploadeXe.Weekday', null = True)
+    #days = models.ManyToManyField('uploadeXe.DateTime', null = True)
+    days = models.ManyToManyField('uploadeXe.Week_Day_Time', null = True)
     def __unicode__(self):
         return u'%s ' % (self.allclass_name)
 # Create your models here.

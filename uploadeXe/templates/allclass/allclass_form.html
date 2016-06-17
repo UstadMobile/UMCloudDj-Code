@@ -98,12 +98,35 @@
 			
                         $('#submit').puibutton();
 			$('#makepdf').puibutton();
+                        $('#days').puiselectbutton({
+                                choices: [
+                                        {label:'Monday', value:1},
+                                        {label:'Tuesday', value:2},
+                                        {label:'Wednesday', value:3},
+                                        {label:'Thursday', value:4},
+                                        {label:'Friday', value:5},
+                                        {label:'Saturday', value:6},
+                                        {label:'Sunday', value:7},
+                                ],
+                                multiple: true,
+                                formfield: 'days'
+                        });
                 }
           ); 
-    function generateAttendanceSheet(){
-	//document.getElementById('allclassedit').submit;
-	location.href="/fetch/make_attendance_pdf/{{allclass.id}}";
-    }
+
+	window.onload = function(){
+
+	    {% for every_day in alldays %}
+		$('#days').puiselectbutton('selectOption', {{every_day.day.id}} -1);
+                //$('#days').puiselectbutton('selectOption',0);
+                //$('#days').puiselectbutton('selectOption',6);
+	    {% endfor %}
+        }
+	
+    	function generateAttendanceSheet(){
+		//document.getElementById('allclassedit').submit;
+		location.href="/fetch/make_attendance_pdf/{{allclass.id}}";
+    	}
 </script>
 {% endblock %}
 {% block title %}Edit Class{% endblock %}
@@ -124,6 +147,9 @@
     <p></p>
     <label>Class Location</label>
 	{{form.allclass_location}}
+    <p></p>
+    <label style="margin-top:3px; margin-bottom:5px;" for="days">Days:</label>
+    <div id="days"/></div><p></p>
      <p></p>
      <label>School</label>
 	<select id="school" form="allclassedit" name="school">
