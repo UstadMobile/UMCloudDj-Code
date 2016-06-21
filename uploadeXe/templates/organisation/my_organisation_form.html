@@ -1,10 +1,26 @@
 {% extends "base.html" %}
 {% block scriptjs %}
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap/css/bootstrap.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap/js/bootstrap.min.js"></script>
+
+  <!-- Bootstrap DatePicker -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap-datepicker/css/bootstrap-datepicker.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+<style>
+	/*Override*/
+	table{
+		width:auto;
+	}
+</style>
 <script type="text/javascript">
           $(function() { 
                         $('#organisation_name').puiinputtext();
                         $('#id_code').puiinputtext();
                         $('#submit').puibutton();
+			$('#holidays').datepicker({
+  				multidate: true
+			});
                 }
           ); 
 </script>
@@ -24,6 +40,7 @@
     {% else %}
         <p><label for="id_public">Public:</label> <input id="id_public" name="public" type="checkbox" /></p>
     {% endif %}
+
     <button id="submit" type="submit" name="submit" value="Create">Update</button>
 </form>
  

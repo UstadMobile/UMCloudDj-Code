@@ -52,6 +52,12 @@ background-image:url(/media/system-settings.png);
     background-position: center left;
     text-align: center;
 }
+#holcal {
+    background-image:url(/media/system-settings.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: center;
+}
 
 
 </style>
@@ -68,6 +74,7 @@ background-image:url(/media/system-settings.png);
 			$('#courses').puibutton();
 			$('#myorg').puibutton();
 			$('#blocks').puibutton();
+			$('#holcal').puibutton();
                 }
           ); 
 </script>
@@ -91,6 +98,7 @@ background-image:url(/media/system-settings.png);
 		<a href="/uploadeXe/managecourses/"><button id="courses" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Courses</button></a>
 		{% if orgadmin_role == True %}
                         <a href="/myorganisation/"><button id="myorg" type="button"style="width:200px;height:100px;margin-top:10px;margin-right:10px;">My Organisation</button></a>
+			<a href="/holiday_calendar/"><button id="holcal" type="button" style="width:200px;height:100px;margin-top:10px;margin-right:10px;">Holiday Calendar</button></a>
                 {% endif %}
 		
 

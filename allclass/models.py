@@ -1,6 +1,7 @@
 from django.db import models
 from school.models import School
 from django.contrib.auth.models import User
+from holiday.models import Calendar
 
 """
 Class object called Allclass because we cant
@@ -20,6 +21,7 @@ class Allclass(models.Model):
     #days = models.ManyToManyField('uploadeXe.Weekday', null = True)
     #days = models.ManyToManyField('uploadeXe.DateTime', null = True)
     days = models.ManyToManyField('uploadeXe.Week_Day_Time', null = True)
+    holidays = models.ManyToManyField(Calendar, null = True)
     def __unicode__(self):
         return u'%s ' % (self.allclass_name)
 # Create your models here.

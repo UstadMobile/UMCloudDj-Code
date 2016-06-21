@@ -40,6 +40,9 @@ from uploadeXe.models import DateTime
 from uploadeXe.models import Weekday
 from uploadeXe.models import Week_Day_Time
 
+from holiday.models import Calendar
+from holiday.views import make_calendar_object
+
 logger = logging.getLogger(__name__)
 
 ###################################
@@ -93,6 +96,8 @@ def allclass_create(request, template_name='allclass/allclass_create.html'):
 						user_userid=request.user\
 						).organisation_organisationid;
     schools = School.objects.filter(organisation=organisation)
+    calendars = Calendar.objects.filter(organisation=organisation)
+
 
     teacher_role = Role.objects.get(pk=5)
     if teacher_role.role_name != "Teacher":
@@ -138,6 +143,7 @@ def allclass_create(request, template_name='allclass/allclass_create.html'):
     data['teacher_list'] = teachers
     data['student_list'] = students
     data['course_list'] = courses
+    data['calendars'] = calendars
 
     if request.method == 'POST':
         post = request.POST;
@@ -224,6 +230,37 @@ def allclass_create(request, template_name='allclass/allclass_create.html'):
 			this_week_day_time.save()
 			allclass.days.add(this_week_day_time)
 		allclass.save()
+
+		print("Mapping holiday calendar if any")
+		print("Checking if Holiday Calendar is given:")
+        	post = request.POST
+        	selected_calendar = post['holiday_calendar']
+        	new_holiday_calendar_name = post['holiday_name']
+        	print("new: " + new_holiday_calendar_name)
+        	hidden_holidays = post['hidden_holidays']
+        	if selected_calendar != None or selected_calendar != "":
+                	if str(selected_calendar) != str(0):
+                        	print(selected_calendar)
+                        	print(type(selected_calendar))
+                        	print("Selecting the calendar : " + str(selected_calendar))
+                        	holiday_calendar = Calendar.objects.get(pk=int(selected_calendar))
+                        	if holiday_calendar:
+                                	if allclass.holidays.all():
+                                        	allclass.holidays.clear()
+                                	allclass.holidays.add(holiday_calendar)
+					allclass.save()
+                                	print("Changed OK")
+                        	else:
+                                	print("No cal found.");
+                	else:
+                        	print("Making new calendar..")
+                        	if new_holiday_calendar_name != "" or new_holiday_calendar_name  != None:
+                                	holiday_calendar, state, statesuccess = make_calendar_object(new_holiday_calendar_name, hidden_holidays, organisation)
+                                	if holiday_calendar:
+                                        	allclass.holidays.clear()
+                                        	allclass.holidays.add(holiday_calendar)
+                                        	allclass.save()
+                                        	print("Made OK")
 
 		data['state']="The class: " + allclass.allclass_name + " has been created."
 
@@ -356,10 +393,16 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 				allclasses__in =[allclass])
 
     all_days = allclass.days.all();
-    logger.info(all_days)
+    #logger.info(all_days)
 
     allschools=School.objects.filter(organisation=organisation)
     assignedschool=allclass.school
+
+    calendars = Calendar.objects.filter(organisation=organisation)
+    allclass_calendars = allclass.holidays.all()
+    selected_calendar = None
+    if allclass_calendars:
+        selected_calendar = allclass_calendars[0]
 
     if form.is_valid():
         form.save()
@@ -421,11 +464,42 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 		this_week_day_time.save()
 		allclass.days.add(this_week_day_time)
 	allclass.save()
-
+	
+	print("Mapping holidays..")
+	print("Checking if Holiday Calendar is given:")
+        post = request.POST
+        selected_calendar = post['holiday_calendar']
+        new_holiday_calendar_name = post['holiday_name']
+        print("new: " + new_holiday_calendar_name)
+        hidden_holidays = post['hidden_holidays']
+        if selected_calendar != None or selected_calendar != "":
+                if str(selected_calendar) != str(0):
+                        print(selected_calendar)
+                        print(type(selected_calendar))
+                        print("Selecting the calendar : " + str(selected_calendar))
+                        holiday_calendar = Calendar.objects.get(pk=int(selected_calendar))
+                        if holiday_calendar:
+                                if allclass.holidays.all():
+                                        allclass.holidays.clear()
+                                allclass.holidays.add(holiday_calendar)
+				allclass.save()
+                                print("Changed OK")
+                        else:
+                                print("No cal found.");
+                else:
+                        print("Making new calendar..")
+                        if new_holiday_calendar_name != "" or new_holiday_calendar_name  != None:
+                                holiday_calendar, state, statesuccess = make_calendar_object(new_holiday_calendar_name, hidden_holidays, organisation)
+                                if holiday_calendar:
+                                        allclass.holidays.clear()
+                                        allclass.holidays.add(holiday_calendar)
+                                        allclass.save()
+                                        print("Made OK")
 	
         return redirect('allclass_table')
     else:
 	print("ALLCLASS UPDATE FORM IS NOT VALID")
+	print("...Or just viewing the class.")
 	
     return render(request, template_name, \
 		{'form':form,'all_schools':allschools, \
@@ -437,7 +511,10 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 			'all_teachers':allteachers,\
 			'assigned_teachers':assignedteachers,\
 			'allclass':allclass,\
-			'alldays':all_days\
+			'alldays':all_days,\
+			'selected_calendar':selected_calendar,\
+			'calendars':calendars\
+			
 		})
 
 """

@@ -1,0 +1,92 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+{% block title %}Manage Holiday Calendars{% endblock %}
+{% block content %}
+<style>
+#newcalendar, #newcalendar1 {
+    background-image: url(/media/images/plus.png);
+    background-repeat: no-repeat;
+    background-position: center left;
+    text-align: right;
+    padding-left: 10px;
+}
+#table {
+	width: 80%;
+}
+.pui-datatable{
+	width: 50%;
+}
+</style>
+<script type="text/javascript">
+  $(function() { 
+    $('#newcalendar').puibutton();
+    $('#newcalendar1').puibutton();
+    $('#tblcalendars').puidatatable({
+            caption: 'Holiday Calendars',
+	    columnResizeMode: 'expand',
+            paginator: {
+                rows: 10
+            },
+            columns: [
+                //{field:'pk', headerText: 'ID', sortable:true},
+                //{field:'model', headerText: 'Django Model', sortable:true},
+                {field:'calendar_name', headerText: 'Calendar Name', sortable:true},
+                //{field:'school_desc', headerText: 'Desc', sortable:true},
+		//{field:'organisation', headerText: 'Org', sortable:true},
+
+            ],
+            datasource: [
+                {% if calendars_as_json %}
+                        {% for c in calendars_as_json %}
+                        {"pk":"{{c.pk}}", "calendar_name":"{{c.fields.name}}","organisation":"{{c.fields.organisation}}"}{% if not forloop.last %},{% endif %}
+                        {% endfor %}
+                {% endif %}
+                ],
+            selectionMode: 'single',
+            rowSelect: function(event, data) {
+                $('#messages').puigrowl('show', [{severity:'info', summary: 'Row Selected', detail: (data.name + ' ' + data.pk)}]);
+                var edit="/holiday_calendar_edit/"+data.pk;
+                window.open(edit, "_self");
+            },
+            rowUnselect: function(event, data) {
+                //$('#messages').puigrowl('show', [{severity:'info', summary: 'Row Unselected', detail: (data.brand + ' ' + data.vin)}]);
+            }
+   });
+   $('#notifyme').puigrowl();                  
+   	addMessage = function(msg) {  
+        	$('#notifyme').puigrowl('show', msg);  
+        }  
+  }); 
+  function codeAddress() {
+                var state="{{state}}"
+                addMessage([{severity: 'info', summary: state, detail: ''}]);
+        }
+        var state="{{state}}";
+        if(state){
+                window.onload = codeAddress;
+        }
+
+
+</script>
+<p></p>
+{% if state %}
+                {% if statesuccess == 1 %}
+                        <p style="color:green;"><i><img src="/media/images/tick.png" alt="">{{state}}</i></p>
+                {% else %}
+                        <p cass="error" style="color:red;"><i>{{state}}</i></p>
+                {% endif %}
+        {% endif %}
+<a href="/holiday_calendar_new/"><button id="newcalendar1" type="button">New Calendar</button></a>
+<p></p>
+<!--<i>Click a row to edit School</i>-->
+<div id="tblcalendars"> </div>
+{% endblock %}

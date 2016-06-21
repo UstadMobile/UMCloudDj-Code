@@ -1,0 +1,63 @@
+{% extends "managebase.html" %}
+{% block navigate %}
+<a href="/userstable/"><button id="usertablenav" type="button" style="width:150px;height:50px;margin-top:10px;margin-right:10px;margin-left:40px;">Users</button></a>
+<a href="/schoolstable/"><button id="schooltablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Schools</button></a>
+<a href="/allclassestable/"><button id="allclasstablenav" type="button"style="width:150px;height:50px;margin-top:10px;margin-right:10px;">Classes</button></a>
+<a href="/uploadeXe/manage/"><button id="blocknav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Blocks</button></a>
+<a href="/uploadeXe/managecourses/"><button id="coursesnav" type="button"style="width:149px;height:50px;margin-top:10px;margin-right:10px;">Courses</button></a>
+
+<hr>
+<p></p>
+{% endblock %}
+{% block scriptjs %}
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap/css/bootstrap.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap/js/bootstrap.min.js"></script>
+
+  <!-- Bootstrap DatePicker -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap-datepicker/css/bootstrap-datepicker.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+<style>
+        #holidays .datepicker.datepicker-inline,
+        #holidays .datepicker.datepicker-inline table{
+                width: 70%;
+        }
+</style>
+<script type="text/javascript">
+          $(function() { 
+                        $('#id_name').puiinputtext();
+			$('#hidden_holidays').puiinputtext();
+                        $('#id_organisation').puidropdown();
+                        $('#submit').puibutton();
+			$('#holidays').datepicker({
+                                multidate: true,
+				startView: 'months',
+                        });
+                        $('#holidays').on("changeDate", function() {
+                                $('#hidden_holidays').val(
+                                        $('#holidays').datepicker('getFormattedDate')
+                                );
+                        });
+                }
+          ); 
+	window.onload = function(){
+		var holidays_string = [];
+		{% for every_day in holidays_string %}
+			holidays_string.push('{{every_day}}');
+		{% endfor %}
+		$('#holidays').datepicker('setDates', holidays_string);
+	}
+</script>
+{% endblock %}
+
+{% block title %}Edit Holiday Calendar{% endblock %}
+{% block content %}
+<form method="post">{% csrf_token %}
+    {{ form.as_p }}
+	
+    <p></p><label for ="holidays">Holiday List:</label>&nbsp;<input type="" name="hidden_holidays" data-name="hidden_holidays" id="hidden_holidays"><div id="holidays" name="holidays" data-name="holidays" class="datepicker" data-date-format="mm/dd/yyyy"></div><p></p>
+
+    <button id="submit" type="submit" name="submit" value="Create">Update</button>
+</form>
+
+{% endblock %}

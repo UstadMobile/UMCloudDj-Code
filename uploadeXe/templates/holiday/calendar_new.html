@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block scriptjs %}
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap/css/bootstrap.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap/js/bootstrap.min.js"></script>
+
+  <!-- Bootstrap DatePicker -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap-datepicker/css/bootstrap-datepicker.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+<style>
+	#holidays .datepicker.datepicker-inline,
+	#holidays .datepicker.datepicker-inline table{
+  		width: 70%;
+	}
+</style>
+<script type="text/javascript">
+          $(function() { 
+                        $('#holiday_name').puiinputtext();
+                        $('#submit').puibutton();
+			$('#holidays').datepicker({
+  				multidate: true,
+				startView: 'months'
+			});
+			$('#holidays').on("changeDate", function() {
+    				$('#hidden_holidays').val(
+        				$('#holidays').datepicker('getFormattedDate')
+    				);
+			});
+                }
+          ); 
+</script>
+{% endblock %}
+{% block title %}New Holiday Calendar{% endblock %}
+{% block content %}
+{% if state %}
+                {% if statesuccess == 1 %}
+                        <p style="color:green;"><i><img src="/media/images/tick.png" alt="">{{state}}<i></p>
+                {% else %}
+                        <p cass="error" style="color:red;"><i>{{state}}</i></p>
+                {% endif %}
+{% endif %}
+
+<form method="post">{% csrf_token %}
+	<h2>Create a New Holiday Calendar</h2>
+    <label>Name:</label>
+    <input type="text" id="holiday_name" name="holiday_name">
+
+    <p></p><label for ="holidays">Holiday List:</label><div id="holidays" name="holidays" data-name="holidays" class="datepicker" data-date-format="mm/dd/yyyy"></div><p></p>
+    <input type="hidden" name="hidden_holidays" data-name="hidden_holidays" id="hidden_holidays">
+
+    <button id="submit" type="submit" name="submit" value="Create">Create</button>
+</form>
+ 
+{% endblock %}

@@ -56,6 +56,10 @@ urlpatterns = patterns('',
 	url(r'^allclassstudents/(?P<pk>\d+)$', 'UMCloudDj.views.get_allclass_students', name='get_allclass_students'),
 	url(r'^umlrs/teacher_enroll_student/$', 'UMCloudDj.views.teacher_enroll_student', name='teacher_enroll_student'), #Public facing API for teachers enrolling students from within the APP
 
+	url(r'holiday_calendar_new/$', 'holiday.views.calendar_new', name='holiday_calendar_new'),
+        url(r'holiday_calendar/$', 'holiday.views.calendar_table', name='holiday_calendar_table'),
+	url(r'holiday_calendar_edit/(?P<pk>\d+)$', 'holiday.views.calendar_update', name='holiday_calendar_edit'),
+
 	#url(r'^updatelastactivity/$', 'report_statement.views.update_lastactivity', name='update_lastactivity'), #Internal fix only
 	url(r'^reports/noactivity/$', 'report_statement.views.last_activity_inactive', name='last_activity_inactive'), #showing inactive users inactive for x days
    	url(r'^reports/lastactivity/$', 'report_statement.views.last_activity', name='last_activity'), #last activity report

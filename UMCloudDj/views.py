@@ -2619,6 +2619,7 @@ def secured(request):
 	context_instance=RequestContext(request)
     )
 
+
 """View to render template for uploading new block 
 """
 @login_required(login_url='/login/')

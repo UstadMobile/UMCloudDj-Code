@@ -192,6 +192,7 @@
 			var nodes=[];
 			console.log("Looping through api response..");
 			var total_days =0
+			var everything_by_date = {}
 			for (var key in response){
 				var total_values = {}
 				var days = 0;
@@ -248,6 +249,11 @@
 					for (var attendance in response[key][everydate].children){
 						//console.log("attendance: " + attendance);
 					}
+
+					if (isNaN(everything_by_date[everydate])){
+						everything_by_date[everydate] = 0;
+                                	}
+					everything_by_date[everydate] = everything_by_date[everydate] + total_student_attendance_male + total_student_attendance_female;
 				}
 				total_days = total_days + days;
 
@@ -292,6 +298,9 @@
 			org_teacher_female_percentage = ( org_total_teachers_female / (org_total_teachers_female + org_total_teachers_male))*100;
 			org_student_present_percentage = ( (org_total_student_attendance_male + org_total_student_attendance_female) / (org_total_students_male + org_total_students_female) ) * 100;
 			org_student_female_percentage = ( org_total_students_female / (org_total_students_female + org_total_students_male) ) * 100;
+
+			console.log("Everything by date: ");
+			console.log(everything_by_date);
 
 				
 			//}

@@ -1,3 +1,7 @@
+v1.1.500
+- Holidays across Schools and Classes
+- Public Attendance Dashboard logic update to include holidays and classes
+
 v1.1.300
 - Added Weekend option for School and Days of work in the week for Classes
 - Updated models for the same

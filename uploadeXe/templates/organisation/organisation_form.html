@@ -1,15 +1,20 @@
 {% extends "base.html" %}
 {% block scriptjs %}
-<script type="text/javascript">
-          $(function() { 
-                        $('#id_organisation_name').puiinputtext();
-                        $('#id_organisation_desc').puiinputtext();
-			$('#id_add_date').puiinputtext();
-                        $('#id_set_package').puidropdown();
-                        $('#submit').puibutton();
+
+  <!-- Bootstrap DatePicker -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap-datepicker/css/bootstrap-datepicker.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+
+  <script type="text/javascript">
+  	$(function() { 
+		$('#id_organisation_name').puiinputtext();
+                $('#id_organisation_desc').puiinputtext();
+		$('#id_add_date').puiinputtext();
+                $('#id_set_package').puidropdown();
+                $('#submit').puibutton();
                 }
-          ); 
-</script>
+	); 
+  </script>
 {% endblock %}
 {% block title %}Edit Organisation{% endblock %}
 {% block content %}

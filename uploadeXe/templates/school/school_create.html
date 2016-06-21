@@ -10,6 +10,58 @@
 <p></p>
 {% endblock %}
 {% block scriptjs %}
+
+<!--Holiday Calender Stuff-->
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap/css/bootstrap.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap/js/bootstrap.min.js"></script>
+
+  <!-- Bootstrap DatePicker -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap-datepicker/css/bootstrap-datepicker.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+<style>
+        #holidays .datepicker.datepicker-inline,
+        #holidays .datepicker.datepicker-inline table{
+                width: 70%;
+        }
+	label{
+		font-weight:500;
+	}
+</style>
+<script type="text/javascript">
+          $(function() {
+                        $('#holiday_name').puiinputtext();
+			//$('#holiday_calendar').puidropdown();
+			//$('#show_new_calendar_button').puibutton();
+                        $('#holidays').datepicker({
+                                multidate: true,
+                                startView: 'months'
+                        });
+                        $('#holidays').on("changeDate", function() {
+                                $('#hidden_holidays').val(
+                                        $('#holidays').datepicker('getFormattedDate')
+                                );
+                        });
+                }
+          );
+	function show_new_calendar(){
+		var add_new_calendar = document.getElementById('add_new_calendar')
+		if ( $(add_new_calendar).css('display') == 'none' ){
+    		// element is hidden
+			$("a#show_new_calendar_href").text("Hide new calendar");
+			add_new_calendar.style.visibility = 'visible';
+                	add_new_calendar.style.display = 'inline';
+			$('#holiday_calendar').val(0);
+		}else{
+			$("a#show_new_calendar_href").text("Add a school calendar");
+			add_new_calendar.style.visibility = 'invisible';
+                	add_new_calendar.style.display = 'none';
+		}
+
+	}
+</script>
+<!-- End of Holiday Calender JS -->
+
 <script type="text/javascript">
           $(function() { 
                         $('#school_name').puiinputtext();
@@ -68,12 +120,23 @@
     </div>
     <label style="margin-top:3px; margin-bottom:5px;" for="days">Weekend Days:</label>
     <div id="days"/></div><p></p>
-   <!--<label>Organisation:</label> <select id="organisation" form="newschoolform" name="organisationid">
-        {% for organisation in object_list %}
-        <option value="{{ organisation.id }}">{{ organisation.organisation_name }}</option>
-        {% endfor %}
-   </select>-->
-   <br></br>
+
+    <label>Holiday Calender:</label>
+    <select class="form-control" style="width:100px; display:inline;" id="holiday_calendar" form="newschoolform" name="holiday_calendar">
+	<option value="0">None</option>
+	{% for calendar in calendars %}
+		<option value="{{ calendar.id }}">{{ calendar.name }}</option>
+	{% endfor %}
+    </select>
+    &nbsp;<a id="show_new_calendar_href" href="javascript:void(0);" onclick="show_new_calendar();"><img src="/media/images/plus.png"/>Add a school calendar</a>
+    <br></br>
+    <div id="add_new_calendar" style="visibility:hidden; display:none;margin-left:50px;" type="hidden" name="add_new_calendar">
+	<label>Calendar Name:</label>
+	<input type="text" id="holiday_name" name="holiday_name">
+	<p></p><label for ="holidays">Holiday List:</label><div id="holidays" name="holidays" data-name="holidays" class="datepicker" data-date-format="mm/dd/yyyy"></div><p></p>
+ 	<input type="hidden" name="hidden_holidays" data-name="hidden_holidays" id="hidden_holidays">
+    </div>
+    <br></br>
     <button id="submit" type="submit" name="submittotable" value="Create">Save</button>
     <button id="submit2" type="submit" name="submittonew" value="Create">Save and Create another</button>
 </form>

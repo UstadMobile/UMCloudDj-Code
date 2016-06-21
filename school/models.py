@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from organisation.models import Organisation
 from decimal import Decimal
 #from uploadeXe.models import Weekday
+from holiday.models import Calendar
 
 """
 This is the model for schools. Schools are directly
@@ -18,6 +19,7 @@ class School(models.Model):
    show_exact_location = models.BooleanField(default = False)
    weekends = models.ManyToManyField('uploadeXe.Weekday', null = True)
    #holidays = models.ManyToManyField('uploadeXe.DateTime', null = True)
+   holidays = models.ManyToManyField(Calendar, null = True)
 
    def __unicode__(self):
 	return u'%s ' % (self.school_name)

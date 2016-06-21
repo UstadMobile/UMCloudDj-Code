@@ -58,6 +58,10 @@ from uploadeXe.models import Weekday
 from uploadeXe.models import Week_Day_Time
 from uploadeXe.models import DateTime
 
+from holiday.models import Holiday
+from holiday.models import Calendar
+
+
 # This uses the lrs logger for LRS specific information
 logger = logging.getLogger(__name__)
 
@@ -3046,8 +3050,7 @@ def attendance_public_api(request):
 			for every_school_id in school_ids:
 				try:
 					every_school = School.objects.get(pk=every_school_id)
-					logger.info("In School: " )
-					logger.info(every_school)
+					logger.info("In School: " + str(every_school.school_name))
 				except Exception as e:
 					print(e)
 					logger.info(str(e))
@@ -3058,9 +3061,11 @@ def attendance_public_api(request):
 				
 				every_schools_allclass_list = Allclass.objects.filter(school=every_school)
 				if not every_schools_allclass_list: #No classes in school
-					logger.info("School: " + str(every_school_id) + " has no classes in it. Skipping")
+					#logger.info("School: " + str(every_school_id) + " has no classes in it. Skipping")
 					continue #..to next for every school loop 
 					
+
+				school_holidays = Holiday.objects.filter(holiday_calendar_holiday=every_school.holidays.all()).values_list('date', flat=True)
 				
 				date_dict = {}
 				#date_dict[date] = Attendance data 
@@ -3072,6 +3077,9 @@ def attendance_public_api(request):
 					if each_day_day in weekends:
 						#logger.info("Weekend!")
 						continue
+					if each_day_day in school_holidays:
+						continue
+
 					every_school_each_day_students_male = 0;
 					every_school_each_day_students_female = 0;
 					every_school_each_day_teachers_male = 0;
@@ -3101,12 +3109,18 @@ def attendance_public_api(request):
 					for every_class in every_schools_allclass_list:
 						days = every_class.days.all()
 						days_week_days =[]
+						allclass_holidays = Holiday.objects.filter(\
+							holiday_calendar_holiday=\
+								every_class.holidays.all()).values_list('date', flat=True)
 						for each_day_time in days: 
 							days_week_days.append(each_day_time.day)
 						if each_day_day not in days_week_days:
-							logger.info("Class not supposed to be active today.")
-							logger.info(days_weeek_days)
+							#logger.info("Class not supposed to be active today.")
+							#logger.info(days_weeek_days)
 							continue
+						if each_day_day in allclass_holidays:
+							continue
+
 						#That starts with a date group by object:
 						every_class_attendance_data_by_date = {}
 							
@@ -3384,8 +3398,7 @@ class SchoolNumbers(object):
 #@login_required(login_url="/login/")
 def public_attendance_report(request):
     logger.info(" A User="+" accessed /reports/public_attendance_report/")
-    #try:
-    if True:
+    try:
         org_id = request.GET.get('orgid')
 	organisation = Organisation.objects.get(pk=org_id)
 	school_list = School.objects.filter(organisation = organisation)
@@ -3407,12 +3420,12 @@ def public_attendance_report(request):
 		school_deets[str(every_school.id)] = every_school_number
 	
 	#calculate number of Teachers
-    #except:
-    else:
+    except:
 	#No org id specified
 	school_list = None
 	organisation = None
 	school_deets = None
+	return redirect('home')
 
     return render_to_response('public_attendance_report.html', {'school_list' : school_list, 'organisation':organisation, 'school_number' : school_deets},
                                 context_instance = RequestContext(request))

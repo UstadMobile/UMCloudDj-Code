@@ -17,7 +17,6 @@ class Weekday(models.Model):
    def __unicode__(self):
 	return u'%s' % (self.name)
 
-
 """
 This is a model for days of the week.
 """
@@ -35,6 +34,9 @@ This is a date model
 """
 class DateTime(models.Model):
     date = models.DateTimeField()
+
+
+
 
 """used for getting and setting path to elp "blocks" from external
 (eXe) and direc upload from umcloud portal
