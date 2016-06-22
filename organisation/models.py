@@ -1,6 +1,7 @@
 from django.db import models
 import datetime
 from django.contrib.auth.models import User
+from holiday.models import Calendar
 
 """
 This model sets the subscription package for a particular organisation. 
@@ -24,6 +25,7 @@ class Organisation(models.Model):
    add_date = models.DateTimeField(default=datetime.datetime.now)
    set_package = models.ForeignKey(UMCloud_Package)
    public = models.BooleanField(default = False)
+   calendar = models.ForeignKey(Calendar, null = True, related_name="organisation_default_calendar")
 
    def __unicode__(self):
         return u'%s ' % (self.organisation_name)

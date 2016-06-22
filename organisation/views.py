@@ -29,6 +29,8 @@ import os
 import urllib
 import urllib2, base64, json
 from random import randrange
+from holiday.models import Calendar
+from holiday.views import make_calendar_object
 
 
 """
@@ -154,6 +156,7 @@ The organisation model form that is used for update and creation
 class OrganisationForm(ModelForm):
     class Meta:
         model = Organisation
+	fields = ('organisation_desc', 'public')
 
 """
 The organisation code model form that is used to set org code and update
@@ -289,6 +292,79 @@ def my_organisation_update(request, pk, template_name='organisation/my_organisat
         print("Not a staff.")
         data['state']="You do not have permission to see this page."
         return render(request, template_name, data)
+
+
+"""View to update the organisation details and change / set the 
+holiday calendar
+"""
+def my_organisation_edit(request, pk, template_name='organisation/my_organisation_edit.html'):
+	current_role = User_Roles.objects.get(\
+                        user_userid=request.user.id\
+                        ).role_roleid
+    	organisation = User_Organisations.objects.get(\
+                        user_userid=request.user\
+                        ).organisation_organisationid
+    	organisation_code = Organisation_Code.objects.get(\
+                        organisation=organisation)
+    	data={}
+    	data['organisation']=organisation
+	data['organisation_code']=organisation_code
+	calendars = Calendar.objects.filter(organisation=organisation)
+	selected_calendar = None
+	selected_calendar = organisation.calendar
+	if not selected_calendar:
+		selected_calendar = None
+	data['calendars'] = calendars
+	data['selected_calendar'] = selected_calendar
+	#data['organisation_code'] = organisation_code
+	if current_role.id == 2 and \
+            current_role.role_name=="Organisational Manager"\
+           	and pk == str(organisation.id):
+        	#("You are an organisational manager and editing \
+        	#your own organisation")
+		
+        	form = OrganisationForm(request.POST or None, \
+                                instance=organisation)
+		data['form'] = form
+        	#public = organisation.public;
+
+        	if form.is_valid():
+                	form.save()
+			post = request.POST
+			code = post['id_code']
+			organisation_code.code = code
+			organisation_code.save()
+
+			print("Checking if Holiday Calendar is given:")
+			selected_calendar = post['holiday_calendar']
+			new_holiday_calendar_name = post['holiday_name']
+			print("new: " + new_holiday_calendar_name)
+			hidden_holidays = post['hidden_holidays']
+			if selected_calendar != None or selected_calendar != "":
+				if str(selected_calendar) != str(0):
+					holiday_calendar = Calendar.objects.get(pk=int(selected_calendar))
+					if holiday_calendar:
+						organisation.calendar = holiday_calendar
+						organisation.save()
+						print("Changed OK")
+					else:
+						print("No cal found.");
+				else:
+					print("Making new calendar..")
+					if new_holiday_calendar_name != "" or new_holiday_calendar_name  != None:
+						holiday_calendar, state, statesuccess = make_calendar_object(new_holiday_calendar_name, hidden_holidays, organisation)
+						if holiday_calendar:
+							organisation.calendar = holiday_calendar
+							organisation.save()
+							print("Made OK")
+
+			
+                	return redirect('my_organisation')
+        	return render(request, template_name, data)
+    	else:
+        	print("Not a staff.")
+        	data['state']="You do not have permission to see this page."
+        	return render(request, template_name, data)
     
 """
 Check if organisation exist. Common function
@@ -395,6 +471,29 @@ def organisation_create(request, template_name='organisation/organisation_create
 						organisation_organisationid=organisation)
 					org_teacher_organisation.save()
 					#("Mapping done.")
+					
+					print("Checking if Holiday Calendar is given:")
+                        		selected_calendar = post['holiday_calendar']
+                        		new_holiday_calendar_name = post['holiday_name']
+                        		print("new: " + new_holiday_calendar_name)
+                        		hidden_holidays = post['hidden_holidays']
+                        		if selected_calendar != None or selected_calendar != "":
+                                		if str(selected_calendar) != str(0):
+                                        		holiday_calendar = Calendar.objects.get(pk=int(selected_calendar))
+                                        		if holiday_calendar:
+                                                		organisation.calendar = holiday_calendar
+                                                		organisation.save()
+                                                		print("Changed OK")
+                                        		else:
+                                                		print("No cal found.");
+                                		else:
+                                        		print("Making new calendar..")
+                                        		if new_holiday_calendar_name != "" or new_holiday_calendar_name  != None:
+                                                		holiday_calendar, state, statesuccess = make_calendar_object(new_holiday_calendar_name, hidden_holidays, organisation)
+                                                		if holiday_calendar:
+                                                        		organisation.calendar = holiday_calendar
+                                                        		organisation.save()
+                                                        		print("Made OK")
 
 					return redirect('organisation_table')
                 		else:
@@ -429,10 +528,59 @@ def organisation_update(request, pk, template_name='organisation/organisation_fo
     if (request.user.is_staff==True):
 	organisation = get_object_or_404(Organisation, pk=pk)
     	form = OrganisationForm(request.POST or None, instance=organisation)
+	try:
+                organisation_code=Organisation_Code.objects.get(
+                                    organisation=organisation)
+        except Organisation_Code.DoesNotExist, e:
+            	organisation_code = Organisation_Code(\
+                                    organisation=organisation)
+                random_code = randrange(1000000)
+                random_org_code=str(organisation.id)+\
+                                        str(random_code)
+                organisation_code.code=random_org_code
+                organisation_code.save()
+	calendars = None
+	calendars = Calendar.objects.filter(organisation=organisation)
+	selected_calendar = None
+	selected_calendar = organisation.calendar
+	data = {}
+	data['organisation'] = organisation
+        data['organisation_code'] = organisation_code
+        data['selected_calendar'] = selected_calendar
+        data['calendars'] = calendars
+	data['form'] = form
     	if form.is_valid():
+		post = request.POST
         	form.save()
+		code = post['id_code']
+		organisation_code.code = code
+		organisation_code.save()
+
+		print("Checking if Holiday Calendar is given:")
+                selected_calendar = post['holiday_calendar']
+                new_holiday_calendar_name = post['holiday_name']
+                print("new: " + new_holiday_calendar_name)
+                hidden_holidays = post['hidden_holidays']
+                if selected_calendar != None or selected_calendar != "":
+                        if str(selected_calendar) != str(0):
+                        	holiday_calendar = Calendar.objects.get(pk=int(selected_calendar))
+                                if holiday_calendar:
+                                        organisation.calendar = holiday_calendar
+                                        organisation.save()
+                                        print("Changed OK")
+                                else:
+                                        print("No cal found.");
+                        else:
+                                print("Making new calendar..")
+                                if new_holiday_calendar_name != "" or new_holiday_calendar_name  != None:
+                                        holiday_calendar, state, statesuccess = make_calendar_object(new_holiday_calendar_name, hidden_holidays, organisation)
+                                        if holiday_calendar:
+                                                organisation.calendar = holiday_calendar
+                                                organisation.save()
+                                                print("Made OK")
+
         	return redirect('organisation_table')
-    	return render(request, template_name, {'form':form})
+    	return render(request, template_name, data)
 
     else:
         print("Not a staff.")

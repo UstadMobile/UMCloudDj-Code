@@ -3066,6 +3066,11 @@ def attendance_public_api(request):
 					
 
 				school_holidays = Holiday.objects.filter(holiday_calendar_holiday=every_school.holidays.all()).values_list('date', flat=True)
+				if not school_holidays:
+					try:
+						school_holidays = organisation.calendar.holidays.all().values_list('date', flat=True)
+					except:
+						school_holidays = []
 				
 				date_dict = {}
 				#date_dict[date] = Attendance data 
@@ -3077,8 +3082,12 @@ def attendance_public_api(request):
 					if each_day_day in weekends:
 						#logger.info("Weekend!")
 						continue
+
+					"""Disabling because the holiday check is at class level.
+					It goes from class check -> school check - > Org check
 					if each_day_day in school_holidays:
 						continue
+					"""
 
 					every_school_each_day_students_male = 0;
 					every_school_each_day_students_female = 0;
@@ -3107,11 +3116,16 @@ def attendance_public_api(request):
 					
 					#Loop through all classes in the school (for every day as this is in everyday loop)
 					for every_class in every_schools_allclass_list:
+						#logger.info("In Class: " + every_class.allclass_name);
 						days = every_class.days.all()
 						days_week_days =[]
 						allclass_holidays = Holiday.objects.filter(\
 							holiday_calendar_holiday=\
 								every_class.holidays.all()).values_list('date', flat=True)
+
+						if not allclass_holidays:
+							allclass_holidays = school_holidays
+
 						for each_day_time in days: 
 							days_week_days.append(each_day_time.day)
 						if each_day_day not in days_week_days:

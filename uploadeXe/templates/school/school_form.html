@@ -111,8 +111,12 @@
     <div id="days"/></div><p></p>
 
     <label>Holiday Calender:</label>
-    <select class="form-control" style="width:100px; display:inline;" id="holiday_calendar" form="schoolform" name="holiday_calendar">
-        <option value="0">None</option>
+    <select class="form-control" style="width:300px; display:inline;" id="holiday_calendar" form="schoolform" name="holiday_calendar">
+	{% if org_calendar and not selected_calendar %}
+        	<option selected="selected" value="0">Organisation's ({{org_calendar.name}})</option>
+	{% elif not selected_calendar %}
+		<option selected="selected" value="0">None set</option>
+	{% endif %}
         {% for calendar in calendars %}
 		{% if calendar.id == selected_calendar.id %}
                 	<option selected="selected" value="{{ calendar.id }}">{{ calendar.name }}</option>

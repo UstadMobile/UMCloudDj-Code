@@ -174,7 +174,7 @@
                     url:  '/reports/attendance_public_api/',
 		    complete: function(response){
 			if (success == true){
-				console.log("succesfully completed post calculations.");
+				console.log("successfully completed post calculations.");
 				console.log("Teacher Present %: " + org_teacher_present_percentage);
 				console.log("Teacher Female %:  " + org_teacher_female_percentage);
                         	console.log("Student Present %: " + org_student_present_percentage);
@@ -188,9 +188,8 @@
 			success = true;
                         var root=response;
 			//myInterval = setInterval( "hideAjaxSpinnerImage()", 1000 );
-			console.log(response);
+			//console.log(response);
 			var nodes=[];
-			console.log("Looping through api response..");
 			var total_days =0
 			var everything_by_date = {}
 			for (var key in response){
@@ -246,9 +245,9 @@
 
 					total_teachers_male = total_teachers_male + teachers_male;
 					total_teachers_female = total_teachers_female + teachers_female;
-					for (var attendance in response[key][everydate].children){
+					/*for (var attendance in response[key][everydate].children){
 						//console.log("attendance: " + attendance);
-					}
+					}*/
 
 					if (isNaN(everything_by_date[everydate])){
 						everything_by_date[everydate] = 0;
@@ -282,7 +281,7 @@
 				var school_teachers_attendance_percentage = 0;
 
 			}
-			console.log("Org  Finished counting..");
+			console.log("Org Finished counting..");
 			console.log("Org Total Students Present Male:   " + org_total_student_attendance_male + "/" + org_total_students_male);
 			console.log("Org Total Students Present Female: " + org_total_student_attendance_female + "/" + org_total_students_female);
 			console.log("Org Total Teachers Present Male:   " + org_total_teacher_attendance_male + "/" + org_total_teachers_male);
@@ -299,8 +298,8 @@
 			org_student_present_percentage = ( (org_total_student_attendance_male + org_total_student_attendance_female) / (org_total_students_male + org_total_students_female) ) * 100;
 			org_student_female_percentage = ( org_total_students_female / (org_total_students_female + org_total_students_male) ) * 100;
 
-			console.log("Everything by date: ");
-			console.log(everything_by_date);
+			//console.log("Everything by date: ");
+			//console.log(everything_by_date);
 
 				
 			//}
@@ -355,7 +354,6 @@
     var school_ids = null;
 
     //New Chart stuff
-    //$(function() {
     function teacherStudentPie(org_teacher_present_percentage, org_teacher_female_percentage, org_student_present_percentage, org_student_female_percentage, school_dict){
 
 	org_teacher_present_percentage = org_teacher_present_percentage.toFixed(1);
@@ -424,7 +422,6 @@
 			options: options
 		});
 
-    //});
     }
 
         jQuery(function($) {
@@ -436,8 +433,7 @@
 	});
 
   function initializeMap() {
-    console.log("Updating attendance data in initializeMap..");
-
+    //console.log("Updating attendance data in initializeMap..");
     var attendance_data = [
                 {% for every_school in school_list %}
                   {% if every_school.longitude != None %}
@@ -450,10 +446,9 @@
                 {% endfor %}
                 ];
 
-    console.log("--------------------");
     var school_list = [];
     var school_count = {{school_list|length}};
-    console.log("Schools asked:   " + schoolids.length + "/" + school_count + "(" + schoolids + ")");
+    //console.log("Schools asked:   " + schoolids.length + "/" + school_count + "(" + schoolids + ")");
 
     var school_list = new Array(school_count);
     for (i=0;i<school_count; i++){
@@ -467,10 +462,6 @@
 	school_list[{{ forloop.counter0 }}][3] = "{{every_school.lattitude}}";
 	
     {% endfor %}
-    //console.log("school_list: " + school_list);
-    for(i=0;i<school_count;i++){
- 	console.log("School List #" + i + " : " + school_list[i]);
-    }
 
     var markers_data= new Array(schoolids.length);
     for(i=0;i<schoolids.length;i++){
@@ -483,26 +474,15 @@
 		j++;
 	}
     }
-    for(j=0;j<schoolids.length;j++){
-	console.log("Mark School List #" + j + " : " + markers_data[j]);
-    }
 	
 
     /*
-    var markers = [
-                {% for every_school in school_list %}
-                  {% if every_school.longitude != None %}
-                        ['{{every_school.school_name}}', '{{every_school.longitude}}', '{{every_school.lattitude}}', 'Attendance Data about: {{every_school.school_name}}']{% if not forloop.last %},{% endif %}
-                  {% endif %}
-                {% endfor %}
-        ];
-    console.log(markers);
     */
     var markers = markers_data;
 
     for (everyid in schoolids){
 	if (schoolids[everyid] == "Z"){
-		console.log("Adding all Schools to the Marker list");
+		//console.log("Adding all Schools to the Marker list");
 		markers = [
                 {% for every_school in school_list %}
                   {% if every_school.longitude != None %}
@@ -514,21 +494,8 @@
     }
 
     /*
-    var attendance_data_wip = new Array(schoolids.length);
-    for(i=0;i<schoolids.length;i++){
-	attendance_data_wip[i] = new Array(1);
-    }
-    for (i=0;i<schoolids.length;i++){
-	console.log(".");
-	attendance_data_wip[i][0]='<h3><center> ' + {{every_school.school_name}}+ ' School<center></h3><p>' + {{value.total_students}} + ' Students</p><p>' + {{value.total_teachers}} + ' Teacher</p><h3> ' + school_dict[schoolids[i]] + ' % Attendance</h3><img style="width:30px; height: 30px;" src="/media/images/100px-ArrowIcon.png" alt="Ustad_Mobile_UMCloud_logo" align="right"/>';
-	
-    }
-    for(j=0;j<schoolids.length;j++){
-	console.log("Attendance_data: " + attendance_data_wip[j]);
-    }
     */
     
-    console.log("-------------------");
 
     var map;
     var bounds = new google.maps.LatLngBounds();
@@ -574,9 +541,9 @@
 	console.log("On load.");
 	$('#ajaxSpinnerImage').show();
 	setTimeout(function () {
-		console.log("Hey this will show up in 5 seconds..");
+		console.log("Hey this will show up in .5 seconds..");
 		$('#attendance_submit').click();
-    	}, 2000);
+    	}, 500);
   }
 
   </script>

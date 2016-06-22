@@ -1,3 +1,8 @@
+v1.1.550
+-Holiday Calendar across organisations.
+-Reflected the above through Schools and Classes
+-Updated Public Attendance Report for the same
+
 v1.1.500
 - Holidays across Schools and Classes
 - Public Attendance Dashboard logic update to include holidays and classes

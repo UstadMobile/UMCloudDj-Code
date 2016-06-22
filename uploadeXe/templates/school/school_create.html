@@ -122,8 +122,9 @@
     <div id="days"/></div><p></p>
 
     <label>Holiday Calender:</label>
-    <select class="form-control" style="width:100px; display:inline;" id="holiday_calendar" form="newschoolform" name="holiday_calendar">
-	<option value="0">None</option>
+    <select class="form-control" style="width:300px; display:inline;" id="holiday_calendar" form="newschoolform" name="holiday_calendar">
+	
+	<option value="0">Organisation's ({{selected_calendar.name}})</option>
 	{% for calendar in calendars %}
 		<option value="{{ calendar.id }}">{{ calendar.name }}</option>
 	{% endfor %}

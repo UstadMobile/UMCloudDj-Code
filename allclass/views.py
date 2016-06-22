@@ -97,7 +97,9 @@ def allclass_create(request, template_name='allclass/allclass_create.html'):
 						).organisation_organisationid;
     schools = School.objects.filter(organisation=organisation)
     calendars = Calendar.objects.filter(organisation=organisation)
-
+	
+    school_calendar = None
+    #school_calendar = allclass.school.holidays.all()[0]
 
     teacher_role = Role.objects.get(pk=5)
     if teacher_role.role_name != "Teacher":
@@ -137,13 +139,19 @@ def allclass_create(request, template_name='allclass/allclass_create.html'):
 
     courses = Course.objects.filter(success="YES",\
 				organisation=organisation)
-    
+    org_calendar = None
+    org_calendar = organisation.calendar
+    if not org_calendar:
+        org_calendar = None
+
     data = {}
     data['object_list'] = schools
     data['teacher_list'] = teachers
     data['student_list'] = students
     data['course_list'] = courses
     data['calendars'] = calendars
+    data['school_calendar'] = school_calendar
+    data['org_calendar']=org_calendar
 
     if request.method == 'POST':
         post = request.POST;
@@ -403,6 +411,23 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
     selected_calendar = None
     if allclass_calendars:
         selected_calendar = allclass_calendars[0]
+    school_calendar = None
+
+    try:
+        school_calendar = allclass.school.holidays.all()[0]
+    except:
+        if not school_calendar:
+		school_calendar = None
+
+    school_calendar = None
+    if allclass.school.holidays.all():
+    	school_calendar = allclass.school.holidays.all()[0]
+
+    org_calendar = None
+    org_calendar = organisation.calendar
+    if not org_calendar:
+	org_calendar = None
+
 
     if form.is_valid():
         form.save()
@@ -513,7 +538,9 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 			'allclass':allclass,\
 			'alldays':all_days,\
 			'selected_calendar':selected_calendar,\
-			'calendars':calendars\
+			'calendars':calendars,\
+			'school_calendar':school_calendar,\
+			'org_calendar':org_calendar\
 			
 		})
 

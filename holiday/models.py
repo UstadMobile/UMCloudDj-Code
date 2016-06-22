@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User #Added user.
-from organisation.models import Organisation
+#from organisation.models import Organisation
 from django.core.urlresolvers import reverse #Added reverse..
 import os
 import uuid
@@ -21,7 +21,9 @@ This is the holiday calender
 class Calendar(models.Model):
     name = models.CharField(max_length=300, default="Holiday Calendar")
     holidays = models.ManyToManyField(Holiday, related_name="holiday_calendar_holiday")
-    organisation = models.ForeignKey(Organisation)
+    organisation = models.ForeignKey('organisation.Organisation', related_name="calendar_organisation")
+    def __unicode__(self):
+        return u'%s ' % (self.name)
 
     """
     #Example use cases:

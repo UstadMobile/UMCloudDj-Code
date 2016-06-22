@@ -84,6 +84,11 @@ def school_create(request, template_name='school/school_create.html', rstate='')
     data = {}
     data['object_list'] = organisations
     data['calendars'] = calendars
+    selected_calendar = None
+    selected_calendar = organisation.calendar
+    if not selected_calendar:
+	selected_calendar = None
+    data['selected_calendar'] = selected_calendar
 
     if request.method == 'POST':
         post = request.POST;
@@ -185,6 +190,10 @@ def school_update(request, pk, template_name='school/school_form.html'):
     selected_calendar = None
     if school_calendars:
 	selected_calendar = school_calendars[0]
+    org_calendar = None
+    org_calendar = organisation.calendar
+    if not org_calendar:
+        org_calendar = None
 
     data = {}
     data['form'] = form
@@ -192,6 +201,7 @@ def school_update(request, pk, template_name='school/school_form.html'):
     data['calendars'] = calendars
     data['weekends'] = weekends
     data['selected_calendar'] = selected_calendar
+    data['org_calendar'] = org_calendar
     if form.is_valid():
         form.save()
 	post = request.POST

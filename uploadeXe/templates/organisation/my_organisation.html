@@ -27,14 +27,14 @@
             ],
             datasource: [
                 {% if organisation_code %}
-                        {"pk":"{{organisation_code.pk}}","model":"{{organisation_code.model}}","organisation_name":"{{organisation_code.organisation.organisation_name}}", "code":"{{organisation_code.code}}"}
+                        {"pk":"{{organisation.pk}}","model":"{{organisation_code.model}}","organisation_name":"{{organisation_code.organisation.organisation_name}}", "code":"{{organisation_code.code}}"}
                 {% endif %}
                 ],
             selectionMode: 'single',
             rowSelect: function(event, data) {
                 console.log("Wassup?")
                 $('#messages').puigrowl('show', [{severity:'info', summary: 'Row Selected', detail: (data.organisation_name + ' ' + data.pk)}]);
-                var edit="/myorganisationedit/"+data.pk;
+                var edit="/myorganisation/"+data.pk;
                 window.open(edit, "_self");
             },
             rowUnselect: function(event, data) {

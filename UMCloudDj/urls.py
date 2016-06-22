@@ -152,6 +152,7 @@ urlpatterns = patterns('',
         url(r'^organisationdelete/(?P<pk>\d+)$', 'organisation.views.organisation_delete', name='organisation_delete'),
 	url(r'^myorganisation/$', 'organisation.views.my_organisation', name='my_organisation'),
         url(r'^myorganisationedit/(?P<pk>\d+)$', 'organisation.views.my_organisation_update', name='my_organisation_update'),
+	url(r'^myorganisation/(?P<pk>\d+)$', 'organisation.views.my_organisation_edit', name='my_organisatiion_edit'),
 
 	#url(r'^umpackages/$', 'organisation.views.umpackage_list', name='umpackage_list'),
 	url(r'^umpackagestable/$', 'organisation.views.umpackage_table', name='umpackage_table'),

@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% block scriptjs %}
-
-  <!--Holiday Calender Stuff-->
+<!--Holiday Calender Stuff-->
   <!-- Bootstrap -->
   <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap/css/bootstrap.min.css" />
   <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap/js/bootstrap.min.js"></script>
@@ -47,7 +46,7 @@
                         add_new_calendar.style.display = 'inline';
                         //$('#holiday_calendar').val(0);
                 }else{
-                        $("a#show_new_calendar_href").text("Add a school calendar");
+                        $("a#show_new_calendar_href").text("Add a Organisation calendar");
                         add_new_calendar.style.visibility = 'invisible';
                         add_new_calendar.style.display = 'none';
                         $('#holiday_calendar').val({{selected_calendar.id}});
@@ -58,35 +57,53 @@
 <!-- End of Holiday Calender JS -->
 
 
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap/css/bootstrap.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap/js/bootstrap.min.js"></script>
+
   <!-- Bootstrap DatePicker -->
   <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap-datepicker/css/bootstrap-datepicker.min.css" />
   <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
-
-  <script type="text/javascript">
-  	$(function() { 
-		$('#id_organisation_name').puiinputtext();
-                $('#id_organisation_desc').puiinputtext();
-		$('#id_code').puiinputtext();
-		$('#id_add_date').puiinputtext();
-                $('#id_set_package').puidropdown();
-                $('#submit').puibutton();
+<style>
+	/*Override*/
+	table{
+		width:auto;
+	}
+</style>
+<script type="text/javascript">
+          $(function() { 
+                        $('#organisation_name').puiinputtext();
+			$('#id_organisation_desc').puiinputtext();
+			$('#id_public').puicheckbox();
+                        $('#id_code').puiinputtext();
+                        $('#submit').puibutton();
+			$('#holidays').datepicker({
+  				multidate: true
+			});
                 }
-	); 
-  </script>
+          ); 
+</script>
 {% endblock %}
 {% block title %}Edit Organisation{% endblock %}
 {% block content %}
 {% if state %}
         <p cass="error" style="color:red;"><i>{{state}}</i></p>
 {% else %}
-<form id="organisationedit" method="post">{% csrf_token %}
-    <label>Organisation name: </label>
-    <input id="id_organisation_name" value="{{organisation.organisation_name}}" readonly="True"></input><i> You can't edit the organisation's name</i>
+<form id="myorganisationedit" method="post">{% csrf_token %}
+    <label>Organisation:</label>
+    <input type="text" id="organisation_name" name="organisation_name" value="{{organisation}}" readonly="True"/><i>You cannot edit the Organisation name</i>
+	{{organisation}}
     {{ form.as_p }}
-    <label>Organisation code: </label>
-    <input id="id_code" name="id_code" value="{{organisation_code.code}}"></input><p></p>
-    <label>Holiday calender:</label>
-    <select class="form-control" style="width:100px; display:inline;" id="holiday_calendar" form="organisationedit" name="holiday_calendar">
+    <!--
+    {% if public %}
+        <p><label for="id_public">Public:</label> <input checked="checked" id="id_public" name="public" type="checkbox" /></p>
+    {% else %}
+        <p><label for="id_public">Public:</label> <input id="id_public" name="public" type="checkbox" /></p>
+    {% endif %}-->
+    <label>Organisation Code:</label>
+    <input type="text" id="id_code" name="id_code" value="{{organisation_code.code}}"/><p></p>
+    <label>Holiday Calender:</label>
+    <select class="form-control" style="width:200px; display:inline;" id="holiday_calendar" form="myorganisationform" name="holiday_calendar">
         <option value="0">None</option>
         {% for calendar in calendars %}
                 {% if calendar.id == selected_calendar.id %}
@@ -96,16 +113,16 @@
                 {% endif %}
         {% endfor %}
     </select>
-    &nbsp;<a id="show_new_calendar_href" href="javascript:void(0);" onclick="show_new_calendar();"><img src="/media/images/plus.png"/>Add a school calendar</a>
-    <br></br>
+    &nbsp;<a id="show_new_calendar_href" href="javascript:void(0);" onclick="show_new_calendar();"><img src="/media/images/plus.png"/>Add a Organisation calendar</a>
+    <br/>
     <div id="add_new_calendar" style="visibility:hidden; display:none;margin-left:50px;" type="hidden" name="add_new_calendar">
-        <label>Calendar name:</label>
+        <label>Calendar Name:</label>
         <input type="text" onChange="return none_selected_calendar();" id="holiday_name" name="holiday_name">
         <p></p><label for ="holidays">Holiday List:</label><div id="holidays" name="holidays" data-name="holidays" class="datepicker" data-date-format="mm/dd/yyyy"></div><p></p>
         <input type="hidden" name="hidden_holidays" data-name="hidden_holidays" id="hidden_holidays">
     </div>
+
     <button id="submit" type="submit" name="submit" value="Create">Update</button>
 </form>
- 
 {% endif %}
 {% endblock %}
