@@ -2663,3 +2663,13 @@ def reports_view(request):
     return render_to_response("reports.html", {'current_user': current_user},
         context_instance=RequestContext(request))
 
+@csrf_exempt
+def test_request(request):
+    print("Testing request:")
+    print(request)
+    print(request.POST)
+    print(request.GET)
+    authresponse = HttpResponse(status=200)
+    authresponse.write("Hello")
+    return authresponse
+    

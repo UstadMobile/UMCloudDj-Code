@@ -172,6 +172,9 @@ urlpatterns = patterns('',
         url(r'^allclassedit/(?P<pk>\d+)$', 'allclass.views.allclass_update', name='allclass_edit'),
         url(r'^allclassdelete/(?P<pk>\d+)$', 'allclass.views.allclass_delete', name='allclass_delete'),
 
+	#Testing Request:
+	url(r'^testrequest/$', 'UMCloudDj.views.test_request', name='test_request'),
+
 	#url(r'^dynatableroles/$', 'UMCloudDj.views.role_dynatable', name='role_dynatable'),
 	(r'^register/', RedirectView.as_view(url='/register/start/')),
 

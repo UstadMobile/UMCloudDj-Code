@@ -716,10 +716,7 @@ def upload(request, template_name='myapp/upload_handle.html'):
 		setattr(newdoc, 'active', False)
 		#newdoc.description = description
                 newdoc.save()
-		newdoc.delete()
-                # Redirect to the document list after POST
-                return HttpResponseRedirect(reverse(\
-					'uploadeXe.views.list'))
+		#newdoc.delete()
 
 	  if 'submittotable' in request.POST:
 	    data['state']=state
@@ -1272,7 +1269,26 @@ def handle_block_upload(blockfile, data):
 			print("unable to delete failed course..")
 
 	if rete == "updatesuccess":
+	    #NOTE:
+	    #elpepubid is the entry that got updated in updatesuccess's case
+	    entry = elpepubid
 	    print("Got to update the already course and assign it to the updated epub if not newly created.")
+	    try:
+		print("Un assign previous Acquisition Link (AL) entry..")
+		previous_acquisition_links = AcquisitionLink.objects.filter(entry=entry)
+		for every_previous_acquisition_link in previous_acquisition_links:
+			every_previous_acquisition_link.active = False
+			every_previous_acquisition_link.save()
+		print("Making AL..")
+		make_acquisition_link(entry)
+		print("..done.")
+		
+            except:
+                print("Unable to create Acquisition Link.")
+                return_values =[]
+                return_values[rete]="updatefail"
+                return return_values, None, data
+
     except Exception, e:
 	print("Block upload not over or something wrong in making block to course trial..")
 	print(str(e))
@@ -1846,7 +1862,8 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 			print(" Updating al's entry..")	
 			acquisition_link.entry=entry
 			
-			return "updatesuccess", None
+			#return "updatesuccess", None
+			return "updatesuccess", entry
 
 			try:
 				print("Starting old EPUB update..")
@@ -1911,7 +1928,8 @@ def ustadmobile_export(uurl, unid, name, elplomid, forceNew):
 		    print("old folder deleted")
 	 	else:
 		    print("Unable to delete old folder")
-		return "updatesuccess", None
+		#return "updatesuccess", None
+		return "updatesuccess", found[0]
 
 		""" 
 		#Update logic commented till bug is updated.

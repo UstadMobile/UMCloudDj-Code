@@ -384,7 +384,7 @@ def get_course(request):
                                 label=\"TESTING\"/>\n"
                     xmlreturn += "<summary>" + o.name + "'s description" + "</summary>\n"
 		    try:
-		        for acquisition_link in entry.acquisitionlink.all():
+		        for acquisition_link in entry.acquisitionlink.all().filter(active=True):
 			    print("In Acquisition Link : " + str(acquisition_link.id))
 			    print("url is : " + str(acquisition_link.exefile))
 			    url = str(acquisition_link.exefile)
