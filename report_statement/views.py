@@ -2340,6 +2340,36 @@ def worksheet_add_values_to_row(worksheet,values, row, format):
     return worksheet
     
 
+"""Report: Survey Report Selection
+"""
+@login_required(login_url='/login/')
+def survey_selection(request):
+        logger.info("User="+request.user.username+\
+                " accessed /reports/survey_selection/")
+        organisation = User_Organisations.objects.get(\
+                user_userid=request.user).organisation_organisationid
+        current_user = request.user.username + " (" + \
+                organisation.organisation_name + ")"
+        current_user_role = User_Roles.objects.get(user_userid=\
+                                request.user.id).role_roleid.role_name;
+        current_user = "Hi, " + request.user.first_name + ". You are a " +\
+                current_user_role + " in " + organisation.organisation_name +\
+                    " organisation."
+	blocks = Block.objects.filter(success="YES", \
+    		publisher__in=User.objects.filter(pk__in=\
+		User_Organisations.objects.filter(\
+    		organisation_organisationid=organisation\
+		).values_list('user_userid', flat=True)))
+	print("Blocks: ")
+	print(blocks)
+
+	template_name="survey_report_selection.html"
+	data={}
+	data['current_user'] = current_user
+	data['blocks'] = blocks
+	return render(request, template_name, data)
+
+
 """Report: Registration Report (Survey Report)
    This report will be made for registration event statements 
    that are part of the organisation. 
@@ -2352,12 +2382,6 @@ def registration_statements_tincanxml(request,\
     organisation = User_Organisations.objects.get(\
 	user_userid=request.user).organisation_organisationid;
 
-    """
-    if organisation.id #Actually it could apply to any organisation.
-	return redirect('reports')
-    """
-
-
     """	
 	1. Get all users in this organisation
 	2. Get all statements for every user
@@ -2367,9 +2391,17 @@ def registration_statements_tincanxml(request,\
 
     OR:
 	1. Get all users and get all statements with registration id
-	
 
     """
+
+    if request.method != 'POST':
+    	return redirect('survey_selection')
+
+    date_since = request.POST['since_1_alt']
+    date_until = request.POST['until_1_alt'] 
+    block_id =   request.POST['blocks']
+    block = Block.objects.get(pk=block_id)
+    logger.info("Block selected: " + str(block.name))
     #Get all users in the current organisation
     all_org_users= User.objects.filter(pk__in=\
 	User_Organisations.objects.filter(\
@@ -2377,7 +2409,8 @@ def registration_statements_tincanxml(request,\
 		).values_list('user_userid', flat=True))
 
     #Get all statements made by those users
-    all_statements = models.Statement.objects.filter(user__in=all_org_users)
+    all_statements = models.Statement.objects.filter(user__in=all_org_users, \
+		timestamp__range = [date_since, date_until])
 	
     #If you need it by date..
     #s_date = datetime.strptime('201603250000', '%Y%m%d%H%M%S')
@@ -2386,12 +2419,15 @@ def registration_statements_tincanxml(request,\
     """
     Fix for statements (new) that don't get assigned to any block. 
     """
+    logger.info("Fixing statements (if any)")
     for every_statement in all_statements:
         statement_json=every_statement.full_statement
-        blockn=models.StatementInfo.objects.get(statement=\
-						every_statement).block
         try:
+	    blockn = models.StatementInfo.objects.get(statement=\
+						every_statement).block
             blockname=blockn.name        
+	    if blockn != block:
+		continue
 	    try:
 		coursen=models.StatementInfo.objects.get(statement=\
 						every_statement).course
@@ -2405,11 +2441,22 @@ def registration_statements_tincanxml(request,\
                         esi.course = esicourse
                         esi.save()
 	    except:
-		print("Something went wrong in fixing statements.")
+		try:
+			#logger.info("Cant find Course assigned to statement: " + str(every_statement.id) + " , fixing..");
+			esi = models.StatementInfo.objects.get(\
+				statement=every_statement)
+			esicourse = Course.objects.get(packages=esi.block)
+			if esi.course == None and esicourse != None:
+				esi.course = esicourse
+				esi.save()
+		except:
+			logger.info("Cannot find Course for the block: " +\
+				str(esi.block.id) + " for statement: " + \
+					str(every_statement.id))
+	
 	
         except: #If no block is assigned to this statementinfo
-            #("Trying for Statement: " + str(every_statement.id))
-	    #("Statement id: " + str(every_statement.id))
+	    logger.info("Fixing statement: " + str(every_statement.id))
             try:
                 context_parent = statement_json[u'context'][u'registration']
                 #("Reg id:" + str(context_parent))
@@ -2419,7 +2466,7 @@ def registration_statements_tincanxml(request,\
                 try:
                     if "um_assessment" in elpid or unicode("um_assessment") in elpid:
                         elpid=elpid[:-13]
-                        block = Block.objects.get(elpid=elpid, success="YES",\
+                        block = Block.objects.get(elpid=elpid, success="YES", active = True, \
 			  publisher__in=User.objects.filter(\
 			    pk__in=User_Organisations.objects.filter(\
 				organisation_organisationid=organisation\
@@ -2427,7 +2474,7 @@ def registration_statements_tincanxml(request,\
                         si = models.StatementInfo.objects.get(
 						statement=every_statement)
                         if si.block == None and block != None:
-                            print("Statement is going to be updated and \
+                            logger.info("Statement is going to be updated and \
 				assigned block: " + block.name)
                             si.block = block
                             si.save()
@@ -2443,17 +2490,17 @@ def registration_statements_tincanxml(request,\
 						statement=e)
                                         if esi.block == None:
                                             esi.block = block
-                                            print("Statement: " + \
+                                            logger.info("Statement: " + \
 						str(e.id) + \
 						    " should be of block: " +\
 							 block.name)
                                             esi.save()
                                 except:
-				    print("Unable to assign")
+				    logger.info("Unable to assign")
 			else:
-			    print("elp id unmatch..")
+			    logger.info("elp id unmatch..")
 		except:
-			print("Unable to fix that.")
+			logger.info("Unable to fix that.")
 
             except:
 		pass
@@ -2483,7 +2530,7 @@ def registration_statements_tincanxml(request,\
 
     g = open(registration_report_file, 'w')
     now = time.strftime("%c")
-    g.write("Registration Report for " + now + '\n')
+    g.write("Registration Report from " + str(date_since) + " to " + (date_until) + '\n')
     column_names = "ID|Item|Value|User|Block|Date"
     column_readable_names = column_names
     column_names_list = ["ID", "Item", "Value", "User", "Block", "Date"]
@@ -2491,22 +2538,22 @@ def registration_statements_tincanxml(request,\
     #"Testing the workbook"
     workbook = xlsxwriter.Workbook(registration_report_xlsx_file)
     worksheet_report = workbook.add_worksheet("Report")
-    worksheet_report.write('A1', 'Registration Report for ' + now)
-    worksheet_test = workbook.add_worksheet("Test")
+    worksheet_report.write('A1', 'Registration Report from ' + str(date_since) + " to " + str(date_until) + ".")
+    worksheet_test = workbook.add_worksheet("Notes")
     bold = workbook.add_format({'bold':True})
     format = workbook.add_format()
     format.set_align('justify')
     worksheet_report.set_column('A:F', 10, format)
     worksheet_report.set_column('G:Z', 25, format)
     worksheet_report.set_row(1, 45)
+    """
     worksheet_test.write('A1', 'Hello', bold)
     worksheet_test.write('A2', 'World')
     worksheet_test.write(3,0,123)
     worksheet_test.write(3,1,456)
     #workbook.close()
+    """
     
-    #worksheet_report.write(1,1,"Registration Report for " + now)
-
     logger.info("Generating Registration report (based on tincan.xml)")
 
     #This loop will ready all relevant registration statements for this report
@@ -2522,11 +2569,19 @@ def registration_statements_tincanxml(request,\
 	    blockn=models.StatementInfo.objects.get(statement=\
 					every_statement).block
 	    blockname=blockn.name
+	    
+	    if blockn != block:
+		#logger.info("Skipping: " + str(every_statement.id) + " because " + str(blockn.id) + " != " + str(block.id))
+		continue
+	    """
+    	    else:
+		#Testing purposes..
+		logger.info(every_statement.id)
+	    """
 	except:
 	    blockname="-"
 	    continue
 	
-
 	#Get Context Parent
         try:
             context_parent = statement_json[u'context'][u'registration']
@@ -2585,9 +2640,13 @@ def registration_statements_tincanxml(request,\
     # look ordered.
     #Update: We want to order the added MCQ columns
     every_regid_index = 3
+
+    #logger.info("Dict reg: ")
+    #logger.info(dict_reg)
+
     for every_regid in dict_reg:
 	every_regid_index = every_regid_index + 1
-	logger.info("In reg..")
+	logger.info("In reg: " + str(every_regid))
         statements = dict_reg.get(every_regid.encode('utf8'))
   	first_statement = statements[0]
 	blockid = first_statement.split('|')[5]
@@ -2672,7 +2731,7 @@ def registration_statements_tincanxml(request,\
 					
 
 	try:
-	    #logger.info("Closing the epub file")
+	    #("Closing the epub file")
 	    epubfilehandler.close()
 	except:
 	    pass
@@ -2695,7 +2754,9 @@ def registration_statements_tincanxml(request,\
 		# of activities from the tincan.xml file. We ignore this
 		pass
 
-	
+	logger.info("Length Statements|Statements In Order|Statements Activities In Order")
+	logger.info(str(len(statements))+"|"+str(len(statements_inorder))+"|"+str(len(statements_activities_inorder)))
+
 	#Updating column name, count and populating dict to link activity id with column number
 	if made_column_name_row == False:
 		logger.info("Updating column name row..")
@@ -2729,7 +2790,7 @@ def registration_statements_tincanxml(request,\
 			column_names_list.append(readable_name)
 
 			
-		logger.info("column_readable_names: " + column_readable_names);
+		#logger.info("column_readable_names: " + column_readable_names);
     		g.write('\n' + column_readable_names.encode('utf8') + '\n');
 		worksheet_report = worksheet_add_values_to_row(worksheet_report, column_names_list, 1, format)
 		made_column_name_row = True
@@ -2755,7 +2816,8 @@ def registration_statements_tincanxml(request,\
 	    if activity_id in reg_activity_score_mapping:
 		try:
 		    activity_id_score = int(reg_activity_score_mapping[activity_id])
-		    reg_activity_score_mapping[activity_id] = int(reg_activity_score_mapping[activity_id]) + int(result_score)
+		    #reg_activity_score_mapping[activity_id] = int(reg_activity_score_mapping[activity_id]) + int(result_score)
+		    reg_activity_score_mapping[activity_id] = int(result_score) #Don't sum it up, take the latest one
 		except:
 		    pass
 	    else:
@@ -2778,11 +2840,17 @@ def registration_statements_tincanxml(request,\
 		activity_id = column_name_number_mapping.get(every_column_number)
 		total_score = reg_activity_score_mapping.get(activity_id.encode('utf8'))
 		#total_score = reg_activity_score_mapping[activity_id]
-		if total_score:
+		if total_score != None:
 			column_score = column_score + "|" + str(total_score)
 			column_score_list.append(total_score)
 			new_registration_list.append(total_score)
 		
+	"""
+	logger.info("New Reg List:")
+	logger.info(new_registration_list)
+	logger.info("Column Score List:")
+	logger.info(column_score_list)
+	"""
 		
 	g.write("|" + "New" + "|Registration|" + this_username + "|" + blockn.name + "|" + timestamp  + column_score + '\n' )
 	g.write('\n' + '\n')

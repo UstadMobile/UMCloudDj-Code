@@ -48,12 +48,13 @@
     </div>-->
 	<!--<label>Classes and Students</label>
 	{% all_students_select %}-->
+
 	<p></p>
 	<label>Select a block</label>
 	<select name="blocks" id="blocks" required>
             <option selected disabled value="Z" required>Select block</option>
                 {% for everyblock in blocks %}
-                    <option value="{{ everyblock.id}}">{{ block.name }}</option>
+                    <option value="{{ everyblock.id}}">{{ everyblock.name }}</option>
                 {% endfor %}
         </select>*
 
