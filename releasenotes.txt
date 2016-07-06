@@ -1,3 +1,8 @@
+v1.1.650
+-Survey Report changes/fixes and tested
+-Statement info fixes
+-Update Epub fixes
+
 v1.1.600
 -Fixed block update which was successfully updating the block but wasn't updating the acquisition link entry so it made the opds acquisition links logic output the old epub file
 
