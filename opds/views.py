@@ -401,16 +401,29 @@ def get_course(request):
 			    micro_edition_url = ""
 			    
 
-			
+			    appLocation = (os.path.dirname(os.path.realpath(__file__)))
+    			    serverlocation=appLocation+'/../'
+    			    mainappstring = "UMCloudDj/"
+
 		            if str(acquisition_link.exefile).lower().endswith('.epub') and o.micro_edition:
 			        dst=os.path.splitext(basename(url))[0]
                                 if dst.strip():
                                     print("Exists!")
                                     micro_edition_url = os.path.dirname(url) + "/" +  dst + "_micro.epub"
+				    print(micro_edition_url)
+				#Check if micro_edition_url file exists:
 			        micro_edition_url = micro_edition_url.replace('&','&amp;')
-		                xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
-                                    href=\"" + micro_edition_url + "\"\n\
-                                    type=\"application/epub+zip;x-umprofile=micro\"/>\n"
+				
+				micro_file = serverlocation + mainappstring + "/media/" + micro_edition_url
+				print("Checking file: " + micro_file)
+				if os.path.isfile(micro_file):
+					print("FIle Exists!")
+					print('/media/'+micro_edition_url);
+				 	xmlreturn += "<link rel=\"http://opds-spec.org/acquisition\"\n \
+                                    		href=\"" + micro_edition_url + "\"\n\
+                                    			type=\"application/epub+zip;x-umprofile=micro\"/>\n"
+				else:
+					print("File Not exists!");
 
 			    if str(acquisition_link.exefile).lower().endswith('.epub') or \
 				str(acquisition_link.exefile).lower().endswith('.epub'):

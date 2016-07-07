@@ -1139,7 +1139,7 @@ def handle_block_upload(blockfile, data):
 	    if uid.lower().endswith('.elp') or uid.lower().endswith('.epub'):
 	        setattr(newdoc, "name", entryname)
 	        setattr(newdoc, "publisher", publisher)
-	        setattr(newdoc, "micro_edition", True)
+	        setattr(newdoc, "micro_edition", False) #disbaled micro
 	        newdoc.save()
 	    else:
 		if entryname != None or entryname != "-":
@@ -1576,7 +1576,7 @@ def list(request, template_name='myapp/list.html'):
                 setattr(newdoc, 'url', courseURL)
                 setattr(newdoc, 'name', elpiname)
                 setattr(newdoc, 'publisher', request.user)
-		setattr(newdoc, 'micro_edition', True)
+		setattr(newdoc, 'micro_edition', False) #Disabled Micro
                 newdoc.save()
 		state="Your Block: " + newdoc.name + "  has been uploaded."
 		statesuccess=1

@@ -1,3 +1,6 @@
+v1.1.670
+- Fixed opds micro edition bug that gets set False and added a check to opds browser to check if the file exists on the server or not
+
 v1.1.650
 -Survey Report changes/fixes and tested
 -Statement info fixes
