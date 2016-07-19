@@ -1,3 +1,6 @@
+v1.1.680
+- Updates to Survey report to show score as well as response filled in.
+
 v1.1.670
 - Fixed opds micro edition bug that gets set False and added a check to opds browser to check if the file exists on the server or not
 

@@ -2409,12 +2409,11 @@ def registration_statements_tincanxml(request,\
 		).values_list('user_userid', flat=True))
 
     #Get all statements made by those users
+    """
+    Get all statements made by those users in that time range
+    """
     all_statements = models.Statement.objects.filter(user__in=all_org_users, \
 		timestamp__range = [date_since, date_until])
-	
-    #If you need it by date..
-    #s_date = datetime.strptime('201603250000', '%Y%m%d%H%M%S')
-    #all_statements = models.Statement.objects.filter(user__in=all_org_users, timestamp__gte=s_date)
 
     """
     Fix for statements (new) that don't get assigned to any block. 
@@ -2519,7 +2518,9 @@ def registration_statements_tincanxml(request,\
     appLocation=(os.path.dirname(os.path.realpath(__file__)))
     timestamp=time.strftime("%Y%m%d%H%M%S")
 
-
+    """
+    Declare the Survey report (previously known as Registration report) 's name
+    """
     registration_report_file = appLocation + \
 	'/../UMCloudDj/media/registration_report/registration_report_tincan_' + timestamp + '.csv'
     registration_report_xlsx_file = appLocation + \
@@ -2528,6 +2529,9 @@ def registration_statements_tincanxml(request,\
     registration_report_filename = 'registration_report/registration_report_tincan_' + timestamp + '.csv'
     registration_report_xlsx_filename = 'registration_report/registration_report_tincan_' + timestamp + '.xlsx'
 
+    """
+    Touch (file) the csv version - Not used. Replaced by excel version
+    """
     g = open(registration_report_file, 'w')
     now = time.strftime("%c")
     g.write("Registration Report from " + str(date_since) + " to " + (date_until) + '\n')
@@ -2535,7 +2539,9 @@ def registration_statements_tincanxml(request,\
     column_readable_names = column_names
     column_names_list = ["ID", "Item", "Value", "User", "Block", "Date"]
 
-    #"Testing the workbook"
+    """
+    Touch and set the excel version of the report
+    """
     workbook = xlsxwriter.Workbook(registration_report_xlsx_file)
     worksheet_report = workbook.add_worksheet("Report")
     worksheet_report.write('A1', 'Registration Report from ' + str(date_since) + " to " + str(date_until) + ".")
@@ -2546,18 +2552,20 @@ def registration_statements_tincanxml(request,\
     worksheet_report.set_column('A:F', 10, format)
     worksheet_report.set_column('G:Z', 25, format)
     worksheet_report.set_row(1, 45)
-    """
-    worksheet_test.write('A1', 'Hello', bold)
-    worksheet_test.write('A2', 'World')
-    worksheet_test.write(3,0,123)
-    worksheet_test.write(3,1,456)
-    #workbook.close()
-    """
     
     logger.info("Generating Registration report (based on tincan.xml)")
 
-    #This loop will ready all relevant registration statements for this report
-    # and ggroup them by registration id and store it in a dict
+    """
+    This loop will ready all relevant registration statements for this report
+    and group them by registration id - by storing it in a dict
+
+    We're basically mapping statements to their registration ids. That way we 
+    are grouping the statements that were made together in that registration 
+    (by id). Using dict. So its: 
+	dict_reg[reg_id] = {statement1, statement2, ..}
+    Note: The statement have been moved from JSON to a pip delimited string for
+	better parsing
+    """
     for every_statement in all_statements:
 
 	#Get statement JSON for processing and the user
@@ -2571,14 +2579,10 @@ def registration_statements_tincanxml(request,\
 	    blockname=blockn.name
 	    
 	    if blockn != block:
-		#logger.info("Skipping: " + str(every_statement.id) + " because " + str(blockn.id) + " != " + str(block.id))
+		#Skipping this statement cus it haz no block assigned to it
 		continue
-	    """
-    	    else:
-		#Testing purposes..
-		logger.info(every_statement.id)
-	    """
 	except:
+	    #Skipping cuz cudnt figure out block 
 	    blockname="-"
 	    continue
 	
@@ -2632,28 +2636,30 @@ def registration_statements_tincanxml(request,\
     made_column_name_row = False
     column_name_number_mapping = {}
     activity_id_name_mapping = {}
-	    
-    #This loop will loop through every registration and get all
-    # activities from all associated epub blocks's tincan.xml
-    #   and order them. 
-    #It will then arrange the statements in that order so that they
-    # look ordered.
     #Update: We want to order the added MCQ columns
     every_regid_index = 3
 
-    #logger.info("Dict reg: ")
-    #logger.info(dict_reg)
+    """
+    This loop will loop through every regsitration (by reg id) and get all
+    activities from its associated epub blocks' tincan.xml and order the
+    statements in that order of the tincan.xml activities for that reg id
+    in order so that they look ordered. 
+	1. Get Block for the reg group
+	2. Get activities in that block's epub's tincan.xml and get the order
+	3. Arrange the statements in the reg dict for that reg id group
 
+    Basically order the dictionary by tincan.xml
+    """
     for every_regid in dict_reg:
 	every_regid_index = every_regid_index + 1
 	logger.info("In reg: " + str(every_regid))
+	#1
         statements = dict_reg.get(every_regid.encode('utf8'))
   	first_statement = statements[0]
 	blockid = first_statement.split('|')[5]
 	blockn = Block.objects.get(pk=blockid)
 	this_username = first_statement.split('|')[4]
 	timestamp = first_statement.split('|')[7]
-	
 	appLocation = (os.path.dirname(os.path.realpath(__file__)))
         serverlocation=appLocation+'/../'
         mainappstring = "UMCloudDj/"
@@ -2669,9 +2675,12 @@ def registration_statements_tincanxml(request,\
 	    return render(request, template_name,{'object_list':dict_reg,\
                 'result':result} )
 
+	#2
 	activities_inorder = []
 	tincanprefix = ""
-	
+	"""
+	Get activities in tincan.xml file in order and store it in an array
+	"""
 	for eachfile in epubasazip.namelist():
             if eachfile.find('tincan.xml') != -1:
                 foundTinCanFile = True
@@ -2700,8 +2709,6 @@ def registration_statements_tincanxml(request,\
                                             #lang = str(activityelement.attrib['lang'])
 					if "name" in activityelement.tag:
 					    name = activityelement.text
-					    #name = activityelement.text
-
 						
 					    epub_id_bit=activityid[activityid.find("epub:")+len("epub:"):activityid.find("/")]
                         		    a = activityid.find("/")
@@ -2723,15 +2730,11 @@ def registration_statements_tincanxml(request,\
                                     if tincanprefix != "":
                                         logger.info("Found prefix!" + str(tincanprefix))
 			    try:
-				#logger.info("Closing the epub file")
 				epubfilehandle.close()
 			    except:
 				logger.info("Cant close epubfilehandle")
-				
 					
-
 	try:
-	    #("Closing the epub file")
 	    epubfilehandler.close()
 	except:
 	    pass
@@ -2739,7 +2742,10 @@ def registration_statements_tincanxml(request,\
 	#logger.info("Name-Activity ID mapping: ") 
 	#logger.info(activity_id_name_mapping)
 
-	#Arranging statements in order (to make it look better)
+	#3
+	"""
+	Arranging statements in order (to make it look better)
+	"""
 	statements_inorder=[]
 	statements_activities_inorder = []
         for every_statement in statements:
@@ -2750,20 +2756,21 @@ def registration_statements_tincanxml(request,\
 	    	statements_inorder.insert(activity_index, every_statement)
 	    	statements_activities_inorder.insert(activity_index, statement_activityid)
 	    except ValueError:
-		#For somereason the actuvuty id with page might not be in the list
+		#For somereason the activity id with page might not be in the list
 		# of activities from the tincan.xml file. We ignore this
 		pass
 
-	logger.info("Length Statements|Statements In Order|Statements Activities In Order")
+	logger.info("For this reg_id: # of Statements|# of Statements In Order|# of Statement's Activities In Order")
 	logger.info(str(len(statements))+"|"+str(len(statements_inorder))+"|"+str(len(statements_activities_inorder)))
 
-	#Updating column name, count and populating dict to link activity id with column number
+	"""
+	Report File: Updating column name in the report 
+	"""
 	if made_column_name_row == False:
 		logger.info("Updating column name row..")
-		column_number = 7
+		column_number = 7 #Cuz the first 6 populated with other info (ID, Item, Value, User, Block, Date
 		for every_activity in activities_inorder:
-			#Reminder:
-			#column_names = "ID|Item|Value|User|Block|Date"
+			#Reminder: column_names = "ID|Item|Value|User|Block|Date"
 
 			#Getting relative activity id 
 			epub_id_bit=every_activity[every_activity.find("epub:")+len("epub:"):every_activity.find("/")]
@@ -2776,7 +2783,7 @@ def registration_statements_tincanxml(request,\
 			relative_activity_id = every_activity.split(epub_id)[1]
 			
 			readable_name = activity_id_name_mapping.get(relative_activity_id)
-			column_names = column_names + "|" + relative_activity_id;
+			column_names = column_names + "|" + relative_activity_id; #Not really used 
 
 			#Make readable names for report
 			if not readable_name:
@@ -2798,31 +2805,54 @@ def registration_statements_tincanxml(request,\
 	#logger.info("Column Name-Column Number mapping:")
 	#logger.info(column_name_number_mapping)
 
+	"""
+	Main report logic: Process each statements (of the current registration) which are in order
+	We check what kind of statements they are. We are currently looking for two types:
+	1. choice (MCQ questions)
+	2. fill-in (Fill in the blanks: Text Entry questions/activities)
+	
+	We are creating a score mapping of this registration's score/result mapped to the activity id
+	We do not add cause we want unique ones 
+	
+	"""
 	reg_activity_score_mapping = {}
  	for every_statement in statements_inorder:
+	    #TODO: Add check for type of statement: MCQ or fill-in
 	    result = every_statement.split('|')[1]
 	    result_score = every_statement.split('|')[2]
 	    activity_name = every_statement.split('|')[0]
 	    activity_id = every_statement.split('|')[3]
 	    exact_timestamp = every_statement.split("|")[7]
-	    if activity_id.startswith(tincanprefix):
+	    if activity_id.startswith(tincanprefix): #tincanprefix is prefix for this epub from the tincan.xml file
 		activity_id = activity_id[len(tincanprefix):]
+
+	    #AFAIK: Not used
 	    result_on_report = ""
 	    if result_score != "":
-		result_on_report = result + " Score: " + result_score
-		activity_name = "MCQ " + activity_id
+		result_on_report = result + " Score: " + result_score 
+		activity_name = "MCQ " + activity_id #AFAIK not used
+	    if result != "":
+		result_on_report = result
+		
+	    if result_score != "":
+		result_report = result_score
+	    else:
+		result_report = result
 
 	    #logger.info("Getting sum for activity id: " + activity_id)
 	    if activity_id in reg_activity_score_mapping:
 		try:
 		    activity_id_score = int(reg_activity_score_mapping[activity_id])
 		    #reg_activity_score_mapping[activity_id] = int(reg_activity_score_mapping[activity_id]) + int(result_score)
-		    reg_activity_score_mapping[activity_id] = int(result_score) #Don't sum it up, take the latest one
+
+		    #reg_activity_score_mapping[activity_id] = int(result_score) #Don't sum it up, take the latest one
+		    reg_activity_score_mapping[activity_id] = result_report
 		except:
 		    pass
 	    else:
 		try:
-		    reg_activity_score_mapping[activity_id] = int(result_score)
+		    #reg_activity_score_mapping[activity_id] = int(result_score)
+		    reg_activity_score_mapping[activity_id] = result_report
 		except:
 		    pass
 		
