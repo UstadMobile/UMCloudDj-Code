@@ -2612,9 +2612,12 @@ def registration_statements_tincanxml(request,\
 	#Get the Result and Score
 	try:
 	    result = statement_json[u'result'][u'response']
-	    result_score = statement_json[u'result'][u'score'][u'raw']
 	except:
 	    result = ""
+	try:
+	    result_score = statement_json[u'result'][u'score'][u'raw']
+	except:
+	    result_score = result
 	    result_score = ""
 
 
@@ -2622,14 +2625,14 @@ def registration_statements_tincanxml(request,\
 	#If this is for an existing registration, we add the activity id to it.
 	if context_parent in dict_reg:
 	    dict_reg[context_parent].append(\
-		activity_name + "|" + result + "|" + str(result_score) + "|" + activity_id +\
+		activity_name + "|" + str(result) + "|" + str(result_score) + "|" + activity_id +\
 	    	  "|"+username+"|" + str(blockn.id) + "|" + blockname+"|"+\
 		    every_statement.timestamp.strftime(\
 			"%B %d %Y %H:%M"))
 		   
 	else:
 	    dict_reg[context_parent] = [activity_name + "|" + \
-		result + "|" + str(result_score) + "|" + activity_id +"|"+username+"|" + \
+		str(result) + "|" + str(result_score) + "|" + activity_id +"|"+username+"|" + \
 		    str(blockn.id) + "|" + blockname+"|"+every_statement.timestamp.strftime(\
 			"%B %d, %Y %H:%M")]
 
@@ -2665,6 +2668,7 @@ def registration_statements_tincanxml(request,\
         mainappstring = "UMCloudDj/"
 	epub_file_path = serverlocation + mainappstring \
                     + settings.MEDIA_URL + str(blockn.exefile)
+	logger.info("Epub file path: " + epub_file_path)
 	try:
             epubfilehandle = open(epub_file_path, 'rb')
             epubasazip = zipfile.ZipFile(epubfilehandle)
@@ -2760,8 +2764,8 @@ def registration_statements_tincanxml(request,\
 		# of activities from the tincan.xml file. We ignore this
 		pass
 
-	logger.info("For this reg_id: # of Statements|# of Statements In Order|# of Statement's Activities In Order")
-	logger.info(str(len(statements))+"|"+str(len(statements_inorder))+"|"+str(len(statements_activities_inorder)))
+	#logger.info("For this reg_id: # of Statements|# of Statements In Order|# of Statement's Activities In Order")
+	#logger.info(str(len(statements))+"|"+str(len(statements_inorder))+"|"+str(len(statements_activities_inorder)))
 
 	"""
 	Report File: Updating column name in the report 
@@ -2857,8 +2861,6 @@ def registration_statements_tincanxml(request,\
 		    pass
 		
 
-
-
 	#logger.info("Registration's Activity - Score mapping")
 	#logger.info(reg_activity_score_mapping)
 
@@ -2874,6 +2876,11 @@ def registration_statements_tincanxml(request,\
 			column_score = column_score + "|" + str(total_score)
 			column_score_list.append(total_score)
 			new_registration_list.append(total_score)
+		else:
+			column_score = column_score +"|" + ""
+			column_score_list.append("")
+			new_registration_list.append("")
+
 		
 	"""
 	logger.info("New Reg List:")
@@ -2881,7 +2888,7 @@ def registration_statements_tincanxml(request,\
 	logger.info("Column Score List:")
 	logger.info(column_score_list)
 	"""
-		
+
 	g.write("|" + "New" + "|Registration|" + this_username + "|" + blockn.name + "|" + timestamp  + column_score + '\n' )
 	g.write('\n' + '\n')
 	
