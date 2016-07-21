@@ -1198,12 +1198,20 @@ def get_allclass_students(request, pk):
 		    allclassteachers = allclass.teachers.all()
 	 	    if user in allclassteachers:
 		    	all_students = allclass.students.all()
+			""" Why encode and stingify? when you can just pass it as is
 		    	json_allstudents = simplejson.dumps([
 			    {
 			    	'id':str(o.id),
-			    	'username':str(o.username),
-				'full_name':str(o.first_name) + " " + str(o.last_name),
+			    	'username':str(o.username.encode('utf-8')),
+				'full_name':str(o.first_name.encode('utf-8')) + " " + str(o.last_name.encode('utf-8')),
 			    }for o in all_students])
+			"""
+			json_allstudents = simplejson.dumps([
+                            {
+                                'id':str(o.id),
+                                'username':o.username,
+                                'full_name':o.first_name + " " + o.last_name,
+                            }for o in all_students])
 		    	return HttpResponse(json_allstudents, mimetype="application/json")
 		    else:
 			authresponse = HttpResponse(status=403)

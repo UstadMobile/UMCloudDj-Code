@@ -2861,8 +2861,8 @@ def registration_statements_tincanxml(request,\
 		    pass
 		
 
-	#logger.info("Registration's Activity - Score mapping")
-	#logger.info(reg_activity_score_mapping)
+	logger.info("Registration's Activity - Score mapping")
+	logger.info(reg_activity_score_mapping)
 
 	new_registration_list = ["","New", "Registration", this_username, blockn.name, timestamp]
 	column_score = ""
