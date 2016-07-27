@@ -61,6 +61,8 @@ from uploadeXe.models import DateTime
 from holiday.models import Holiday
 from holiday.models import Calendar
 
+from collections import OrderedDict
+
 
 # This uses the lrs logger for LRS specific information
 logger = logging.getLogger(__name__)
@@ -2413,7 +2415,7 @@ def registration_statements_tincanxml(request,\
     Get all statements made by those users in that time range
     """
     all_statements = models.Statement.objects.filter(user__in=all_org_users, \
-		timestamp__range = [date_since, date_until])
+		timestamp__range = [date_since, date_until]).order_by('-timestamp')
 
     """
     Fix for statements (new) that don't get assigned to any block. 
@@ -2513,6 +2515,7 @@ def registration_statements_tincanxml(request,\
     logger.info("On to generating the report..")
 
     dict_reg = dict() #This is all the registration statements grouped by red id.
+    #ordered_dict_reg = OrderedDict()
     school_dict = dict() #These are all the registration ids grouped by school id.
     #Group this by registration id 
     appLocation=(os.path.dirname(os.path.realpath(__file__)))
@@ -2554,6 +2557,7 @@ def registration_statements_tincanxml(request,\
     worksheet_report.set_row(1, 45)
     
     logger.info("Generating Registration report (based on tincan.xml)")
+    sorted_keys = []
 
     """
     This loop will ready all relevant registration statements for this report
@@ -2631,10 +2635,12 @@ def registration_statements_tincanxml(request,\
 			"%B %d %Y %H:%M"))
 		   
 	else:
+	    sorted_keys.append(context_parent)
 	    dict_reg[context_parent] = [activity_name + "|" + \
 		str(result) + "|" + str(result_score) + "|" + activity_id +"|"+username+"|" + \
 		    str(blockn.id) + "|" + blockname+"|"+every_statement.timestamp.strftime(\
 			"%B %d, %Y %H:%M")]
+	    
 
     made_column_name_row = False
     column_name_number_mapping = {}
@@ -2653,7 +2659,8 @@ def registration_statements_tincanxml(request,\
 
     Basically order the dictionary by tincan.xml
     """
-    for every_regid in dict_reg:
+    #for every_regid in dict_reg:
+    for every_regid in sorted_keys:
 	every_regid_index = every_regid_index + 1
 	logger.info("In reg: " + str(every_regid))
 	#1
@@ -2897,11 +2904,11 @@ def registration_statements_tincanxml(request,\
 	worksheet_report = worksheet_add_values_to_row(worksheet_report, new_registration_list, every_regid_index, format)
 	every_regid_index = every_regid_index + 1;
 
-	dict_reg[every_regid] = statements_inorder
+	dict_reg[every_regid] = statements_inorder #Dont need this
 
-    all_reg_ids=dict_reg.keys()
-    regidsalldone=[]
-    regidsdone=[]
+    all_reg_ids=dict_reg.keys() #Don't need this
+    regidsalldone=[] #Don't need this
+    regidsdone=[] #Don't need this
 
     g.close()
     workbook.close()
