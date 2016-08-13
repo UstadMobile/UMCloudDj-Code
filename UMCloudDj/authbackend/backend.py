@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.contrib import auth
 import xmlrpclib as xmlrpc 	#Used for authenticating against wordpress using xmlrpc client
-
+import socket
 from uploadeXe.models import Role
 from uploadeXe.models import User_Roles
 from django.forms import ModelForm
@@ -40,8 +40,11 @@ class MyCustomBackend:
 	    #Check user credentials
 
 	    s = xmlrpc.ServerProxy('http://www.ustadmobile.com/xmlrpc.php')	#Getting the xmlrpc link for ustadmobile.com wordpress
+	    socket.setdefaulttimeout(5)
 	    try:
+		print("Checking against xmlrpc for ustadmobile's wordpress..")
 	        if s.wpse39662.login(username,password):				#Returns true if user is successfully authenticated, False if not
+		    socket.setdefaulttimeout(None)
 	    	    print("Username and Password check success for new user.")
 		    print("Checking new user in Django..")
 		    #Create user.
@@ -74,13 +77,15 @@ class MyCustomBackend:
 			print("Error in creating user. User already exists!")
         		return redirect("/login/")
 	        else:
+		    socket.setdefaulttimeout(None)
 		    print("Username and Password check unsuccessfull for new user. Not creating new user.")
 		    return None
 	    except:
 		print("!!Unable to establish a connection with ustadmobile.com's xmlrpcr!!")
+		socket.setdefaulttimeout(None)
 		return None
-
-            #return None
+	    
+            return None
 
     # Required for your backend to work properly - unchanged in most scenarios
     def get_user(self, user_id):
