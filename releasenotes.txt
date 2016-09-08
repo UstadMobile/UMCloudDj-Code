@@ -1,3 +1,6 @@
+v1.1.700
+- Added Attendance Excel Report and made attendance related activities more modular
+
 v1.1.691
 - Fixed error in studnets in class api that was giving names as strings and not as is in database causing error with names with special characters (eg: french)
 

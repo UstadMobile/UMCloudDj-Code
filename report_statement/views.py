@@ -1220,6 +1220,40 @@ def attendance_selection(request):
         #return render_to_response('attendance_report_selection.html',\
         #    {'current_user':current_user}, context_instance = RequestContext(request))
 
+"""Common function to get registrations per class for a given date range/statements
+"""
+def get_allclass_registrations(date_since, date_until, allclass):
+    allclass_id = str(allclass.id);
+    attended_activity_string = "http://www.ustadmobile.com/activities/attended-class/"
+    activity_id_string = attended_activity_string + allclass_id
+    all_activity_id_string = []
+    activity_id_string2 = activity_id_string + "/"
+    all_activity_id_string.append(activity_id_string)
+    all_activity_id_string.append(activity_id_string2)
+    all_hosted_verb_id = []
+    hosted_verb_id = "http://activitystrea.ms/schema/1.0/host"
+    hosted_verb_id2 = "http://activitystrea.ms/schema/1.0/host/"
+    all_hosted_verb_id.append(hosted_verb_id)
+    all_hosted_verb_id.append(hosted_verb_id2)
+    hosted_verb = models.Verb.objects.filter(verb_id__in=all_hosted_verb_id)
+    attendance_activity = models.Activity.objects.filter(\
+        activity_id__in=all_activity_id_string)
+    
+    #Get all registrations:
+    all_teachers=[]
+    all_dates=[]
+    all_registrations = models.Statement.objects.filter(\
+        timestamp__range = [date_since, date_until],\
+            object_activity__in = attendance_activity,\
+                verb__in=hosted_verb).distinct('context_registration')
+    for every_registration in all_registrations:
+        all_teachers.append(every_registration.user)
+	all_dates.append(every_registration.timestamp)
+    #print("All registrations for class: " + allclass.allclass_name + \
+    #    " from " + str(date_since) + " to " + str(date_until) + " : ")
+    #print(all_registrations)
+    return all_registrations, all_teachers, all_dates
+
 """Report: Attendance Get Registration for selection
 """
 @login_required(login_url='/login/')
@@ -1232,36 +1266,14 @@ def attendance_get_registration(request, template_name='attendance_all_registrat
 	allclass_id = request.POST['allclass']
         allclass = Allclass.objects.get(pk=allclass_id)
         if allclass is not None:
-        
-            #Get all registrations unique for that class 
-            #allclass_statements = models.Statement.objects.filter(\
-            #    , timestamp__range=[date_since, date_until])
-            attended_activity_string = "http://www.ustadmobile.com/activities/attended-class/"
-            activity_id_string = attended_activity_string + allclass_id
-            all_activity_id_string = []
-            activity_id_string2 = activity_id_string + "/"
-            all_activity_id_string.append(activity_id_string)
-            all_activity_id_string.append(activity_id_string2)
-            all_hosted_verb_id = []
-            hosted_verb_id = "http://activitystrea.ms/schema/1.0/host"
-            hosted_verb_id2 = "http://activitystrea.ms/schema/1.0/host/"
-            all_hosted_verb_id.append(hosted_verb_id)
-            all_hosted_verb_id.append(hosted_verb_id2)
-            hosted_verb = models.Verb.objects.filter(verb_id__in=all_hosted_verb_id)
-            attendance_activity = models.Activity.objects.filter(\
-                activity_id__in=all_activity_id_string)
 
-            #Get all registrations 
-	    allteachers=[]
-            all_registrations = models.Statement.objects.filter(\
-                timestamp__range = [date_since, date_until],\
-                    object_activity__in = attendance_activity,\
-                        verb__in=hosted_verb).distinct('context_registration')
-	    for every_registration in all_registrations:
-		print("hi")
-		allteachers.append(every_registration.user)
-            print("I think I got the registrations")
-            print(all_registrations)
+	    all_registrations, allteachers, all_dates = get_allclass_registrations(date_since, date_until, allclass)
+	    #print("All dates:")
+	    #print(all_dates)
+
+	    all_registrations = zip(\
+                all_registrations, allteachers)
+            data={}
 	    table_headers_html = []
 	    table_headers_name = []
    	    table_headers_html.append("registration")
@@ -1270,11 +1282,6 @@ def attendance_get_registration(request, template_name='attendance_all_registrat
             table_headers_name.append("Time")
 	    table_headers_html = zip(\
 		table_headers_html, table_headers_name)
-
-
-	    all_registrations = zip(\
-		all_registrations, allteachers)
-	    data={}
 	    
 	    data['yaxis'] = all_registrations
 	    data['pagetitle'] = "All registrations Selection"
@@ -1319,64 +1326,569 @@ class Student(object):
         self.fingerprinted = fingerprinted
         self.gender = gender
 
+"""
+ATTENDANCE REPORT COMMON FUNCTIONS
+"""
+
+"""Common function to get student attendance for a given registration id in a studnet 
+object list
+"""
+def get_registration_attendance(registration_id):
+    #print("Registration id given: " + str(registration_id))
+    attended_activity_string = "http://www.ustadmobile.com/activities/attended-class/"
+    all_hosted_verb_id = []
+    hosted_verb_id = "http://activitystrea.ms/schema/1.0/host"
+    hosted_verb_id2 = "http://activitystrea.ms/schema/1.0/host/"
+    all_hosted_verb_id.append(hosted_verb_id)
+    all_hosted_verb_id.append(hosted_verb_id2)
+    hosted_verb = models.Verb.objects.filter(verb_id__in=all_hosted_verb_id)
+
+    allstudents_statements_per_registration = models.Statement.objects.filter(\
+                context_registration = registration_id).exclude(\
+                    verb__in = hosted_verb)
+    timestamp = ""
+    try:
+        #Get class
+        a = allstudents_statements_per_registration[0].object_activity.activity_id.strip()
+        timestamp = allstudents_statements_per_registration[0].timestamp
+        pos = a.find(attended_activity_string)
+        pos = pos + len(attended_activity_string)
+        reg_allclass_id = a[pos:].strip()
+        if (reg_allclass_id.endswith('/')):
+             reg_allclass_id = reg_allclass_id[:-1]
+        reg_allclass = Allclass.objects.get(pk=reg_allclass_id)
+        if reg_allclass is None:
+            reg_allclass = ""
+    except Exception as e:
+        logger.info("Unable to get class from activity id")
+        logger.info(str(e.message));
+	print("Unable to get class from activity id")
+        reg_allclass = ""
+
+    #Debug:
+    #print("All student statements for Registration : " + str(registration_id))
+    #print(allstudents_statements_per_registration)
+    all_students_attendance = []
+    for every_statement in allstudents_statements_per_registration:
+        actor_name = every_statement.actor.get_a_name()
+        verb = every_statement.verb.get_display()
+        context_extensions = every_statement.context_extensions
+        #context_extensions_json = json.loads(context_extensions)
+        fingerprinted = ""
+        try:
+            fingerprinted = context_extensions[u'http://www.ustadmobile.com/fingerprinted']
+        except:
+            fingerprinted = ""
+        if not fingerprinted:
+            all_students_attendance.append(Student(actor_name, verb, "",""))
+            #print("For student: " + actor_name + "->" + verb +  " " )
+        else:
+            all_students_attendance.append(Student(actor_name, verb, fingerprinted, ""))
+            #print("For student: " + actor_name + " -> " + verb + " -> fingerprinted: " + fingerprinted +  " " )
+
+    return all_students_attendance, reg_allclass, timestamp
+    
+
+""" Gets all dates everyday between (and inclusive) of 
+date range : date_since -> date_until 
+Returns a list of dates (datetime.datetime.date)
+"""
+def get_everyday_in_daterange(date_since, date_until):
+    everyday_in_daterange=[]
+    time_delta = (date_until - date_since)
+    for i in range(time_delta.days + 1):
+    	this_date = date_since + td(days=i)
+    	everyday_in_daterange.append(this_date)
+    return everyday_in_daterange
+
+""" Gets all holidays assigned to a school. These are 
+irrespective of weekends. If a school does not 
+have any holidays assigned, this will return the
+organisation's holidays if it exists. 
+Returns a list of dates (datetime.datetime.date?)
+"""
+def get_school_holidays(school):
+    #print("get_school_holidays(school)");
+    organisation = school.organisation
+    school_holidays = Holiday.objects.filter(\
+        holiday_calendar_holiday=school.holidays.all()\
+	    ).values_list('date', flat=True)
+    if not school_holidays:
+    	try:
+            school_holidays = \
+		organisation.calendar.holidays.all().values_list(\
+		    'date', flat=True)
+        except:
+            school_holidays = []
+    return school_holidays
+
+""" Gets the day from a date
+"""
+def get_day_from_date(this_date):
+    this_date_dayid = date.weekday(this_date) + 1;
+    this_date_day = Weekday.objects.get(pk=this_date_dayid)
+    return this_date_day
+
+""" Get weekend set by school 
+Returns list of Weekday object (Sun,Mon,etc) 
+"""
+def get_school_weekends(this_school):
+    weekends = this_school.weekends.all()
+    return weekends
+
+
+""" Gets all the days the class is supposed to be 
+    operational. This will only return the days
+    and not the times. Enough to check if its 
+    supposed to be on this day or not. TODO: 
+    Extend to return time whenever we need it.
+    Returns list of Weekday object (Sun, Mon, etc)
+"""
+def get_class_days(allclass):
+    #print("get_class_days")
+    allclass_day_time = allclass.days.all()
+    days = []
+    for every_day_time in allclass_day_time:
+	days.append(every_day_time.day)
+    return days
+
+""" Gets all holidays assigned to a class. These are
+    irrespective of weekends. If a class does not have 
+    any holidays assigend to it, it will get school's
+    holidays.
+    Returns a list of dates (datetime.datetime.date?) 
+"""
+def get_class_holiday_days(allclass):
+    #print("get_allclass_holidays")
+    days = allclass.days.all()
+    days_week_days =[]
+    school = allclass.school
+    allclass_holidays = Holiday.objects.filter(\
+    	holiday_calendar_holiday=\
+            allclass.holidays.all()).values_list('date', flat=True)
+    for each_day_time in days:
+    	days_week_days.append(each_day_time.day)
+
+    if not allclass_holidays:
+    	allclass_holidays = get_school_holidays(school)
+
+    return allclass_holidays, days_week_days
+
+""" Checks if the current date is a holiday for the given
+    school and class combination
+"""
+def is_date_a_holiday(this_date, hallclass):
+    #print("Checking if : " + str(this_date) + " is a holiday in class: " + str(allclass))
+    this_date_day = get_day_from_date(this_date)
+    this_school = hallclass.school
+    if this_date_day in get_school_weekends(this_school):
+	#print("Its the weekend! (" + str(this_date) + ")");
+	return True
+    if this_date_day not in get_class_days(hallclass):
+    	#print("No class this day of the week! (" + str(this_date) + ")");
+	return True
+    if this_date in get_class_holiday_days(hallclass):
+    	#print("Its a holiday today! (" + str(this_date) + ")");
+	return True
+    return False
+
+""" Checks if the current date is a holidayu for the
+    given school
+"""
+def is_date_a_holiday_school(this_date, tschool):
+    this_date_day = get_day_from_date(this_date)
+    if this_date_day in get_school_weekends(tschool):
+	return True
+    return False
+
+""" Get termdays for class given in date range given.
+    This will account for holidays and remove that 
+    from everyday between the date range.
+    Returns a list of dates (datetime.datetime.date)
+"""
+def get_termday_in_daterange(date_since, date_until, termday_allclass):
+    #print("get_termday_in_daterange");
+    termday_in_daterange=[]
+    time_delta = (date_until - date_since)
+    for i in range(time_delta.days + 1):
+    	this_date = date_since + td(days=i)
+	if is_date_a_holiday(this_date, termday_allclass):
+	    continue
+    	termday_in_daterange.append(this_date)
+    return termday_in_daterange
+
+""" Gets the attendance sorted by date for everyday sorted
+    by date range given for class given.
+    Returns a dictionary of dates and the corresponding 
+    Student Attendance list 
+"""
+def get_attendance_daily(date_since, date_until, attendance_class):
+    #print("get_attendance_daily for class: " + str(attendance_class))
+    #Get everyday in date range
+    everydays = get_everyday_in_daterange(date_since, date_until)
+    date_attendance_dict = {}
+    #Get all registrations and date
+    all_registrations, all_teachers, all_dates = \
+    	get_allclass_registrations(date_since, date_until, attendance_class)
+
+    for reg, this_datetime in zip(all_registrations, all_dates):
+	this_date = this_datetime.date()
+	reg_id = reg.context_registration
+	#print("For reg id: " + reg_id + ", Checking if the date: " + str(this_date) + " is a holiday in class: " + str(allclass))
+    	if is_date_a_holiday(this_date, attendance_class):
+	    continue
+	all_students_attendance, allclass_from_reg, timestamp = \
+	    get_registration_attendance(reg_id);
+	date_attendance_dict[this_date] = all_students_attendance;
+    return date_attendance_dict;
+
+
+
+"""
+ATTENDANCE REPORT VIEWS
+"""
+
+"""Report: Attendance Excel Report Selection
+"""
+@login_required(login_url='/login/')
+def attendance_excel_selection(request):
+        logger.info("User="+request.user.username+\
+                " accessed /reports/attendance_excel_selection/")
+        organisation = User_Organisations.objects.get(\
+                user_userid=request.user).organisation_organisationid
+        current_user = request.user.username + " (" + \
+                organisation.organisation_name + ")"
+        current_user_role = User_Roles.objects.get(user_userid=\
+                                request.user.id).role_roleid.role_name;
+        current_user = "Hi, " + request.user.first_name + ". You are a " +\
+                current_user_role + " in " + organisation.organisation_name +\
+                    " organisation."
+
+        teacher_role = Role.objects.get(role_name="Teacher")
+        user_role = User_Roles.objects.get(user_userid=request.user).role_roleid
+        if (user_role == teacher_role):
+            #Get only the classes the teacher has access to. Duh.
+            allteachers=[]
+            allteachers.append(user)
+            allclass_list=Allclass.objects.filter(teachers__in=allteachers);
+        else:
+            #Get all classes in that organisation
+            allclass_list=Allclass.objects.filter(\
+		school__in=School.objects.filter(organisation=organisation));
+        template_name="attendance_excel_selection.html"
+        data={}
+        data['current_user'] = current_user
+        data['allclass_list'] = allclass_list
+        return render(request, template_name, data)
+
+
+""" Column Number to Column Name
+"""
+def xlsx_colnum_string(n):
+    div=n
+    string=""
+    temp=0
+    while div>0:
+        module=(div-1)%26
+        string=chr(65+module)+string
+        div=int((div-module)/26)
+    return string
+
+""" Attendance Excel Report 
+"""
+@login_required(login_url="/login/")
+def attendance_excel(request):
+    print("attendance_report_excel main");
+    #Get Date Range:
+    date_since = request.POST['since_1_alt'];
+    date_until = request.POST['until_1_alt'];
+    date_since = datetime.strptime(date_since[:10], '%Y-%m-%d')
+    date_until = datetime.strptime(date_until[:10], '%Y-%m-%d')
+
+    #Get Organisation:
+    try:
+        #If organisation is explicitly declared.
+        organisation_id = request.POST['organisation_id']
+        organisation = Organisation.objects.get(pk=organisation_id)
+    except:
+        #If org id not given, get logged in users org
+        #Will always go here in Public API
+        try:
+	    #This will fail in public API: We need a  organisation ID
+            organisation = User_Organisations.objects.get(\
+                user_userid=request.user).organisation_organisationid
+        except Exception as orgex:
+            logger.info(str(orgex))
+            json_response = simplejson.dumps({ \
+               'error': "No organisation selected or not logged in."})
+            return HttpResponse(json_response, mimetype="application/json")
+
+    #Get school:
+    schools = School.objects.filter(organisation=organisation);
+    #Get all classes in the organisation:
+    allclasses_in_org = Allclass.objects.filter(school__in=\
+        School.objects.filter(organisation=organisation));
+    #Get everyday in date rance
+    everydays = get_everyday_in_daterange(date_since, date_until)
+
+    """
+	Options:
+	A] Loop through everyday, every class, get attendance, fill
+	B] Loop through everyclass, every day, get attendance, fill
+	C] Loop through everyclass,
+	Get all unique daily registrations -> attendance by date, 
+	Check date and fill 
+
+    """
+
+    #For file name and path
+    appLocation=(os.path.dirname(os.path.realpath(__file__)))
+    timestamp=time.strftime("%Y%m%d%H%M%S")
+
+    #Touch and set the excel version of the report
+    attendance_report_xlsx_file = appLocation + \
+        '/../UMCloudDj/media/attendance_report/attendance_report_' + timestamp + '.xlsx'
+    attendance_report_xlsx_filename = "/media/attendance_report/attendance_report_"+timestamp+".xlsx"
+    workbook = xlsxwriter.Workbook(attendance_report_xlsx_file)
+    #format
+    #bold = workbook.add_format({'bold':True})
+    format = workbook.add_format()
+    #format.set_align('justify')
+    bold_format = format
+    #bold_format.set_bold()
+    #vertical_text_format = format
+    #vertical_text_format.set_rotation(90)
+    #vertical_text_format.set_bold()
+
+    worksheet_summary = workbook.add_worksheet("Summary")
+    worksheet_summary.write('B2', 'Attendance Report from ' + \
+	str(date_since.date()) + " to " + str(date_until.date()) + ".")
+
+    summary_row = ["# Students", "% Present", "% Absent"]
+    worksheet_summary = worksheet_add_values_to_row_column(worksheet_summary, summary_row, 3, 2, bold_format)
+
+    #Formatting like so:
+    #worksheet_summary.set_column('A:F', 10, format)
+    #worksheet_summary.set_column('G:Z', 25, format)
+    #worksheet_summary.set_row(1, 45)
+
+    #Loop through every class
+    summary_row_class_number = 6
+    for every_class in allclasses_in_org:
+	summary_row_class_number = summary_row_class_number + 1
+        #We need a way to Per Day uniquely get attendance
+    	#Lets try Option C!
+	print("\n For class: " + str(every_class))
+    	every_class_date_attendance_dict = \
+            get_attendance_daily(date_since, date_until, every_class)
+  	#print("Attendance Dict:")
+	#print(every_class_date_attendance_dict)
+
+    	"""
+	    1. Create new book in the excel
+	    2. Loop through date range, fill in excel sheet
+	    3. Loop through class date_attendance_dict and fill in 
+	    4. 
+        """
+
+    	#Create new book in excel file
+	every_class_name = every_class.allclass_name
+	worksheet_class = workbook.add_worksheet(every_class_name)
+
+	#formatting:
+	worksheet_class.set_column('A:D', 12, format)
+	worksheet_class.set_row(4, 60)
+	
+	vertical_text_format = workbook.add_format()
+	vertical_text_format.set_rotation(90)
+	vertical_text_format.set_bold()
+
+	just_bold_format = workbook.add_format()
+	just_bold_format.set_bold()
+
+	percentage_format = workbook.add_format({'num_format': '0%'})
+	#percentage_format.
+
+	class_overall_title = ["Attendance report for "+str(every_class)+\
+	    " from " + str(date_since.date()) + " to " + str(date_until.date()),\
+		"Overall attendance average:", "Overall absence average:"]
+	worksheet_class = worksheet_add_values_to_column_row(worksheet_class,\
+	    class_overall_title, 1, 0, format)
+
+	class_overall_day_title = ["Day % Absent", "Day % Present", \
+	    "Day # Students Present", "Total Absent"]
+	worksheet_class = worksheet_add_values_to_column_row(worksheet_class,\
+	    class_overall_day_title, 5, 3, format)
+
+	class_student_daily_title = ["Student Name", "Days Present", \
+	    "Days Absent", "% Absent"]
+	worksheet_class = worksheet_add_values_to_row_column(worksheet_class,\
+	    class_student_daily_title, 10, 0, just_bold_format)
+
+
+    	#Get dates that need to be put in 
+    	termdays = get_termday_in_daterange(\
+    	    date_since, date_until, every_class);
+	
+
+	class_date_start_column_number = 4
+	class_date_row_number = 4
+	class_student_verb_row_number = 11
+
+	#TODO: Check this
+        #Get students assigned to class
+        students = every_class.students.all()
+        if not students:
+            worksheet_class.write(class_student_verb_row_number,0, "No Students Assigned", format)
+        student_names = []
+        for every_student in students:
+            student_names.append(every_student.first_name + \
+                " " + every_student.last_name)
+        print("Adding : " + str(len(student_names)) + " students names for class : " + str(every_class))
+        worksheet_class = worksheet_add_values_to_column_row(\
+            worksheet_class, student_names, class_student_verb_row_number,0, format)
+
+	if not termdays:
+	    #Everyday is a holiday
+	    worksheet_class.write(11,4, "Class is not operational in the date range", format)
+    	#Fill dates in class tab
+    	for termday in termdays:
+	    class_date_start_column_number = \
+		class_date_start_column_number + 1
+	    #Just get the date not the time..
+	    termdate = termday.date()
+	    
+	    #Add the term day to the excel sheet
+	    worksheet_class.write(class_date_row_number, class_date_start_column_number, \
+		str(termdate), vertical_text_format)
+	
+	    names_filled = False
+
+	    #Add the attendance for this date 
+	    if termdate in every_class_date_attendance_dict:
+	    	every_class_attendance = every_class_date_attendance_dict[termdate];
+		print("Attendance taken for date : " + str(termdate))
+		
+	        if every_class_attendance:
+		    print("Got attendance for " + str(every_class) +\
+			 " class for date " + str(termdate))
+		    #print(every_class_attendance)
+
+		    #TODO:Check this
+		    """
+		    if every_class_attendance:
+			for everyStudent in every_class_attendance:
+				class_student_name.append(everyStudent.name)
+			worksheet_class = worksheet_add_values_to_column_row(\
+				worksheet_class, class_student_name, class_student_verb_row_number,\
+				    0, format)
+			names_filled = True
+		    """
+		 
+		    """
+		    #TODO: Check this
+		    #Get students assigned to class
+		    students = every_class.students.all()
+		    student_names = []
+		    for every_student in students:
+			student_names.append(every_student.first_name + \
+			    " " + every_student.last_name)
+		    worksheet_class = worksheet_add_values_to_column_row(\
+			worksheet_class, student_names, class_student_verb_row_number,0, format)
+		    """
+
+		    class_student_verb_start = 11
+	    	    #Loop through the list and add attendance below
+	    	    for everyStudentAttendance in every_class_attendance:
+	    	        #Go one level down
+		   	if everyStudentAttendance.verb == "Attended":
+		    	    #Add P
+		    	    #print("P")
+			    worksheet_class.write(class_student_verb_start, class_date_start_column_number,\
+				"P", format);
+			    
+		    	else:
+		    	    #Add A 
+		    	    #print("A")
+			    worksheet_class.write(class_student_verb_start, class_date_start_column_number,\
+                                "A", format);
+			    pass
+			class_student_verb_start = class_student_verb_start + 1
+		else:
+		    print("Found, but not taken. Please debug..");
+
+	    else:
+		number_students = len(every_class.students.all())
+	    	#Add  Absent values below 
+	    	print("Attendance Not Taken for date: " + str(termdate));
+		worksheet_class = worksheet_add_values_to_column_row_fill(worksheet_class, "A",\
+		    class_student_verb_row_number,class_date_start_column_number,number_students,format)
+
+		#worksheet_class = worksheet_add_values_to_column_
+	#Add Formulas
+	worksheet_class.write('C4', 0, percentage_format)
+	worksheet_class.write('C3', 0, percentage_format)
+	
+	worksheet_class.write_formula('C4', '=100*E9/(SUM(E8:E9))')
+	worksheet_class.write_formula('C3', '=100-C4')
+	#worksheet_class.set_column(
+	date_end_col_num = 5 + len(termdays)
+	date_end_col_string = xlsx_colnum_string(date_end_col_num)
+	students_end_row_num = 11 + len(students)
+	worksheet_class.write_formula('E8', '=SUM(F8:'+date_end_col_string+'8)')
+	worksheet_class.write_formula('E9', '=SUM(F9:'+date_end_col_string+'9)')
+	student_row = 11
+	students_end_row_num_a = students_end_row_num + 1
+	while(student_row <= students_end_row_num_a ):
+	    student_row = student_row + 1
+	    worksheet_class.write_formula('B'+str(student_row),'=COUNTIF(F'+str(student_row)+':'+date_end_col_string + str(student_row)+', "P")')
+	    worksheet_class.write_formula('C'+str(student_row),'=COUNTIF(F'+str(student_row)+':'+date_end_col_string + str(student_row)+', "A")')
+	    worksheet_class.write_formula('D'+str(student_row),'=100*C'+str(student_row)+'/COLUMNS(F'+str(student_row)+':'+date_end_col_string + str(student_row)+')')
+	date_col = 6 
+	while(date_col <= date_end_col_num):
+	    date_col_string = xlsx_colnum_string(date_col)
+	    worksheet_class.write_formula(date_col_string+'6', '='+date_col_string+'9/ROWS('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a)+')')
+	    worksheet_class.write_formula(date_col_string+'7', '=1-'+date_col_string+'6')
+	    worksheet_class.write_formula(date_col_string+'8', '=COUNTIF('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a)+', "P")')
+	    worksheet_class.write_formula(date_col_string+'9', '=COUNTIF('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a)+', "A")')
+	    date_col = date_col + 1
+	
+	
+	worksheet_summary.write(summary_row_class_number, 1, str(every_class), format)
+	#worksheet_summary.write(summary_row_class_number, 2, len(stu
+	worksheet_summary.write_formula('C'+str(summary_row_class_number + 1), "=ROWS('"+str(every_class).strip()+"'!A12:A"+str(students_end_row_num)+")")
+	worksheet_summary.write_formula('D'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C3")
+	worksheet_summary.write_formula('E'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C4")
+
+	
+
+    #Done with all classes loop. Figure out how many there are
+    #Create Summary page:
+    worksheet_summary.set_column('B:B',20)
+    worksheet_summary.write('B5', "Total", format)
+    worksheet_summary.write_formula('C5', '=SUM(C8:C'+str(summary_row_class_number + 1)+')')
+    worksheet_summary.write_formula('D5', '=AVERAGE(D8:D'+str(summary_row_class_number + 1)+')')
+    worksheet_summary.write_formula('E5', '=AVERAGE(E8:E'+str(summary_row_class_number + 1)+')')
+    
+    #When done, close the workbook
+    workbook.close()
+
+    authresponse = HttpResponse(status=500)
+    authresponse.write("<!DOCTYPE html><html><body><a href=\"" + attendance_report_xlsx_filename + "\">Click here to get the attendance report!</a></body></html>")
+    return authresponse
+
+
+
+
+
 
 """Report: Student Attendance Report by Registration ID
 """
 @login_required(login_url='/login/')
 def attendance_registration_students(request, registration_id, template_name='attendance_registration_students.html'):
-    #if request.method != 'POST':
-    #    return redirect('attendance_selection')
     try:
-	
-	attended_activity_string = "http://www.ustadmobile.com/activities/attended-class/"
-        all_hosted_verb_id = []
-        hosted_verb_id = "http://activitystrea.ms/schema/1.0/host"
-        hosted_verb_id2 = "http://activitystrea.ms/schema/1.0/host/"
-        all_hosted_verb_id.append(hosted_verb_id)
-        all_hosted_verb_id.append(hosted_verb_id2)
-        hosted_verb = models.Verb.objects.filter(verb_id__in=all_hosted_verb_id)
 
-	allstudents_statements_per_registration = models.Statement.objects.filter(\
-                    context_registration = registration_id).exclude(\
-                        verb__in = hosted_verb)
-	timestamp = ""
-	try:
-	    #Get class
-	    a = allstudents_statements_per_registration[0].object_activity.activity_id.strip()
-	    timestamp = allstudents_statements_per_registration[0].timestamp
-	    pos = a.find(attended_activity_string)
-	    pos = pos + len(attended_activity_string)
-	    allclass_id = a[pos:].strip()
-	    if (allclass_id.endswith('/')):
-	         allclass_id = allclass_id[:-1]
-	    allclass = Allclass.objects.get(pk=allclass_id)
-	    if allclass is None:
-	        allclass = ""
-	except Exception as e:
-	    print("Unable to get class from activity id")
-	    print(str(e.message));
-	    allclass = ""
-
-        print("All student statements for Registration : " + str(registration_id))
-        print(allstudents_statements_per_registration)
-	all_students_attendance = []
-        for every_statement in allstudents_statements_per_registration:
-	    actor_name = every_statement.actor.get_a_name()
-            verb = every_statement.verb.get_display()
-            context_extensions = every_statement.context_extensions
-            #context_extensions_json = json.loads(context_extensions)
-	    fingerprinted = ""
-	    try:
-                fingerprinted = context_extensions[u'http://www.ustadmobile.com/fingerprinted']
-	    except:
-		fingerprinted = ""
-            if not fingerprinted:
-		all_students_attendance.append(Student(actor_name, verb, "",""))
-                print("For student: " + actor_name + "->" + verb +  " " )
-            else:
-		all_students_attendance.append(Student(actor_name, verb, fingerprinted, ""))
-                print("For student: " + actor_name + " -> " + verb + " -> fingerprinted: " + fingerprinted +  " " )
-
+	all_students_attendance, allclass, timestamp = get_registration_attendance(registration_id)
 
         table_headers_html = []
         table_headers_name = []
@@ -1390,8 +1902,6 @@ def attendance_registration_students(request, registration_id, template_name='at
         table_headers_html, table_headers_name)
 
         data={}
-
-        data['yaxis'] = allstudents_statements_per_registration
 	data['yaxis'] = all_students_attendance
         data['pagetitle'] = "All Students Attendance by Registration"
         data['allclass'] = allclass
@@ -1402,12 +1912,6 @@ def attendance_registration_students(request, registration_id, template_name='at
 
         return render(request, template_name, data)
 
-	"""
-        else:
-            authresponse = HttpResponse(status=400)
-            authresponse.write("Invalid class selected. Something went wrong.")
-            return authresponse
-	"""
     except Exception as e:
         print(e)
         authresponse = HttpResponse(status=500)
@@ -2341,6 +2845,32 @@ def worksheet_add_values_to_row(worksheet,values, row, format):
 	worksheet.write(row, i, every_value, format);
     return worksheet
     
+"""Add values to worksheet with specified column start
+"""
+def worksheet_add_values_to_row_column(worksheet, values, row, column, format):
+    col=column;
+    for every_value in values:
+	worksheet.write(row, col, every_value, format);
+	col = col + 1;
+    return worksheet
+
+"""Add values to worksheet in a single row with start
+"""
+def worksheet_add_values_to_column_row(worksheet, values, row, column, format):
+    for every_value in values:
+	worksheet.write(row, column, every_value, format)
+	row = row + 1;
+    return worksheet
+
+"""Add same value to a column with start and total number of fills
+"""
+def worksheet_add_values_to_column_row_fill(worksheet, value, row, column, times, format):
+    i=0
+    while i < times:
+	worksheet.write(row, column, value, format)
+	row = row + 1;
+	i = i + 1;
+    return worksheet
 
 """Report: Survey Report Selection
 """
@@ -3051,9 +3581,9 @@ def attendance_public_api(request):
                 organisation = Organisation.objects.get(pk=organisation_id)
         except:
                 #If org id not given, get logged in users org 
-				#Will always go here in Public API
+		#Will always go here in Public API
                 try:
-						#This will fail in public API: We need a  organisation ID
+			#This will fail in public API: We need a  organisation ID
                         organisation = User_Organisations.objects.get(\
                         user_userid=request.user).organisation_organisationid
                 except Exception as orgex:

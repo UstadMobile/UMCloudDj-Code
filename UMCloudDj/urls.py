@@ -87,6 +87,8 @@ urlpatterns = patterns('',
 	url(r'^reports/survey_selection/$', 'report_statement.views.survey_selection', name='survey_selection'), #Survey Report selection
 	url(r'^reports/registrations_report_tincanxml/$' ,'report_statement.views.registration_statements_tincanxml', name='registration_statements_tincanxml'),
 	url(r'^reports/public_attendance_report/$', 'report_statement.views.public_attendance_report', name='public_attendance_report'),
+	url(r'^reports/attendance_excel_selection/$', 'report_statement.views.attendance_excel_selection', name='attendance_excel_selection'), #Attendance Excel Report Selection
+	url(r'^reports/attendance_excel/$', 'report_statement.views.attendance_excel', name="attendance_excel"), #Attendance Excel Report 
 
 	#Testing the pdfgen:
 	url(r'^fetch/make_attendance_pdf/(?P<allclass_id>\d+)$', 'allclass.views.allclass_makepdf', name='allclass_makepdf'), #Attendance Sheet PDF gen test

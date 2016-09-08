@@ -12,6 +12,7 @@ UMCloudDj/settings.py
 UMCloudDj/wordpresscred.txt
 UMCloudDj/media/cfregdump
 UMCloudDj/media/registration_report
+UMCloudDj/media/attendance_report
 *.pyc
 *.bak
 adllrs/
