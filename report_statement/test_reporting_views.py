@@ -110,9 +110,13 @@ class ReportsViewTestCase(TestCase):
 		school=school1)
         allclass1.save()
 
-        allclass1.students.add(student1)
-	allclass1.students.add(student2)
-	allclass1.students.add(student3)
+        #allclass1.students.add(student1)
+	#allclass1.students.add(student2)
+	#allclass1.students.add(student3)
+	#Changed:
+	allclass1.students_add(student1)
+        allclass1.students_add(student2)
+        allclass1.students_add(student3)
         allclass1.save()
 
 	#Test Block 1

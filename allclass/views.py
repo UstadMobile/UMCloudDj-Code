@@ -43,6 +43,8 @@ from uploadeXe.models import Week_Day_Time
 from holiday.models import Calendar
 from holiday.views import make_calendar_object
 
+from allclass.models import Enrollment
+
 logger = logging.getLogger(__name__)
 
 ###################################
@@ -203,7 +205,9 @@ def allclass_create(request, template_name='allclass/allclass_create.html'):
 			try:
 				currentstudent=User.objects.get(\
 						pk=everystudentid)
-				allclass.students.add(currentstudent)
+				#allclass.students.add(currentstudent)
+				#Changed
+				allclass.students_add(currentstudent)
 				allclass.save()
 			except:
 				pass
@@ -317,7 +321,9 @@ def allclass_makepdf(request, allclass_id):
     if allclass_org != organisation:
 	return redirect('allclass_table')
     logger.info("Generating pdf..")
-    student_list = allclass.students.all()
+    #student_list = allclass.students.all()
+    #Changed:
+    student_list = allclass.students_all()
 	
     logger.info(len(student_list))
     student_name_list = []
@@ -378,7 +384,9 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 		role_roleid=student_role).values_list(\
 		    'user_userid', flat=True))
 
-    assignedstudents=allclass.students.all();
+    #assignedstudents=allclass.students.all();
+    #Changed:
+    assignedstudents=allclass.students_all();
 
     unassigned_students = list(set(allstudents) - set(assignedstudents))
 
@@ -445,13 +453,45 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
         print("Going to update the assigned students..")
         studentidspicklist=request.POST.getlist('target')
 	if studentidspicklist:
-        	allclass.students.clear()
-        assignedclear = allclass.students.all();
+        	#allclass.students.clear()
+		#Changed:
+		#New way of clearing student list from Class' enrollment
+		#"Clearning relationships"
+                #Can't clear relationships becaue if we do then
+                # we add whatevers on the list, then the dates
+                # on the enrollment will be updated for all.
+                # We have to handle removal in a different way..
+		pass
+        #assigned_students = allclass.students.all();
+   	#Changed:
+	assigned_students = allclass.students_all();
+	students_to_remove = []
+	students_worked_on = []
+	date_now = datetime.datetime.now()
+	#Changed:
+	#Maybe get rid of the add bit here
         for everystudentid in studentidspicklist:
                 currentstudent=User.objects.get(\
-					pk=everystudentid)
-                allclass.students.add(currentstudent)
-                allclass.save()
+			pk=everystudentid)
+		students_worked_on.append(currentstudent)
+                #allclass.students.add(currentstudent)
+		"""
+		#Don't do this if we are adding it later
+		allclass.students_add(currentstudent)
+		"""
+                #allclass.save()
+
+	students_to_remove = list(set(assigned_students) - set(students_worked_on))
+	for every_student_to_remove in students_to_remove:
+		#Changed/Added:
+		allclass.students_remove(every_student_to_remove)
+		allclass.save()
+	students_to_add = list(set(students_worked_on) - set(assigned_students))
+	for every_student_to_add in students_to_add:
+		print("Adding student")
+		#Changed/Added:
+		allclass.students_add(every_student_to_add)
+		allclass.save()
 
         print("Going to update the assigned teacher..")
         teacheridspicklist=request.POST.getlist('target2')
@@ -566,5 +606,71 @@ def allclass_delete(request, pk, template_name='allclass/allclass_confirm_delete
         allclass.delete()
         return redirect('allclass_table')
     return render(request, template_name, {'object':allclass})
+
+"""
+Gets the max number of enrollments in that class and returns the next
+available roll number
+"""
+def get_next_roll_number(allclass):
+	print("Roll number calculation")
+        no = len(User.objects.filter(enrollment__allclass = allclass))
+        try:
+            max_roll_number = Enrollment.objects.filter(allclass = allclass).order_by("-roll_number")[0].roll_number
+	    print("Max: " + str(max_roll_number) + " no: " + str(no))
+            if max_roll_number != no and max_roll_numbr != 0:
+                print("Max roll number not equal to the number of students. I wonder why.")
+                if max_roll_number > no:
+                    print("Taking the next roll number")
+                    no = max_roll_number
+	    if max_roll_number == 0:
+		no = None
+        except:
+            pass
+        if not no:
+                return 1
+        else:
+                no = no + 1
+                return no
+
+
+"""
+Internal API to migrate all class students to new Through enrollment Many to Many
+Relationship table
+"""
+@login_required(login_url='/login/')
+def migrate_allclass_students_enrollment(request):
+    print("hey")
+    if not request.user.is_superuser:
+        authresponse = HttpResponse(status=403)
+        authresponse.write("Forbidden.")
+        return authresponse
+    else:
+    	"""
+    	We basically want to move existing students in .students to the new enrollment 
+    	We can do that over the db command line. That may not be so bad. Maybe not look above
+    	Or we write some logic over here
+    	"""
+	date_now = datetime.datetime.now()
+	try:
+    	    all_classes_umcloud = Allclass.objects.all()
+    	    for every_class_umcloud in all_classes_umcloud:
+	    	students_every_class = every_class_umcloud.students.all()
+	    	for every_student in students_every_class:
+	    	    enroll = Enrollment(user = every_student, active = True,\
+	    	    allclass = every_class_umcloud)
+		    roll_number = get_next_roll_number(every_class_umcloud)
+		    roll_number_date = date_now + datetime.timedelta(0, roll_number)
+		    enroll.date_joined = roll_number_date
+		    enroll.roll_number = roll_number
+	    	    enroll.save()
+	except Exception, e:
+	    print("Something went wrong in Students to Enrollment Migration")
+	    print(e)
+  	    print(str(e))
+
+
+        authresponse = HttpResponse(status=200)
+        authresponse.write("Allclasses Student to Enrollment Migration Done.")
+        return authresponse
 
 # Create your views here.

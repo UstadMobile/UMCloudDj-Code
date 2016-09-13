@@ -294,7 +294,9 @@ def attendance_pdf(request, school_id):
     student_name_list = []
     for every_class in allclasses:
 	student_name_list=[]
-	allstudents = every_class.students.all()
+	#allstudents = every_class.students.all()
+	#Changed:
+	allstudents = every_class.students_all()
 	for every_student in allstudents:
 		student_name_list.append(every_student.first_name + " " + every_student.last_name)
 	split_student_name_list = split_list(student_name_list, 66)

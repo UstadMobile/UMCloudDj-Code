@@ -551,7 +551,9 @@ def user_create(request, template_name='user/user_create.html'):
 			
 		        for everyallclassid in selectedallclassids:
 			    everyallclass = Allclass.objects.get(pk=everyallclassid)
-			    everyallclass.students.add(user)
+			    #everyallclass.students.add(user)
+			    #Changed:
+			    everyallclass.students_add(user)
 			    everyallclass.save()
 
 		    state="The user " + user.username + " has been created."
@@ -1197,7 +1199,10 @@ def get_allclass_students(request, pk):
 		    #Check if the teacher is assigned to this course.
 		    allclassteachers = allclass.teachers.all()
 	 	    if user in allclassteachers:
-		    	all_students = allclass.students.all()
+		    	#all_students = allclass.students.all()
+			#Changed:
+			all_students = allclass.students_all()
+
 			""" Why encode and stingify? when you can just pass it as is
 		    	json_allstudents = simplejson.dumps([
 			    {
@@ -2579,7 +2584,9 @@ def teacher_enroll_student(request):
         user_profile.save()
 	
 	#Add student to class
-	this_class.students.add(new_user)
+	#this_class.students.add(new_user)
+	#Changed:
+	this_class.students_add(new_user)
 	this_class.save()
 	
 

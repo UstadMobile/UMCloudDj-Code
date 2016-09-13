@@ -174,6 +174,7 @@ urlpatterns = patterns('',
         url(r'^allclassnew/$', 'allclass.views.allclass_create', name='allclass_new'),
         url(r'^allclassedit/(?P<pk>\d+)$', 'allclass.views.allclass_update', name='allclass_edit'),
         url(r'^allclassdelete/(?P<pk>\d+)$', 'allclass.views.allclass_delete', name='allclass_delete'),
+	#url(r'^migrate_allclass_students_enrollment/$', 'allclass.views.migrate_allclass_students_enrollment', name='migrate_allclass_students_enrollment'),
 
 	#Testing Request:
 	url(r'^testrequest/$', 'UMCloudDj.views.test_request', name='test_request'),

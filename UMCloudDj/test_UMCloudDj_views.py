@@ -93,7 +93,9 @@ class UMCloudDjViewTestCase(TestCase):
         allclass1 = Allclass(allclass_name="TestAllClassTableTest1", allclass_desc="TestAllClass1 Desc", allclass_location="Test Land" ,school=school1)
         allclass1.save()
 
-	allclass1.students.add(student1)
+	#allclass1.students.add(student1)
+	#Changed:
+	allclass1.students_add(student1)
 	allclass1.save()
 
     def test_get_phone_inapp_reg(self):

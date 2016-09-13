@@ -851,7 +851,9 @@ def allclasse_students(request, allclassid):
 	School.objects.filter(organisation=organisation));
     allclass_class = Allclass.objects.get(id=allclassid)
     if allclass_class in allclasses:
-        student_list =allclass_class.students.all()
+        #student_list =allclass_class.students.all()
+	#Changed:
+	student_list = allclass_class.students_all()
 	#Not sending complete user object to avoid someone \
 	#hacking and getting user information like encrypted\
 	# password, roles and all other information like Uber did.\
@@ -903,7 +905,9 @@ def allclass_students(request):
 	allclass = get_object_or_404(Allclass, pk=allclassid)
 	allclasses=Allclass.objects.filter(school__in=School.objects.filter\
 						(organisation=organisation));
-	students=allclass.students.all()
+	#students=allclass.students.all()
+	#Changed:
+	students=allclass.students_all()
 	if allclass not in allclasses:
 		logger.info("That class isn't in your organisation")
 		return HttpResponse("That class isn't in your organisation")
@@ -935,7 +939,8 @@ def school_allclasses(request):
 				'children':[{'id':s.id,'text':s.first_name+" "+s.last_name,\
 					'type':'user',\
 					'icon':'/media/images/users.small.png'}\
-				 for s in c.students.all()]} for c in allclasses ])
+				 for s in c.students_all()]} for c in allclasses ])
+	#Changed
 	return HttpResponse(json_allclasses, mimetype="application/json")
     except:
 	logger.info("Something went wrong in fetching classes from schools..")
@@ -1442,6 +1447,7 @@ def get_school_weekends(this_school):
     and not the times. Enough to check if its 
     supposed to be on this day or not. TODO: 
     Extend to return time whenever we need it.
+    Later when we need it. 
     Returns list of Weekday object (Sun, Mon, etc)
 """
 def get_class_days(allclass):
@@ -1735,9 +1741,10 @@ def attendance_excel(request):
 	class_date_row_number = 4
 	class_student_verb_row_number = 11
 
-	#TODO: Check this
         #Get students assigned to class
-        students = every_class.students.all()
+        #students = every_class.students.all()
+	#Changed:
+	students = every_class.students_all()
         if not students:
             worksheet_class.write(class_student_verb_row_number,0, "No Students Assigned", format)
         student_names = []
@@ -1774,7 +1781,6 @@ def attendance_excel(request):
 			 " class for date " + str(termdate))
 		    #print(every_class_attendance)
 
-		    #TODO:Check this
 		    """
 		    if every_class_attendance:
 			for everyStudent in every_class_attendance:
@@ -1786,9 +1792,9 @@ def attendance_excel(request):
 		    """
 		 
 		    """
-		    #TODO: Check this
 		    #Get students assigned to class
 		    students = every_class.students.all()
+		    #students = every_class.students_all()
 		    student_names = []
 		    for every_student in students:
 			student_names.append(every_student.first_name + \
@@ -1818,7 +1824,9 @@ def attendance_excel(request):
 		    print("Found, but not taken. Please debug..");
 
 	    else:
-		number_students = len(every_class.students.all())
+		#number_students = len(every_class.students.all())
+		#Changed:
+ 		number_students = len(every_class.students_all())
 	    	#Add  Absent values below 
 	    	print("Attendance Not Taken for date: " + str(termdate));
 		worksheet_class = worksheet_add_values_to_column_row_fill(worksheet_class, "A",\
@@ -2305,7 +2313,9 @@ def durationreport(request, template_name='duration_report_05.html'):
                 allclassid=request.POST['brand']
                 allclassid=int(allclassid)
                 allclass_class = Allclass.objects.get(id=allclassid)
-                users_with_statements = allclass_class.students.all().values_list('id', flat=True)
+                #users_with_statements = allclass_class.students.all().values_list('id', flat=True)
+		#Changed:
+ 		users_with_statements = allclass_class.students_all().values_list('id', flat=True)
         else:
                 users_with_statements = user_selected #Just assuming so. Should re work naming convention
 
@@ -2390,7 +2400,9 @@ def get_all_students_in_this_organisation(request):
             allclassesfromthisschool=Allclass.objects.filter(\
                                      school=everyschool)
             for allclass in allclassesfromthisschool:
-                allstudentsinthisallclass=allclass.students.all()
+                #allstudentsinthisallclass=allclass.students.all()
+		#Changed:
+ 		allstudentsinthisallclass=allclass.students_all()
                 for s in allstudentsinthisallclass:
                     if s not in users:
                         users.append(s)
@@ -2639,7 +2651,9 @@ def test_heather_report(request, template_name='breakdown_report_08.html'):
 	allclass_by_duration=[]
 	user_allclass_by_duration=[]
 	for allclass in allclasses:
-	    students=allclass.students.all()
+	    #students=allclass.students.all()
+	    #Changed:
+ 	    students = allclass.students_all()
 
 	    #Adding everything for school calculation
 	    for student in students:
@@ -2715,14 +2729,18 @@ def usage_report_data_ajax_handler(request):
                             allclassesfromthisschool=Allclass.objects.filter(\
                                                         school__id=schoolid)
                             for allclass in allclassesfromthisschool:
-                                allstudentsinthisallclass=allclass.students.all()
+                                #allstudentsinthisallclass=allclass.students.all()
+				#Changed:
+ 				allstudentsinthisallclass = allclass.students_all()
                                 for s in allstudentsinthisallclass:
                                     if s not in users:
                                         users.append(s)
                         elif "class" in typestring:
                             allclassid=int(idstring)
                             allclass=Allclass.objects.get(id=allclassid)
-                            allstudentsinthisallclass=allclass.students.all()
+                            #allstudentsinthisallclass=allclass.students.all()
+			    #Changed:
+ 			    allstudentsinthisallclass = allclass.students_all()
                             for stu in allstudentsinthisallclass:
                                 if stu not in users:
                                     users.append(stu);
@@ -3592,10 +3610,6 @@ def attendance_public_api(request):
                            'error': "No organisation selected or not logged in."})
                         return HttpResponse(json_response, mimetype="application/json")
 
-		#In the future we have to group by schools.
-		#TODO: Group by School
-		#This may have been done below.
-		
 		#Group by Class:
 		#Get classes if classes are explicitly declared in POST param
         try:
@@ -3873,7 +3887,9 @@ def attendance_public_api(request):
 							#Get student list for this class
 							# Loop through every student, get its gender
 							# Assign a +1 for male, female
-							all_students_in_this_class = every_class.students.all();
+							#all_students_in_this_class = every_class.students.all();
+							#Changed:
+ 							all_students_in_this_class = every_class.students_all();
 							for every_student in all_students_in_this_class:
 								every_student_gender = UserProfile.objects.get(user=every_student).gender;
 								if every_student_gender == "M":
@@ -4071,7 +4087,9 @@ def public_attendance_report(request):
 		teacher_count = 0
 		allclass_count = 0
 		for every_class in allclasses:
-			student_list = every_class.students.all()
+			#student_list = every_class.students.all()
+			#Changed:
+ 			student_list = every_class.students_all()
 			student_count = student_count + len(student_list)
 			teacher_list = every_class.teachers.all()
 			teacher_count = teacher_count + len(teacher_list)
