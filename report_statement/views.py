@@ -1350,7 +1350,7 @@ def get_registration_attendance(registration_id):
 
     allstudents_statements_per_registration = models.Statement.objects.filter(\
                 context_registration = registration_id).exclude(\
-                    verb__in = hosted_verb)
+                    verb__in = hosted_verb).order_by('timestamp')
     timestamp = ""
     try:
         #Get class
@@ -1374,8 +1374,15 @@ def get_registration_attendance(registration_id):
     #print("All student statements for Registration : " + str(registration_id))
     #print(allstudents_statements_per_registration)
     all_students_attendance = []
+    all_students=[]
     for every_statement in allstudents_statements_per_registration:
         actor_name = every_statement.actor.get_a_name()
+	try:
+	    actor_user = User.objects.get(username=str(actor_name))
+	except:
+	    print("Unable to get actor: " + str(actor_user))
+	    actor_user = None
+	all_students.append(actor_user)
         verb = every_statement.verb.get_display()
         context_extensions = every_statement.context_extensions
         #context_extensions_json = json.loads(context_extensions)
@@ -1390,8 +1397,13 @@ def get_registration_attendance(registration_id):
         else:
             all_students_attendance.append(Student(actor_name, verb, fingerprinted, ""))
             #print("For student: " + actor_name + " -> " + verb + " -> fingerprinted: " + fingerprinted +  " " )
+    #Debug
+    #print("Students attended: ")
+    #print(len(all_students))
+    #print(".. they are:")
+    #print(all_students)
 
-    return all_students_attendance, reg_allclass, timestamp
+    return all_students_attendance, all_students, reg_allclass, timestamp
     
 
 """ Gets all dates everyday between (and inclusive) of 
@@ -1529,7 +1541,6 @@ def get_termday_in_daterange(date_since, date_until, termday_allclass):
     Student Attendance list 
 """
 def get_attendance_daily(date_since, date_until, attendance_class):
-    #print("get_attendance_daily for class: " + str(attendance_class))
     #Get everyday in date range
     everydays = get_everyday_in_daterange(date_since, date_until)
     date_attendance_dict = {}
@@ -1543,9 +1554,10 @@ def get_attendance_daily(date_since, date_until, attendance_class):
 	#print("For reg id: " + reg_id + ", Checking if the date: " + str(this_date) + " is a holiday in class: " + str(allclass))
     	if is_date_a_holiday(this_date, attendance_class):
 	    continue
-	all_students_attendance, allclass_from_reg, timestamp = \
+	all_students_attendance, all_students, allclass_from_reg, timestamp = \
 	    get_registration_attendance(reg_id);
-	date_attendance_dict[this_date] = all_students_attendance;
+	#date_attendance_dict[this_date] = all_students_attendance;
+	date_attendance_dict[this_date] = zip(all_students_attendance, all_students)
     return date_attendance_dict;
 
 
@@ -1667,11 +1679,14 @@ def attendance_excel(request):
     #vertical_text_format.set_bold()
 
     worksheet_summary = workbook.add_worksheet("Summary")
+    worksheet_summary.write('B1', str(organisation.organisation_name) + ' Organisation')
     worksheet_summary.write('B2', 'Attendance Report from ' + \
-	str(date_since.date()) + " to " + str(date_until.date()) + ".")
+	str(date_since.date().strftime("%d %B %Y")) + " to " + str(date_until.date().strftime("%d %B %Y")) + ".")
 
     summary_row = ["# Students", "% Present", "% Absent"]
     worksheet_summary = worksheet_add_values_to_row_column(worksheet_summary, summary_row, 3, 2, bold_format)
+
+    worksheet_summary.write('B7', 'School:')
 
     #Formatting like so:
     #worksheet_summary.set_column('A:F', 10, format)
@@ -1703,6 +1718,7 @@ def attendance_excel(request):
 
 	#formatting:
 	worksheet_class.set_column('A:D', 12, format)
+	worksheet_class.set_column('D:D', 18, format)
 	worksheet_class.set_row(4, 60)
 	
 	vertical_text_format = workbook.add_format()
@@ -1716,7 +1732,7 @@ def attendance_excel(request):
 	#percentage_format.
 
 	class_overall_title = ["Attendance report for "+str(every_class)+\
-	    " from " + str(date_since.date()) + " to " + str(date_until.date()),\
+	    " from " + str(date_since.date().strftime("%d %B %Y")) + " to " + str(date_until.date().strftime("%d %B %Y")),\
 		"Overall attendance average:", "Overall absence average:"]
 	worksheet_class = worksheet_add_values_to_column_row(worksheet_class,\
 	    class_overall_title, 1, 0, format)
@@ -1751,7 +1767,7 @@ def attendance_excel(request):
         for every_student in students:
             student_names.append(every_student.first_name + \
                 " " + every_student.last_name)
-        print("Adding : " + str(len(student_names)) + " students names for class : " + str(every_class))
+        #print("Adding : " + str(len(student_names)) + " students names for class : " + str(every_class))
         worksheet_class = worksheet_add_values_to_column_row(\
             worksheet_class, student_names, class_student_verb_row_number,0, format)
 
@@ -1791,32 +1807,39 @@ def attendance_excel(request):
 			names_filled = True
 		    """
 		 
+
+		    class_student_verb_start = 11
+		
 		    """
-		    #Get students assigned to class
-		    students = every_class.students.all()
-		    #students = every_class.students_all()
-		    student_names = []
-		    for every_student in students:
-			student_names.append(every_student.first_name + \
-			    " " + every_student.last_name)
-		    worksheet_class = worksheet_add_values_to_column_row(\
-			worksheet_class, student_names, class_student_verb_row_number,0, format)
+			Filling everything with Absent for the time being such 
+			that the students not filled are Absent by default (for now)
 		    """
+		    for student in students:
+			worksheet_class.write(class_student_verb_start, class_date_start_column_number,\
+                                "A", just_bold_format);
+			class_student_verb_start = class_student_verb_start + 1
 
 		    class_student_verb_start = 11
 	    	    #Loop through the list and add attendance below
-	    	    for everyStudentAttendance in every_class_attendance:
+	    	    for everyStudentAttendance, everyStudent in every_class_attendance:
 	    	        #Go one level down
+			entryIndex = class_student_verb_row_number + list(students).index(everyStudent)
 		   	if everyStudentAttendance.verb == "Attended":
 		    	    #Add P
-		    	    #print("P")
+			    """
 			    worksheet_class.write(class_student_verb_start, class_date_start_column_number,\
-				"P", format);
+			    	"P", format);
+			    """
+			    worksheet_class.write(entryIndex, class_date_start_column_number,\
+                                "P", format);
 			    
 		    	else:
 		    	    #Add A 
-		    	    #print("A")
+			    """
 			    worksheet_class.write(class_student_verb_start, class_date_start_column_number,\
+                                "A", format);
+			    """
+			    worksheet_class.write(entryIndex, class_date_start_column_number,\
                                 "A", format);
 			    pass
 			class_student_verb_start = class_student_verb_start + 1
@@ -1827,8 +1850,11 @@ def attendance_excel(request):
 		#number_students = len(every_class.students.all())
 		#Changed:
  		number_students = len(every_class.students_all())
+		date_letter = xlsx_colnum_string(class_date_start_column_number + 1)
+		worksheet_class.set_column(date_letter + ':' + date_letter, 9, format)
+		#worksheet.write(row, col, every_value, format);
+		worksheet_class.write(date_letter +'11', "NOT TAKEN", just_bold_format);
 	    	#Add  Absent values below 
-	    	print("Attendance Not Taken for date: " + str(termdate));
 		worksheet_class = worksheet_add_values_to_column_row_fill(worksheet_class, "A",\
 		    class_student_verb_row_number,class_date_start_column_number,number_students,format)
 
@@ -1837,8 +1863,8 @@ def attendance_excel(request):
 	worksheet_class.write('C4', 0, percentage_format)
 	worksheet_class.write('C3', 0, percentage_format)
 	
-	worksheet_class.write_formula('C4', '=100*E9/(SUM(E8:E9))')
-	worksheet_class.write_formula('C3', '=100-C4')
+	worksheet_class.write_formula('C4', '=E9/(SUM(E8:E9))', percentage_format)
+	worksheet_class.write_formula('C3', '=1-C4', percentage_format)
 	#worksheet_class.set_column(
 	date_end_col_num = 5 + len(termdays)
 	date_end_col_string = xlsx_colnum_string(date_end_col_num)
@@ -1847,16 +1873,16 @@ def attendance_excel(request):
 	worksheet_class.write_formula('E9', '=SUM(F9:'+date_end_col_string+'9)')
 	student_row = 11
 	students_end_row_num_a = students_end_row_num + 1
-	while(student_row <= students_end_row_num_a ):
+	while(student_row < students_end_row_num):
 	    student_row = student_row + 1
 	    worksheet_class.write_formula('B'+str(student_row),'=COUNTIF(F'+str(student_row)+':'+date_end_col_string + str(student_row)+', "P")')
 	    worksheet_class.write_formula('C'+str(student_row),'=COUNTIF(F'+str(student_row)+':'+date_end_col_string + str(student_row)+', "A")')
-	    worksheet_class.write_formula('D'+str(student_row),'=100*C'+str(student_row)+'/COLUMNS(F'+str(student_row)+':'+date_end_col_string + str(student_row)+')')
+	    worksheet_class.write_formula('D'+str(student_row),'=C'+str(student_row)+'/COLUMNS(F'+str(student_row)+':'+date_end_col_string + str(student_row)+')', percentage_format)
 	date_col = 6 
 	while(date_col <= date_end_col_num):
 	    date_col_string = xlsx_colnum_string(date_col)
-	    worksheet_class.write_formula(date_col_string+'6', '='+date_col_string+'9/ROWS('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a)+')')
-	    worksheet_class.write_formula(date_col_string+'7', '=1-'+date_col_string+'6')
+	    worksheet_class.write_formula(date_col_string+'6', '='+date_col_string+'9/ROWS('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a)+')', percentage_format)
+	    worksheet_class.write_formula(date_col_string+'7', '=1-'+date_col_string+'6', percentage_format)
 	    worksheet_class.write_formula(date_col_string+'8', '=COUNTIF('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a)+', "P")')
 	    worksheet_class.write_formula(date_col_string+'9', '=COUNTIF('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a)+', "A")')
 	    date_col = date_col + 1
@@ -1865,8 +1891,8 @@ def attendance_excel(request):
 	worksheet_summary.write(summary_row_class_number, 1, str(every_class), format)
 	#worksheet_summary.write(summary_row_class_number, 2, len(stu
 	worksheet_summary.write_formula('C'+str(summary_row_class_number + 1), "=ROWS('"+str(every_class).strip()+"'!A12:A"+str(students_end_row_num)+")")
-	worksheet_summary.write_formula('D'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C3")
-	worksheet_summary.write_formula('E'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C4")
+	worksheet_summary.write_formula('D'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C3", percentage_format)
+	worksheet_summary.write_formula('E'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C4", percentage_format)
 
 	
 
@@ -1875,8 +1901,8 @@ def attendance_excel(request):
     worksheet_summary.set_column('B:B',20)
     worksheet_summary.write('B5', "Total", format)
     worksheet_summary.write_formula('C5', '=SUM(C8:C'+str(summary_row_class_number + 1)+')')
-    worksheet_summary.write_formula('D5', '=AVERAGE(D8:D'+str(summary_row_class_number + 1)+')')
-    worksheet_summary.write_formula('E5', '=AVERAGE(E8:E'+str(summary_row_class_number + 1)+')')
+    worksheet_summary.write_formula('D5', '=AVERAGE(D8:D'+str(summary_row_class_number + 1)+')', percentage_format)
+    worksheet_summary.write_formula('E5', '=AVERAGE(E8:E'+str(summary_row_class_number + 1)+')', percentage_format)
     
     #When done, close the workbook
     workbook.close()
@@ -1896,7 +1922,7 @@ def attendance_excel(request):
 def attendance_registration_students(request, registration_id, template_name='attendance_registration_students.html'):
     try:
 
-	all_students_attendance, allclass, timestamp = get_registration_attendance(registration_id)
+	all_students_attendance, all_students, allclass, timestamp = get_registration_attendance(registration_id)
 
         table_headers_html = []
         table_headers_name = []

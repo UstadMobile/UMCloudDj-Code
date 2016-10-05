@@ -1,3 +1,6 @@
+v1.1.810
+-Attendance Excel Report bug fixes and formatting fixes
+
 v1.1.800
 - Internal Class - Student Architecture update: Students are now enrolled as a process where the m2m relationship has another level where we can store date joined, active, notes, roll number, etc. this enables us to order the students assigned to a class and have extra inforation associated with the association
 
