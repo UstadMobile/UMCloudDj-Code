@@ -1,3 +1,6 @@
+v1.1.820
+-Fixed bug in Attendance report sheetmaker logic that was using a different index for roll numbers. Fixed the error
+
 v1.1.810
 -Attendance Excel Report bug fixes and formatting fixes
 

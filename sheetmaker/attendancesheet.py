@@ -157,16 +157,14 @@ class AttendanceSheet(object):
             #trim the middle initials
             names = name.split()
             name = ""
-            for index in range(len(names)):
-                if index == 0 or index == len(names)-1:
-                    name += names[index] + " "
+            for indx in range(len(names)):
+                if indx == 0 or indx == len(names)-1:
+                    name += names[indx] + " "
                 else:
-                    name += names[index][:1] + ". "
+                    name += names[indx][:1] + ". "
                     
             label = simpleSplit("%s: %s" % (str(index), name), self.label_font, 
                                 self.label_font_size, self.om_row_name_width)[0]
-             
-        
         canvas.drawString(x, y+2, label)
         canvas.line(x, y, x + self.om_row_name_width - (self.om_diameter/2), y)
         

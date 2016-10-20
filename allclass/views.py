@@ -346,6 +346,7 @@ def allclass_makepdf(request, allclass_id):
 	logger.info("Sheet: " + str(i))
 	sheet = AttendanceSheet( student_names = every_sheet, \
 			status_labels = ["Present", None, None, "Absent"], \
+			#status_labels = ["Present", "Late", "Excused", "Absent"],\
 			title = str(allclass.allclass_name + \
 				" Class Page " + str(i) +"/"+ \
 				str(len(split_student_name_list))))
