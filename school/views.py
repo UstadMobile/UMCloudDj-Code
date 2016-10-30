@@ -34,6 +34,8 @@ from uploadeXe.models import Weekday
 from holiday.models import Calendar
 from holiday.views import make_calendar_object
 
+from sheetmaker.models import status_label, organisation_status_label
+
 ###################################
 # School CRUD
 
@@ -278,6 +280,7 @@ def school_delete(request, pk, template_name='school/school_confirm_delete.html'
 """
 def attendance_pdf(request, school_id):
     school = get_object_or_404(School, pk=school_id)
+    organisation = school.organisation
     user_organisation = User_Organisations.objects.get(\
 	user_userid=request.user\
 	).organisation_organisationid;
@@ -302,14 +305,36 @@ def attendance_pdf(request, school_id):
 	split_student_name_list = split_list(student_name_list, 66)
 	if split_student_name_list is None or split_student_name_list == "" or split_student_name_list == []:
 		continue
+
+	present = None
+    	late = None
+    	excused = None
+    	absent = None
+    	selected_status_label = []
+    	selected_org_status_label = organisation_status_label.objects.filter(organisation=organisation)
+	if not selected_org_status_label:
+            present = "Present"
+            absent = "Absent"
+    	for every_osl in selected_org_status_label:
+            selected_status_label.append(every_osl.status_label)
+    	for every_label in selected_status_label:
+            if every_label.name == "Present":
+            	present = every_label.name
+            if every_label.name == "Late":
+            	late = every_label.name
+            if every_label.name == "Excused":
+            	excused = every_label.name
+            if every_label.name == "Absent":
+            	absent = every_label.name
 	i=0;
 	print("Class: " + every_class.allclass_name + " has " + str(len(student_name_list)) + " studnets.")
 	for every_sheet in split_student_name_list:
 		i = i + 1;
 		sheet = AttendanceSheet( student_names = every_sheet, \
-                        status_labels = ["Present", None, None, "Absent"], \
+                        #status_labels = ["Present", None, None, "Absent"], \
+			status_labels = [present, late, excused, absent],\
 			title = str(every_class.allclass_name + \
-				" Class, Page " + str(i) + "/" + \
+				", ID: " + str(every_class.id) + ", Page " + str(i) + "/" + \
 				str(len(split_student_name_list))))
 		sheet.render_to_canvas(canvas)
     canvas.save()

@@ -31,6 +31,8 @@ import urllib2, base64, json
 from random import randrange
 from holiday.models import Calendar
 from holiday.views import make_calendar_object
+from sheetmaker.models import status_label
+from sheetmaker.models import organisation_status_label
 
 
 """
@@ -293,6 +295,14 @@ def my_organisation_update(request, pk, template_name='organisation/my_organisat
         data['state']="You do not have permission to see this page."
         return render(request, template_name, data)
 
+class status_label_status(object):
+    status = ""
+    label = ""
+
+    # The class "constructor" - It's actually an initializer
+    def __init__(self, status, label):
+	self.status = status;
+	self.label = label;
 
 """View to update the organisation details and change / set the 
 holiday calendar
@@ -314,8 +324,21 @@ def my_organisation_edit(request, pk, template_name='organisation/my_organisatio
 	selected_calendar = organisation.calendar
 	if not selected_calendar:
 		selected_calendar = None
+	all_labels = status_label.objects.all()
+	selected_org_status_labels = organisation_status_label.objects.filter(organisation=organisation)
+	selected_status_labels = []
+	status_labels = []
+	for every_org_status_label in selected_org_status_labels:
+	    selected_status_labels.append(every_org_status_label.status_label)
+	for elabel in all_labels:
+	    if elabel in selected_status_labels:
+	    	status_labels.append(status_label_status(True, elabel))	
+	    else:
+		status_labels.append(status_label_status(False, elabel))
 	data['calendars'] = calendars
 	data['selected_calendar'] = selected_calendar
+	data['status_labels'] = status_labels
+	data['selected_status_labels'] = selected_status_labels
 	#data['organisation_code'] = organisation_code
 	if current_role.id == 2 and \
             current_role.role_name=="Organisational Manager"\
@@ -336,11 +359,16 @@ def my_organisation_edit(request, pk, template_name='organisation/my_organisatio
 			organisation_code.save()
 
 			print("Checking if Holiday Calendar is given:")
-			selected_calendar = post['holiday_calendar']
-			new_holiday_calendar_name = post['holiday_name']
-			print("new: " + new_holiday_calendar_name)
-			hidden_holidays = post['hidden_holidays']
-			if selected_calendar != None or selected_calendar != "":
+			try:
+			    selected_calendar = post['holiday_calendar']
+			except:
+			    selected_calendar = None
+			
+			if selected_calendar:
+			    new_holiday_calendar_name = post['holiday_name']
+			    print("new: " + new_holiday_calendar_name)
+			    hidden_holidays = post['hidden_holidays']
+			    if selected_calendar != None or selected_calendar != "":
 				if str(selected_calendar) != str(0):
 					holiday_calendar = Calendar.objects.get(pk=int(selected_calendar))
 					if holiday_calendar:
@@ -358,6 +386,38 @@ def my_organisation_edit(request, pk, template_name='organisation/my_organisatio
 							organisation.save()
 							print("Made OK")
 
+			#Adding the status_label to organisation
+			print("all status labels:")
+			selected_status_labels = post.getlist('labels')
+			all_labels = status_label.objects.all()
+			selected_labels = []
+			for every_label in selected_status_labels:
+			    this_label = status_label.objects.get(pk=int(every_label))
+			    selected_labels.append(this_label)
+			    try:
+				every_label_org = organisation_status_label.objects.get(status_label = this_label)
+				print("every_label_org:")
+				print(every_label_org)
+			    except:
+				every_label_org = organisation_status_label(organisation = organisation, \
+							status_label = this_label)
+				every_label_org.save()
+				print("every_label_org saved")
+				print(every_label_org)
+			print("all labels:")
+			print(all_labels)
+			print("selected labels:")
+			print(selected_labels)
+			for each_label in all_labels:
+			    if each_label not in selected_labels:
+				#Delete this
+				try:
+				    print("Deleteing label org assignment..")
+				    delete_this_org_label = organisation_status_label.objects.get(status_label = each_label)
+				    delete_this_org_label.delete()
+				    print("..deleted.")
+				except:
+				    pass
 			
                 	return redirect('my_organisation')
         	return render(request, template_name, data)

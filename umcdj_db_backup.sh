@@ -6,10 +6,10 @@ echo `date`
 if [ $# -eq 0 ]
   then
     echo "No arguments supplied, taking default values"
-    exit 1
+    #exit 1
     DBNAME="umcdj" #default
     DBUSER="umcdjpgsu" #default
-    DB_DUMP_FOLDER="/home/ubuntu/srv/dump"
+    DB_DUMP_FOLDER="/srv/dump"
 elif [ $# -ne 3 ]
   then
     echo "Four Arguments not given."
@@ -25,7 +25,7 @@ else
 fi
 DB_DUMP_LOCATION="${DB_DUMP_FOLDER}/UMCloudDj_${DBNAME}_DUMP_${TIMESTAMP}.dump"
 echo "Starting backup script.."
-pg_dump -w -c -U $DBUSER -h localhost $DBNAME > $DB_DUMP_LOCATION
+pg_dump -w -U $DBUSER -h localhost $DBNAME > $DB_DUMP_LOCATION
 
 if [ $? -ne 0 ]
   then

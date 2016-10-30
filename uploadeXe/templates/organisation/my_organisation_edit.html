@@ -5,9 +5,14 @@
   <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap/css/bootstrap.min.css" />
   <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap/js/bootstrap.min.js"></script>
 
+  <!-- Bootstrap-multiselect -->
+  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap-multiselect/dist/css/bootstrap-multiselect.css" />
+  <script type="text/javascript" src="{{ STATIC_URL}}jscss/bootstrap-multiselect/dist/js/bootstrap-multiselect.js"></script>
+
   <!-- Bootstrap DatePicker -->
   <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap-datepicker/css/bootstrap-datepicker.min.css" />
   <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+ 
 <style>
         #holidays .datepicker.datepicker-inline,
         #holidays .datepicker.datepicker-inline table{
@@ -17,7 +22,12 @@
                 font-weight:500;
         }
 </style>
+
 <script type="text/javascript">
+	$(document).ready(function(){
+        	console.log("Ready..");
+        	//$('#labels').multiselect();  
+	});
           //var selected_calendar = {{selected_calendar.id}};
           $(function() {
                         $('#holiday_name').puiinputtext();
@@ -32,6 +42,8 @@
                                         $('#holidays').datepicker('getFormattedDate')
                                 );
                         });
+			//$('#labels').puidropdown();
+			$('#labels').multiselect();
                 }
           );
         function none_selected_calendar(){
@@ -58,12 +70,13 @@
 
 
   <!-- Bootstrap -->
-  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap/css/bootstrap.min.css" />
-  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap/js/bootstrap.min.js"></script>
+  <!--<link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap/css/bootstrap.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap/js/bootstrap.min.js"></script>-->
 
   <!-- Bootstrap DatePicker -->
-  <link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap-datepicker/css/bootstrap-datepicker.min.css" />
-  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>
+  <!--<link rel="stylesheet" href="{{ STATIC_URL }}jscss/bootstrap-datepicker/css/bootstrap-datepicker.min.css" />
+  <script type="text/javascript" src="{{ STATIC_URL }}jscss/bootstrap-datepicker/js/bootstrap-datepicker.min.js"></script>-->
+
 <style>
 	/*Override*/
 	table{
@@ -102,6 +115,19 @@
     {% endif %}-->
     <label>Organisation Code:</label>
     <input type="text" id="id_code" name="id_code" value="{{organisation_code.code}}"/><p></p>
+
+    <label>Attendance Labels:</label>
+    <select multiple="multiple" name="labels" id="labels" required>
+            <!--<option selected value="Z">Labels</option>-->
+        {% for every_label in status_labels %}
+	  {% if every_label.status == True %}
+	    <option selected value="{{ every_label.label.id }}">{{ every_label.label.name }}</option>
+	  {% else %}
+            <option value="{{ every_label.label.id }}">{{ every_label.label.name }}</option>
+	  {% endif %}
+        {% endfor %}
+    </select><p></p>
+
     <label>Holiday Calender:</label>
     <select class="form-control" style="width:200px; display:inline;" id="holiday_calendar" form="myorganisationform" name="holiday_calendar">
         <option value="0">None</option>

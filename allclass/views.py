@@ -45,6 +45,8 @@ from holiday.views import make_calendar_object
 
 from allclass.models import Enrollment
 
+from sheetmaker.models import status_label, organisation_status_label
+
 logger = logging.getLogger(__name__)
 
 ###################################
@@ -340,15 +342,38 @@ def allclass_makepdf(request, allclass_id):
         return redirect('allclass_table')
 
     canvas = Canvas(response, pagesize = A4)    
+    present = None
+    late = None
+    excused = None
+    absent = None
+    selected_status_label = []
+    selected_org_status_label = organisation_status_label.objects.filter(organisation=organisation)
+    if not selected_org_status_label:
+	present = "Present"
+	absent = "Absent"
+
+    for every_osl in selected_org_status_label:
+	selected_status_label.append(every_osl.status_label)
+    for every_label in selected_status_label:
+	if every_label.name == "Present":
+	    present = every_label.name
+	if every_label.name == "Late":
+	    late = every_label.name
+	if every_label.name == "Excused":
+	    excused = every_label.name
+	if every_label.name == "Absent":
+	    absent = every_label.name
+	    
     i=0;
     for every_sheet in split_student_name_list:
 	i = i + 1;
 	logger.info("Sheet: " + str(i))
 	sheet = AttendanceSheet( student_names = every_sheet, \
-			status_labels = ["Present", None, None, "Absent"], \
+			#status_labels = ["Present", None, None, "Absent"], \
+			status_labels = [present, late, excused, absent],\
 			#status_labels = ["Present", "Late", "Excused", "Absent"],\
 			title = str(allclass.allclass_name + \
-				" Class Page " + str(i) +"/"+ \
+				", ID: " + str(allclass.id) + ", Page " + str(i) +"/"+ \
 				str(len(split_student_name_list))))
 	sheet.render_to_canvas(canvas)
 	logger.info("Sheet Created")

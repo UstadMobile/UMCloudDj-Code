@@ -277,6 +277,31 @@
     "fields": {
       "name": "Teaching and Learning"
     }
+ },
+ {
+    "model": "sheetmaker.status_label"
+    "pk": 1,
+    "fields": {
+	"name": "Present"
+    }
+ }{
+    "model": "sheetmaker.status_label"
+    "pk": 2,
+    "fields": {
+        "name": "Late"
+    }
+ }{
+    "model": "sheetmaker.status_label"
+    "pk": 3,
+    "fields": {
+        "name": "Excused"
+    }
+ }{
+    "model": "sheetmaker.status_label"
+    "pk": 4,
+    "fields": {
+        "name": "Absent"
+    }
  }
 
 ]

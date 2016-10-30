@@ -1,3 +1,8 @@
+v1.1.880
+-Attendance Sheet will show status label based on organisation settings set in "My Organisation" under managerment
+-Attendance Excel Report will now show Class roll numbers
+-Attendance PDFs Sheet will now show Class ID in the title 
+
 v1.1.820
 -Fixed bug in Attendance report sheetmaker logic that was using a different index for roll numbers. Fixed the error
 

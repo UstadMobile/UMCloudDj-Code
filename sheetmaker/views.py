@@ -14,5 +14,7 @@ def pdfgen(request):
     sheet.make_canvas(response)
     return response
 
+#Status Label and organisation mapping CRUD
+
 
 # Create your views here.

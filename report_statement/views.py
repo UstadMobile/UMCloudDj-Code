@@ -1718,7 +1718,10 @@ def attendance_excel(request):
 
 	#formatting:
 	worksheet_class.set_column('A:D', 12, format)
-	worksheet_class.set_column('D:D', 18, format)
+	worksheet_class.set_column('D:D', 21, format)
+	worksheet_class.set_column('A:A',  4, format)
+	worksheet_class.set_column('B:B', 18, format)
+	worksheet_class.set_column('C:C', 12, format)
 	worksheet_class.set_row(4, 60)
 	
 	vertical_text_format = workbook.add_format()
@@ -1742,7 +1745,7 @@ def attendance_excel(request):
 	worksheet_class = worksheet_add_values_to_column_row(worksheet_class,\
 	    class_overall_day_title, 5, 3, format)
 
-	class_student_daily_title = ["Student Name", "Days Present", \
+	class_student_daily_title = ["No.", "Student Name", "Days Present", \
 	    "Days Absent", "% Absent"]
 	worksheet_class = worksheet_add_values_to_row_column(worksheet_class,\
 	    class_student_daily_title, 10, 0, just_bold_format)
@@ -1764,12 +1767,18 @@ def attendance_excel(request):
         if not students:
             worksheet_class.write(class_student_verb_row_number,0, "No Students Assigned", format)
         student_names = []
+	student_rollnos = []
+	rollno = 0
         for every_student in students:
             student_names.append(every_student.first_name + \
                 " " + every_student.last_name)
+	    rollno = rollno + 1
+	    student_rollnos.append(rollno)
         #print("Adding : " + str(len(student_names)) + " students names for class : " + str(every_class))
+	worksheet_class = worksheet_add_values_to_column_row(\
+	    worksheet_class, student_rollnos, class_student_verb_row_number,0, format)
         worksheet_class = worksheet_add_values_to_column_row(\
-            worksheet_class, student_names, class_student_verb_row_number,0, format)
+            worksheet_class, student_names, class_student_verb_row_number,1, format)
 
 	if not termdays:
 	    #Everyday is a holiday
@@ -1875,9 +1884,9 @@ def attendance_excel(request):
 	students_end_row_num_a = students_end_row_num + 1
 	while(student_row < students_end_row_num):
 	    student_row = student_row + 1
-	    worksheet_class.write_formula('B'+str(student_row),'=COUNTIF(F'+str(student_row)+':'+date_end_col_string + str(student_row)+', "P")')
-	    worksheet_class.write_formula('C'+str(student_row),'=COUNTIF(F'+str(student_row)+':'+date_end_col_string + str(student_row)+', "A")')
-	    worksheet_class.write_formula('D'+str(student_row),'=C'+str(student_row)+'/COLUMNS(F'+str(student_row)+':'+date_end_col_string + str(student_row)+')', percentage_format)
+	    worksheet_class.write_formula('C'+str(student_row),'=COUNTIF(F'+str(student_row)+':'+date_end_col_string + str(student_row)+', "P")')
+	    worksheet_class.write_formula('D'+str(student_row),'=COUNTIF(F'+str(student_row)+':'+date_end_col_string + str(student_row)+', "A")')
+	    worksheet_class.write_formula('E'+str(student_row),'=D'+str(student_row)+'/COLUMNS(F'+str(student_row)+':'+date_end_col_string + str(student_row)+')', percentage_format)
 	date_col = 6 
 	while(date_col <= date_end_col_num):
 	    date_col_string = xlsx_colnum_string(date_col)
