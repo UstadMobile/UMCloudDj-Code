@@ -24,6 +24,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from django.core import serializers
 import datetime
+from datetime import timedelta
 import time
 import os
 import urllib
@@ -34,6 +35,14 @@ from holiday.views import make_calendar_object
 from sheetmaker.models import status_label
 from sheetmaker.models import organisation_status_label
 
+from django_cron import CronJobBase, Schedule
+from django.core.mail import send_mail
+
+from allclass.models import Allclass, Allclass_alert_settings, Alert, Alert_type
+from school.models import School_alert_settings
+from organisation.models import Org_alert_settings
+from report_statement.views import is_date_a_holiday, get_attendance_daily
+from users.models import UserProfile
 
 """
 The organisation model form that is used for update and creation
@@ -755,5 +764,171 @@ def umpackage_delete(request, pk, template_name='organisation/umpackage_confirm_
 
 ####################################
 
+
+class MyCronJob(CronJobBase):
+    #RUN_EVERY_MINS = 120 # every 2 hours
+    RUN_AT_TIMES = ['18:30']
+    #RUN_AT_TIMES = ['16:22']
+
+    #schedule = Schedule(run_every_mins=RUN_EVERY_MINS)
+    schedule = Schedule(run_at_times=RUN_AT_TIMES)
+    code = 'organisation.my_cron_job'    # a unique code
+
+    def do(self):
+	print("Hey Hows it going!? If you can read this the cron job worked!")
+	check_alert()
+
+def check_alert():
+    print("Hi, Checking alerts..")
+    all_alerts = Alert.objects.all()
+    if not all_alerts:
+	print("No alerts found :( ")
+	pass
+    if all_alerts:
+	print("Alerts found. Lets go through and check them..")
+	try:
+	  for every_alert in all_alerts:
+	    check_these_allclasses = None
+	    to_emails = every_alert.to_emails.split(',')
+	    #Find which classes need to be checked in this alert 
+	    if every_alert.allclasses == None:
+		if every_alert.schools == None:
+		    #Check all classes in the whole organisation 
+		    organisation = every_alert.organisation;
+		    check_these_allclasses = []
+		    all_schools = School.objects.filter(organisation = organisation)
+		    for every_school in all_schools: #TODO: Check 
+			all_classes = Allclass.objects.filter(school = every_school)
+			for every_class in all_classes:
+			    check_these_allclasses.append(every_class)
+		else:
+		    check_these_allclasses = []
+		    #Check all classes in schools provided..
+		    for every_school in every_alert.schools.all():
+			all_classes = Allclass.objects.filter(school = every_school)
+			for every_allclass in all_classes: #TODO: Check! 
+			    check_these_allclasses.append(every_allclass)
+	    else:
+		if every_alert.schools == None:
+		    #Check all classes in allclasses provided..
+		    check_these_allclasses  = every_alert.allclasses.all()
+		else:
+		    check_these_allclasses = []
+		    #Check all classes in schools AND classes provided
+		    for every_school in every_alert.schools.all():
+			all_classes = Allclass.objects.filter(school = every_school)
+			for each_class in all_classe:
+			    check_these_allclasses.append(each_class)
+		    for each_allclass in every_alert.allclasses.all():
+			check_these_allclasses.append(each_allclass)
+
+	    print("Got classes list:")
+	    print(check_these_allclasses)
+
+	    types = every_alert.types.all()
+	    if not types:
+		print("Could NOT find types for this alert..")
+	    for type in types:
+		if type.name == "missed_attendance":
+		    print("Checking attendance for all classes..\n")
+		    check_attendance_send_alert(check_these_allclasses, to_emails)
+	except Exception as e:
+	    print("Exception!: ")
+	    print (e)
+	   
+
+def check_attendance_send_alert(check_these_allclasses, to_emails):
+    for every_allclass in check_these_allclasses:
+	print("Getting cut off time..")
+	#Get cut off time
+	cut_off_time = None
+	try:
+	    allclass_alert_settings = Allclass_alert_settings.objects.filter(allclass = every_allclass)
+	except:
+	    allclass_alert_settings = None
+	try:
+	    school_alert_settings = School_alert_settings.objects.filter(school = every_allclass.school)
+	except:
+	    school_alert_settings = None
+	try:
+	    org_alert_settings = Org_alert_settings.objects.filter(organisation = every_allclass.school.organisation)
+	except:
+	    org_alert_settings = None
+
+	if allclass_alert_settings:
+	    cut_off_time = allclass_alert_settings.cut_off_time
+	elif school_alert_settings:
+	    cut_off_time = school_alert_settings.cut_off_time
+	elif org_alert_settings:
+	    cut_off_time = org_alert_settings.cut_off_time
+	else:
+	    cut_off_time = 1 
+
+	print("Got cut off time: " + str(cut_off_time))
+	#Get class timing
+	today_date = datetime.datetime.now().date()
+	#TODO:Remove this
+	#today_date = datetime.datetime.now().date() - timedelta(days = 1)
+	if is_date_a_holiday(today_date, every_allclass):
+	    #return or skip	
+	    print("Today is a holiday for the class : " + str(every_allclass.allclass_name))
+	    continue 
+	#TODO:Remove this
+	#today_date = datetime.datetime.now().date()
+
+	#Check attendance for date
+	yesterday_date = today_date - timedelta(days = 1)
+	tomorrow_date = today_date + timedelta(days = 1)
+	date_dict = get_attendance_daily(today_date, tomorrow_date, every_allclass)
+	#TODO: Remove this
+	#date_dict = get_attendance_daily(yesterday_date, today_date, every_allclass)
+	today_date_pretty = today_date.strftime("%B %d, %Y")
+	#TODO: Remove this
+	#today_date_pretty = yesterday_date.strftime("%B %d, %Y")
+	print("Today: " )
+	print(today_date_pretty)
+	if not date_dict:
+	    teacher_names = []
+	    teacher_names_string = ""
+	    teachers_in_this_class = every_allclass.teachers.all()
+	    for every_teacher_in_this_class in teachers_in_this_class:
+		teacher_profile = UserProfile.objects.get(user=every_teacher_in_this_class)
+		if teacher_profile.phone_number != "":
+			phone_number = teacher_profile.phone_number
+		if teacher_names_string == "":
+		    teacher_names_string = every_teacher_in_this_class.first_name + ' ' +\
+                        every_teacher_in_this_class.last_name + ' (' + phone_number + ')'
+		else:
+		    teacher_names_string = teacher_names_string + ', ' + every_teacher_in_this_class.first_name + ' ' +\
+			every_teacher_in_this_class.last_name + ' (' + phone_number + ')' 
+	    # Send alert
+	    print("ATTENDANCE NOT TAKEN YET. SENDING ALERT FOR CLASS " + every_allclass.allclass_name)
+	    current_email = "varuna@ustadmobile.com"
+	    try:
+		#TODO: Remvoe this
+		#to_emails= []
+		#to_emails.append('varuna@ustadmobile.com')
+		send_mail('Attendance Alert: ' + every_allclass.allclass_name, \
+			'\nHi,\n\nThis is to inform you that the class : ' \
+			+ every_allclass.allclass_name + ' has not taken the attendance today (' + \
+			today_date_pretty + '). The teacher(s) : ' + \
+			teacher_names_string + '' + '\n\nRegards, \nUstad Mobile\ninfo@ustadmobile.com\n@ustadmobile', \
+ 			'info@ustadmobile.com' , to_emails, fail_silently=False)
+	    except Exception as e:
+		#authresponse = HttpResponse(status=506)
+		#authresponse.write("Failed to send emails. Check if you have set it up and the settings are correct.")
+		print("Couldn't send email..")
+		print(e)
+
+def test_send_mail(request):
+    print("Testing email..")
+    try:
+    	send_mail('Test email','Hi,\n This is a test email. Please ignore it.\n\n',\
+	    'info@ustadmobile.com', ['varuna@ustadmobile.com'], fail_silently=False)
+    except Exception as e:
+	print("Couldnt send email..")
+	print(e)
+    authresponse = HttpResponse(status = 200)
+    authresponse.write("Got mail?")
 
 # Create your views here.

@@ -178,6 +178,7 @@ urlpatterns = patterns('',
 
 	#Testing Request:
 	url(r'^testrequest/$', 'UMCloudDj.views.test_request', name='test_request'),
+	url(r'^testmail/$', 'organisation.views.test_send_mail', name='test_send_mail'), # Test send_mail 
 
 	#url(r'^dynatableroles/$', 'UMCloudDj.views.role_dynatable', name='role_dynatable'),
 	(r'^register/', RedirectView.as_view(url='/register/start/')),

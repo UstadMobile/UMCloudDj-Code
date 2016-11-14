@@ -1,3 +1,8 @@
+v1.2.000
+-Added alert capability
+-Added Real names to old Attendance Report
+
+
 v1.1.880
 -Attendance Sheet will show status label based on organisation settings set in "My Organisation" under managerment
 -Attendance Excel Report will now show Class roll numbers

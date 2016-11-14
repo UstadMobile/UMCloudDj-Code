@@ -1251,9 +1251,19 @@ def get_allclass_registrations(date_since, date_until, allclass):
         timestamp__range = [date_since, date_until],\
             object_activity__in = attendance_activity,\
                 verb__in=hosted_verb).distinct('context_registration')
+    print("Okay, we are about to find the difference between the timestamps..")
     for every_registration in all_registrations:
         all_teachers.append(every_registration.user)
 	all_dates.append(every_registration.timestamp)
+
+	print("Timestamp @ LRS: ")
+	print(every_registration.timestamp)
+	print("Timestampe @ taken:")
+	print(every_registration.full_statement['timestamp'])
+	print("Stored @ LRS: ")
+	print(every_registration.stored)
+	print("Stored @ taken:")
+	print(every_registration.full_statement['stored'])
     #print("All registrations for class: " + allclass.allclass_name + \
     #    " from " + str(date_since) + " to " + str(date_until) + " : ")
     #print(all_registrations)
@@ -1377,11 +1387,14 @@ def get_registration_attendance(registration_id):
     all_students=[]
     for every_statement in allstudents_statements_per_registration:
         actor_name = every_statement.actor.get_a_name()
+	actor_real_name = ""
 	try:
 	    actor_user = User.objects.get(username=str(actor_name))
+	    actor_real_name = actor_user.first_name + " " + actor_user.last_name
 	except:
 	    print("Unable to get actor: " + str(actor_user))
 	    actor_user = None
+	    actor_real_name = None
 	all_students.append(actor_user)
         verb = every_statement.verb.get_display()
         context_extensions = every_statement.context_extensions
@@ -1392,10 +1405,10 @@ def get_registration_attendance(registration_id):
         except:
             fingerprinted = ""
         if not fingerprinted:
-            all_students_attendance.append(Student(actor_name, verb, "",""))
+            all_students_attendance.append(Student(actor_real_name, verb, "",""))
             #print("For student: " + actor_name + "->" + verb +  " " )
         else:
-            all_students_attendance.append(Student(actor_name, verb, fingerprinted, ""))
+            all_students_attendance.append(Student(actor_real_name, verb, fingerprinted, ""))
             #print("For student: " + actor_name + " -> " + verb + " -> fingerprinted: " + fingerprinted +  " " )
     #Debug
     #print("Students attended: ")

@@ -48,5 +48,11 @@ class Organisation_Code(models.Model):
    organisation = models.ForeignKey(Organisation)
    code=models.CharField(max_length=100)
 
+"""
+Alert stuff
+"""
+class Org_alert_settings(models.Model):
+   organisation = models.ForeignKey(Organisation)
+   cut_off_time = models.IntegerField(default = 1) #in hours
 
 # Create your models here.

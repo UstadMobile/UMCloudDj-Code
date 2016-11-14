@@ -24,4 +24,8 @@ class School(models.Model):
    def __unicode__(self):
 	return u'%s ' % (self.school_name)
 
+class School_alert_settings(models.Model):
+  school = models.ForeignKey(School)
+  cut_off_time = models.IntegerField(default = 1) #in hours
+
 # Create your models here.

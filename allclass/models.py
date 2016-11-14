@@ -2,6 +2,7 @@ from django.db import models
 from school.models import School
 from django.contrib.auth.models import User
 from holiday.models import Calendar
+from organisation.models import Organisation
 
 """
 Gets the max number of enrollments in that class and returns the next
@@ -113,5 +114,32 @@ class Enrollment(models.Model):
                         print("Updating date updated")
                         self.date_updated = self.date_modified
                         super(Enrollment,self).save(*args, **kwargs)
+
+"""
+Alert Models
+"""
+
+class Allclass_alert_settings(models.Model):
+  allclass = models.ForeignKey(Allclass)
+  cut_off_time = models.IntegerField(default = 1) #in hours
+
+class Alert_type(models.Model):
+   name = models.CharField(max_length=300)
+
+class Alert(models.Model):
+   organisation = models.ForeignKey(Organisation)
+   schools = models.ManyToManyField(School, null = True, related_name = "alert_schools")
+   allclasses = models.ManyToManyField(Allclass, null = True, related_name = "alert_classes")
+   #Frequency
+   day_of_week = models.IntegerField(null=True)
+   month = models.IntegerField(null=True)
+   day_of_month = models.IntegerField(null=True)
+   minute = models.IntegerField(null=True)
+   active = models.BooleanField(default=False)
+   #Alert Type
+   types = models.ManyToManyField(Alert_type, null = False)
+   to_emails = models.CharField(max_length = 1000)
+
+
 
 # Create your models here.
