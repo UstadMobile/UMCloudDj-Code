@@ -1,3 +1,15 @@
+v1.3.000
+-Added Password Reset API
+-Attendance Online capability
+-Fixed Sort bug in Online Take Attendance 
+-Added ability to backdate online take attendance
+-Added Student ID field in User creation
+-Made Username and password combination not mandatory if those are blank. It will auto generate based on ORG short code, First Name and Last Name
+-Added "-" instead of A (Absent) in Excel Report. Also added a field to count them in every class
+-Added Student ID in old Attendance Report
+-Added not taken students in order in old Attendance Report with status "-" instead of Skipped
+
+
 v1.2.000
 -Added alert capability
 -Added Real names to old Attendance Report

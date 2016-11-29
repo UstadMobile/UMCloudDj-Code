@@ -20,7 +20,7 @@ $(function() {
             records:[
                 {% if yaxis %}
                         {% for s in yaxis  %}
-			    {"student":"{{s.name}}","verb":"{{s.verb}}","fingerprinted":"{{s.fingerprinted}}" } {% if not forloop.last %},{% endif %}
+			    {"student":"{{s.name}}","verb":"{{s.verb}}","student_id":"{{s.student_id}}","fingerprinted":"{{s.fingerprinted}}" } {% if not forloop.last %},{% endif %}
                         {% endfor %}
                 {% endif %}
                 ]

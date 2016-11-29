@@ -54,6 +54,8 @@ urlpatterns = patterns('',
 	url(r'^isteacher/$', 'UMCloudDj.views.is_teacher', name='is_teacher'),
 	url(r'^teacherclasses/$', 'UMCloudDj.views.get_teacher_allclasses', name='get_teacher_allclasses'),
 	url(r'^allclassstudents/(?P<pk>\d+)$', 'UMCloudDj.views.get_allclass_students', name='get_allclass_students'),
+	url(r'^request_password_reset/$', 'UMCloudDj.views.request_password_reset', name='request_password_reset'), #Needs basic auth
+	url(r'^reset_password/(?P<reg_id>[-\w]+)$', 'UMCloudDj.views.reset_password', name='reset_password'),#Password reset
 	url(r'^umlrs/teacher_enroll_student/$', 'UMCloudDj.views.teacher_enroll_student', name='teacher_enroll_student'), #Public facing API for teachers enrolling students from within the APP
 
 	url(r'holiday_calendar_new/$', 'holiday.views.calendar_new', name='holiday_calendar_new'),
@@ -175,6 +177,7 @@ urlpatterns = patterns('',
         url(r'^allclassedit/(?P<pk>\d+)$', 'allclass.views.allclass_update', name='allclass_edit'),
         url(r'^allclassdelete/(?P<pk>\d+)$', 'allclass.views.allclass_delete', name='allclass_delete'),
 	#url(r'^migrate_allclass_students_enrollment/$', 'allclass.views.migrate_allclass_students_enrollment', name='migrate_allclass_students_enrollment'),
+	url(r'^allclassattendanceform/(?P<pk>\d+)$', 'allclass.views.attendance_form', name='allclass_attendance_form'), #Attendance Form 
 
 	#Testing Request:
 	url(r'^testrequest/$', 'UMCloudDj.views.test_request', name='test_request'),

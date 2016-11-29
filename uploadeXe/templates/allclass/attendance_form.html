@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{pagetitle}}{% endblock %}
+{% block scriptjs %}
+<style>
+</style>
+<script type="text/javascript">
+	function disableall(){
+        	$('input[type=radio]').prop('checked',false);
+		$('input[type=radio]').parents('tr').css('background-color','');
+	}
+
+          $(function() { 
+			$('#rd1').puiradiobutton();
+			$('#uncheckradio').puibutton();
+			$('#submit').puibutton();
+			var newtypeid="{{newtypeid}}";
+                        $('#{{newtypeid}}').puibutton(); 
+			$(function() { 
+        			$('#{{tabletypeid}}').dynatable({
+					features: {
+        					//paginate: true,
+						paginate: false,
+        					search: true,
+        					recordCount: true,
+						sorting: true,
+						sort: false,
+						
+						
+      					},
+        				dataset: {
+        				records:[
+
+						{% for every_student in assigned_students %}
+
+								{"radio2":"<input type=\"radio\" id=\"{{every_student.pk}}_radio\" style=\"width:2.5em;height:2.5em;\" onchange=\"$(this).parents('tr:first').css('background-color','#E55451');\" name=\"{{every_student.pk}}_radio\" value=\"{{every_student.pk}}_0\"><br>","radio":"<input type=\"radio\" id=\"{{every_student.pk}}_radio\" style=\"width:2.5em;height:2.5em;\" onchange=\"$(this).parents('tr:first').css('background-color','lightgreen');\"name=\"{{every_student.pk}}_radio\" value=\"{{every_student.pk}}_1\"><br>","approve":"<div class=\"onoffswitch\"><input type=\"checkbox\" name=\"onoffswitch\" class=\"onoffswitch-checkbox\" id=\"{{every_student.pk}}myonoffswitch\" checked><label class=\"onoffswitch-label\" for=\"{{every_student.pk}}myonoffswitch\"><span class=\"onoffswitch-inner\"></span><span class=\"onoffswitch-switch\"></span></label></div>","pk":"{{every_student.pk}}","model":"{{every_student.model}}", "fields.username":"{{every_student.username}}","fields.first_name":"{{every_student.first_name}}", "fields.last_name":"{{every_student.last_name}}", "fields.username":"{{every_student.username}}"}{% if not forloop.last %},{% endif %}
+
+                        			{% endfor %}
+                				]
+        				}
+    				});
+  			});
+			$('#date').puidropdown();
+
+	});
+</script>
+{% endblock %}
+{% block content %}
+{% if state %}
+<p class="error" style="color:red;"><i>{{state}}</i></p>
+{% else %}
+<form id="approveusersform" method="post">{% csrf_token %}
+<h1> Attendance Form for class: {{allclass.allclass_name}} for <select id="date" name="date">
+  {% for every_date,every_number in all_dates %}
+  	<option value="{{every_number}}"><b>{{every_date}}</b></option>
+  {% endfor %}
+
+ </select>
+</h1>
+
+<div class="dropdown-content">
+    <p>Hello World!</p>
+</div>
+
+</h2>
+<i> Please fill the form below</i>
+<table id="{{tabletypeid}}">
+  <thead>
+    {% for d, f in table_headers_html %}
+	<th data-dynatable-column="{{d}}" >{{f}}</th>
+    {% endfor %}
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+<button id="uncheckradio" type="button" name="uncheckradio" onClick="disableall()" value="Uncheck">Reset</button>
+<button id="submit" type="submit" name="submittotable" value="Create">Submit</button>
+</form>
+{% endif %}
+
+<br></br>
+
+
+
+{% endblock %}

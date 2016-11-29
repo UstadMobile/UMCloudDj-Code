@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Login {% endblock %}
+
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+			$('#username').puiinputtext();
+			$('#password').puiinputtext();
+			$('#loginpanel').puipanel(); 
+			$('#submit').puibutton();
+			$('#home').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+
+
+{% block content %}
+
+	{% if state %}
+		<p style="color:green;"><i><img src="/media/images/tick.png" alt="">{{state}}<i></p>
+	{% endif %}
+
+<form>
+	<h3> Attendance for class {{allclass.allclass_name}} for {{today}} </h3>
+	<p><i>Please fill the form below and click submit</i><p>
+	{% for each_student in assigned_students %}
+	    {{each_student.first_name}} {{each_student.last_name}} 
+		{% with attendance_id="{{each_student.id}}" %}
+	     	    <fieldset style="fload:left;" id="{{attendance_id}}">
+        		Present <input type="radio" value="" name="Present">
+        		Absent <input type="radio" value="" name="Absent">
+    	     	    </fieldset>
+		{% endwith %}
+	    <p><p>
+	{% endfor %}
+</form>
+
+{% endblock %}

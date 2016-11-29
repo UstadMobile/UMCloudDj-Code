@@ -34,5 +34,13 @@ class UserProfile(models.Model):
 		        	null=True)
     notes=models.TextField(null=True,blank=True)
     last_activity_date = models.DateTimeField(blank=True, null=True)
+    custom_roll_no = models.CharField(max_length = 100, blank = True, null = True)
 
+class PasswordReset(models.Model):
+    user = models.ForeignKey(User)
+    reg_id = models.CharField(max_length=100, \
+                        unique=True, default=uuid.uuid4)
+    done = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True) #added by Varuna Singh
+    date_accessed = models.DateTimeField(auto_now=True, null=True)
 # Create your models here.

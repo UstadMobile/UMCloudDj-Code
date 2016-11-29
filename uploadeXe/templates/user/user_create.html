@@ -64,6 +64,7 @@
                                 }  
                         });
 			$('#phonenumber').puiinputtext();
+			$('#student_id').puiinputtext();
 			$('#gender').puidropdown();
 			$( ".dobdatepicker" ).datepicker({
         			changeMonth: true,
@@ -92,7 +93,7 @@
     <div id="createuser" title="Create a New User">
     <div data-role="fieldcontain" style="padding-bottom:5px">
         <!--<label for="username">Username: &nbsp  </label>-->
-        <input type="text" name="username" id="username" placeholder="Username" style="height: 30px; width: 250px;" value="" required/>
+        <input type="text" name="username" id="username" placeholder="Username" style="height: 30px; width: 250px;" value="" />
 	<i id="spaceprompt" style="visibility:hidden;">Spaces are not allowed in usernames.</i>
     </div>
     <div data-role="fieldcontain" style="padding-bottom:5px">
@@ -101,11 +102,11 @@
     </div>
     <div data-role="fieldcontain" style="padding-bottom:5px">
         <!--<label for="password">Password:</label>-->
-        <input type="password" name="password" id="password" placeholder="Password" style="height: 30px; width: 250px;" value="" required/>
+        <input type="password" name="password" id="password" placeholder="Password" style="height: 30px; width: 250px;" value=""/>
     </div>
     <div data-role="fieldcontain" style="padding-bottom:5px">
         <!--<label for="password">Password:</label>-->
-        <input type="password" name="passwordagain" id="passwordagain" placeholder="Enter Password Again" style="height: 30px; width: 250px;" value="" required/>
+        <input type="password" name="passwordagain" id="passwordagain" placeholder="Enter Password Again" style="height: 30px; width: 250px;" value="" />
     </div>
 
     <div data-role="fieldcontain" style="padding-bottom:5px">
@@ -129,6 +130,9 @@
      <div data-role="fieldcontain" style="padding-bottom:5px">
         <!--<label for="job_title">Job Title:  </label>-->
         <input type="tel" name="phonenumber" id="phonenumber" placeholder="Phone Number" style="height: 30px; width: 250px;" value="" required/>
+    </div>
+    <div data-role="fieldcontain" style="padding-botton:5px">
+	<input type="text" name="student_id" id="student_id" placeholder="Student ID" style="height: 30px; width: 250px;" value="" />
     </div>
 
     <div data-role="fieldcontain" style="padding-bottom:5px">

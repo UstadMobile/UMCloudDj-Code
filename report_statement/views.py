@@ -1325,19 +1325,25 @@ def attendance_get_registration(request, template_name='attendance_all_registrat
 	
 class Student(object):
     name = ""
+    username = ""
     verb = "" 
     fingerprinted = ""
     gender=""
+    student_id=""
 
     # The class "constructor" - It's actually an initializer 
-    def __init__(self, name, verb, fingerprinted):
+    def __init__(self, name, username, verb, student_id, fingerprinted):
         self.name = name
+	self.username = username
         self.verb = verb
+	self.student_id = student_id
         self.fingerprinted = fingerprinted
     #Anlther one
-    def __init__(self, name, verb, fingerprinted, gender):
+    def __init__(self, name, username, verb, student_id, fingerprinted, gender):
         self.name = name
+	self.username = username
         self.verb = verb
+	self.student_id = student_id
         self.fingerprinted = fingerprinted
         self.gender = gender
 
@@ -1388,13 +1394,17 @@ def get_registration_attendance(registration_id):
     for every_statement in allstudents_statements_per_registration:
         actor_name = every_statement.actor.get_a_name()
 	actor_real_name = ""
+	actor_student_id=""
 	try:
 	    actor_user = User.objects.get(username=str(actor_name))
 	    actor_real_name = actor_user.first_name + " " + actor_user.last_name
+	    actor_student_id = UserProfile.objects.get(user=actor_user).custom_roll_no
 	except:
 	    print("Unable to get actor: " + str(actor_user))
 	    actor_user = None
 	    actor_real_name = None
+	    actror_student_id = None
+
 	all_students.append(actor_user)
         verb = every_statement.verb.get_display()
         context_extensions = every_statement.context_extensions
@@ -1405,18 +1415,36 @@ def get_registration_attendance(registration_id):
         except:
             fingerprinted = ""
         if not fingerprinted:
-            all_students_attendance.append(Student(actor_real_name, verb, "",""))
+            all_students_attendance.append(Student(actor_real_name, actor_name, verb, actor_student_id, "",""))
             #print("For student: " + actor_name + "->" + verb +  " " )
         else:
-            all_students_attendance.append(Student(actor_real_name, verb, fingerprinted, ""))
+            all_students_attendance.append(Student(actor_real_name, actor_name, verb, actor_student_id, fingerprinted, ""))
             #print("For student: " + actor_name + " -> " + verb + " -> fingerprinted: " + fingerprinted +  " " )
     #Debug
     #print("Students attended: ")
     #print(len(all_students))
     #print(".. they are:")
     #print(all_students)
+    
+    #TODO:
+    # 1. Order the list by student id
+    # 2. Fill in the ones that aren't there..
 
-    return all_students_attendance, all_students, reg_allclass, timestamp
+    #for every_student_attendance in all_student_attendance:
+    ordered_students_attendance=[]
+    for every_student in reg_allclass.students.all():
+	actor_real_name = every_student.first_name + " " + every_student.last_name
+	every_student_id = UserProfile.objects.get(user=every_student).custom_roll_no
+	found = False
+	for every_student_attendance in all_students_attendance:
+	    if every_student_attendance.username == every_student.username:
+		found = True
+		ordered_students_attendance.append(every_student_attendance)
+	if found == False:
+	    ordered_students_attendance.append(Student(actor_real_name,\
+		every_student.username, "-", every_student_id, "", ""))
+    #return all_students_attendance, all_students, reg_allclass, timestamp
+    return ordered_students_attendance, all_students, reg_allclass, timestamp
     
 
 """ Gets all dates everyday between (and inclusive) of 
@@ -1731,10 +1759,11 @@ def attendance_excel(request):
 
 	#formatting:
 	worksheet_class.set_column('A:D', 12, format)
-	worksheet_class.set_column('D:D', 21, format)
+	worksheet_class.set_column('E:E', 21, format)
 	worksheet_class.set_column('A:A',  4, format)
 	worksheet_class.set_column('B:B', 18, format)
-	worksheet_class.set_column('C:C', 12, format)
+	worksheet_class.set_column('C:C', 14, format)
+	worksheet_class.set_column('D:D', 12, format)
 	worksheet_class.set_row(4, 60)
 	
 	vertical_text_format = workbook.add_format()
@@ -1754,11 +1783,11 @@ def attendance_excel(request):
 	    class_overall_title, 1, 0, format)
 
 	class_overall_day_title = ["Day % Absent", "Day % Present", \
-	    "Day # Students Present", "Total Absent"]
+	    "Day # Students Present", "Total Absent", "Total Not Taken"]
 	worksheet_class = worksheet_add_values_to_column_row(worksheet_class,\
-	    class_overall_day_title, 5, 3, format)
+	    class_overall_day_title, 5, 4, format)
 
-	class_student_daily_title = ["No.", "Student Name", "Days Present", \
+	class_student_daily_title = ["No.", "Student Name", "Student ID", "Days Present", \
 	    "Days Absent", "% Absent"]
 	worksheet_class = worksheet_add_values_to_row_column(worksheet_class,\
 	    class_student_daily_title, 10, 0, just_bold_format)
@@ -1769,7 +1798,7 @@ def attendance_excel(request):
     	    date_since, date_until, every_class);
 	
 
-	class_date_start_column_number = 4
+	class_date_start_column_number = 5
 	class_date_row_number = 4
 	class_student_verb_row_number = 11
 
@@ -1781,17 +1810,25 @@ def attendance_excel(request):
             worksheet_class.write(class_student_verb_row_number,0, "No Students Assigned", format)
         student_names = []
 	student_rollnos = []
+	student_custom_roll_nos = []
 	rollno = 0
         for every_student in students:
             student_names.append(every_student.first_name + \
                 " " + every_student.last_name)
 	    rollno = rollno + 1
 	    student_rollnos.append(rollno)
+	    every_student_profile = UserProfile.objects.get(user=every_student)
+	    every_student_profile_custom_roll_no = every_student_profile.custom_roll_no
+	    if every_student_profile_custom_roll_no is None:
+		every_student_profile_custom_roll_no = ""
+	    student_custom_roll_nos.append(every_student_profile_custom_roll_no)
         #print("Adding : " + str(len(student_names)) + " students names for class : " + str(every_class))
 	worksheet_class = worksheet_add_values_to_column_row(\
 	    worksheet_class, student_rollnos, class_student_verb_row_number,0, format)
         worksheet_class = worksheet_add_values_to_column_row(\
             worksheet_class, student_names, class_student_verb_row_number,1, format)
+	worksheet_class = worksheet_add_values_to_column_row(\
+	    worksheet_class, student_custom_roll_nos, class_student_verb_row_number,2, format)
 
 	if not termdays:
 	    #Everyday is a holiday
@@ -1837,8 +1874,9 @@ def attendance_excel(request):
 			that the students not filled are Absent by default (for now)
 		    """
 		    for student in students:
+			#Assign everyone nothing. (Maybe we can make this "-")
 			worksheet_class.write(class_student_verb_start, class_date_start_column_number,\
-                                "A", just_bold_format);
+                                "-", just_bold_format);
 			class_student_verb_start = class_student_verb_start + 1
 
 		    class_student_verb_start = 11
@@ -1855,7 +1893,7 @@ def attendance_excel(request):
 			    worksheet_class.write(entryIndex, class_date_start_column_number,\
                                 "P", format);
 			    
-		    	else:
+		    	elif everyStudentAttendance.verb == "Skipped":
 		    	    #Add A 
 			    """
 			    worksheet_class.write(class_student_verb_start, class_date_start_column_number,\
@@ -1864,6 +1902,10 @@ def attendance_excel(request):
 			    worksheet_class.write(entryIndex, class_date_start_column_number,\
                                 "A", format);
 			    pass
+			else:
+			    #Add -
+			    worksheet_class.write(entryIndex, class_date_start_column_number,\
+                                "-", format);
 			class_student_verb_start = class_student_verb_start + 1
 		else:
 		    print("Found, but not taken. Please debug..");
@@ -1885,28 +1927,33 @@ def attendance_excel(request):
 	worksheet_class.write('C4', 0, percentage_format)
 	worksheet_class.write('C3', 0, percentage_format)
 	
-	worksheet_class.write_formula('C4', '=E9/(SUM(E8:E9))', percentage_format)
+	worksheet_class.write_formula('C4', '=F9/(SUM(F8:F9))', percentage_format)
 	worksheet_class.write_formula('C3', '=1-C4', percentage_format)
 	#worksheet_class.set_column(
-	date_end_col_num = 5 + len(termdays)
+	date_end_col_num = 6 + len(termdays)
 	date_end_col_string = xlsx_colnum_string(date_end_col_num)
 	students_end_row_num = 11 + len(students)
-	worksheet_class.write_formula('E8', '=SUM(F8:'+date_end_col_string+'8)')
-	worksheet_class.write_formula('E9', '=SUM(F9:'+date_end_col_string+'9)')
+	worksheet_class.write_formula('F8', '=SUM(G8:'+date_end_col_string+'8)')
+	worksheet_class.write_formula('F9', '=SUM(G9:'+date_end_col_string+'9)')
+	#Not taken total formula
+	worksheet_class.write_formula('F10', '=SUM(G10:'+date_end_col_string+'9)')
 	student_row = 11
 	students_end_row_num_a = students_end_row_num + 1
 	while(student_row < students_end_row_num):
 	    student_row = student_row + 1
-	    worksheet_class.write_formula('C'+str(student_row),'=COUNTIF(F'+str(student_row)+':'+date_end_col_string + str(student_row)+', "P")')
-	    worksheet_class.write_formula('D'+str(student_row),'=COUNTIF(F'+str(student_row)+':'+date_end_col_string + str(student_row)+', "A")')
-	    worksheet_class.write_formula('E'+str(student_row),'=D'+str(student_row)+'/COLUMNS(F'+str(student_row)+':'+date_end_col_string + str(student_row)+')', percentage_format)
-	date_col = 6 
+	    worksheet_class.write_formula('D'+str(student_row),'=COUNTIF(G'+str(student_row)+':'+date_end_col_string + str(student_row)+', "P")')
+	    worksheet_class.write_formula('E'+str(student_row),'=COUNTIF(G'+str(student_row)+':'+date_end_col_string + str(student_row)+', "A")')
+	    worksheet_class.write_formula('F'+str(student_row),'=E'+str(student_row)+'/COLUMNS(G'+str(student_row)+':'+date_end_col_string + str(student_row)+')', percentage_format)
+	date_col = 7 
 	while(date_col <= date_end_col_num):
 	    date_col_string = xlsx_colnum_string(date_col)
-	    worksheet_class.write_formula(date_col_string+'6', '='+date_col_string+'9/ROWS('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a)+')', percentage_format)
+	    worksheet_class.write_formula(date_col_string+'6', '='+date_col_string+'9/ROWS('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a - 1)+')', percentage_format)
 	    worksheet_class.write_formula(date_col_string+'7', '=1-'+date_col_string+'6', percentage_format)
 	    worksheet_class.write_formula(date_col_string+'8', '=COUNTIF('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a)+', "P")')
 	    worksheet_class.write_formula(date_col_string+'9', '=COUNTIF('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a)+', "A")')
+
+	    #Total Not Taken every term date
+	    worksheet_class.write_formula(date_col_string+'10', '=COUNTIF('+date_col_string+'12:'+date_col_string+''+str(students_end_row_num_a)+', "-")')
 	    date_col = date_col + 1
 	
 	
@@ -1950,6 +1997,8 @@ def attendance_registration_students(request, registration_id, template_name='at
         table_headers_name = []
         table_headers_html.append("student")
         table_headers_name.append("Student")
+	table_headers_html.append("student_id")
+	table_headers_name.append("Student ID")
         table_headers_html.append("verb")
         table_headers_name.append("Status")
   	table_headers_html.append("fingerprinted")

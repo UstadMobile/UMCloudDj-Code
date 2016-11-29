@@ -27,3 +27,5 @@ git_pull.sh
 .coverage
 *.tar.gz
 *.csv
+cred.txt
+allclass/cred.txt

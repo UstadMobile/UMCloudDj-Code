@@ -20,7 +20,7 @@ from organisation.models import Organisation
 from organisation.models import UMCloud_Package
 from organisation.models import User_Organisations
 from organisation.models import Organisation_Code
-from users.models import UserProfile
+from users.models import UserProfile, PasswordReset
 from allclass.models import Allclass
 from school.models import School
 from django import forms
@@ -69,6 +69,7 @@ from django.http import HttpResponseBadRequest
 import random
 import string
 import phonenumbers
+import threading
 
 logger = logging.getLogger(__name__)
 ###################################
@@ -149,7 +150,7 @@ class UserProfileForm(ModelForm):
     class Meta:
         model = UserProfile
 	fields=('website','company_name','job_title','date_of_birth',\
-			'address','phone_number','gender', 'notes', 'last_activity_date')
+			'address','phone_number','gender', 'notes', 'last_activity_date', 'custom_roll_no')
 
 """User model form for user addition and update forms.
 """
@@ -519,15 +520,17 @@ def user_create(request, template_name='user/user_create.html'):
 
     if request.method == 'POST':
 	post = request.POST;
+	username=post['username']
 	password=post['password']
 	passwordagain=post['passwordagain']
-	if password != passwordagain:
+	auto_generate_user = False
+	if username != "" and password != passwordagain:
 		password=None
 		state="The two passwords you gave do not match. Please try again."
                 data['state']=state
                 return render(request, template_name, data)
 
-	if not user_exists(post['username']):
+	if not user_exists(post['username']) or username == "" or username is None:
 		
         	user = create_user_more(username=post['username'], \
 					email=post['email'], \
@@ -542,6 +545,13 @@ def user_create(request, template_name='user/user_create.html'):
 					phone_number=post['phonenumber'], \
 					organisation_request=organisation)
 		if user:
+		    try:
+			student_id = post['student_id']
+			user_profile = UserProfile.objects.get(user=user)
+			user_profile.custom_roll_no = student_id
+			user_profile.save()
+		    except:
+			pass
 		    current_user_role = User_Roles.objects.get(\
 					user_userid=user.id).role_roleid;
 		    student_role = Role.objects.get(pk=6)
@@ -669,6 +679,162 @@ def user_delete(request, pk, template_name='user/user_confirm_delete.html'):
     return render(request, template_name, {'object':user})
 
 ####################################
+
+class EmailThread(threading.Thread):
+    def __init__(self, subject, html_content, recipient_list, from_email):
+        self.subject = subject
+        self.recipient_list = recipient_list
+	self.from_email = from_email
+        self.html_content = html_content
+        threading.Thread.__init__(self)
+
+    def run (self):
+  	"""
+        msg = EmailMessage(self.subject, self.html_content, EMAIL_HOST_USER, self.recipient_list)
+        msg.content_subtype = "html"
+        msg.send()
+	"""
+	send_mail(self.subject, self.html_content, self.from_email, self.recipient_list, fail_silently=False)
+
+def send_html_mail(subject, html_content, recipient_list, from_email):
+    EmailThread(subject, html_content, recipient_list, from_email).start()
+
+
+"""Generate password reset"""
+@csrf_exempt
+def request_password_reset(request):
+    email_status = ""
+    state, authresponse = login_basic_auth(request)
+    if state == False:
+        return authresponse
+    if state == True:
+        request.user = authresponse
+    try:
+        user=request.user
+    except:
+        authresponse = HttpResponse(status=401)
+        authresponse.write("Not logged in or unknown user.")
+        return authresponse
+    else:
+        if user is not None:
+	    """
+		1. Create a new password_reset object with user, reg_id, active=True, date_created, date_accessed=NULL, date_modified=auto_add_now()
+		2. Check if user has email address
+		3. If user does not have email address, do not create the password_reset object
+		4. Verify if email is valid and save the object.
+		5. Write email with password reset link and that auto generated reg_id and send it to that email address.
+		6. Return response in JSON
+	    """
+	    #Remove all previous reset links
+	    all_user_password_reset = PasswordReset.objects.filter(user=user, done = False)
+	    for every_user_password_reset in all_user_password_reset:
+		every_user_password_reset.done = True
+		every_user_password_reset.save()
+
+	    password_reset = PasswordReset(user=user)
+	    password_reset.save()
+	    #Check if user has email address
+	    #user_email = UserProfile.objects.get(user=user).email
+	    user_email = user.email
+	    if user_email == None or user_email == "":
+		email_status = "noemail"
+	    else:
+	    	#Send email
+		to_emails = []
+		to_emails.append(user_email)
+		try:
+		    """
+                    send_mail('UstadMobile Password Reset: ' + user.first_name + ' ' + user.last_name, \
+                        '\nHi,\n\nYou recently requested a password reset. Please ignore this if you did not.' \
+                        + ' Click here to reset: https://umcloud1.ustadmobile.com/reset_password/' + \
+			str(password_reset.reg_id) + '\n\nRegards, \nUstad Mobile\ninfo@ustadmobile.com\n@ustadmobile', \
+                        'info@ustadmobile.com' , to_emails, fail_silently=False)
+		    """
+		    EmailThread('UstadMobile Password Reset: ' + user.first_name + ' ' + user.last_name,\
+				'\nHi,\n\nYou recently requested a password reset. Please ignore this if you did not.' \
+                        	+ ' Click here to reset: https://umcloud1.ustadmobile.com/reset_password/' + \
+				str(password_reset.reg_id) + '\n\nRegards, \nUstad Mobile\ninfo@ustadmobile.com\n@ustadmobile',\
+				to_emails, 'info@ustadmobile.com').start()
+
+		    email_status="sent"
+		    
+                except Exception as e:
+                    #authresponse = HttpResponse(status=506)
+                    #authresponse.write("Failed to send emails. Check if you have set it up and the settings are correct.")
+                    print("Couldn't send email..")
+                    print(e)
+   	    	    email_status = "error"
+            json_result = simplejson.dumps({
+                'email': email_status,
+		'reg_id': str(password_reset.reg_id) })
+            return HttpResponse(json_result, mimetype="application/json")
+
+        else:
+            authresponse = HttpResponse(status=401)
+            authresponse.write("Unable to get user.")
+            return authresponse
+
+""" Password Reset Form"""
+@csrf_exempt
+def reset_password(request, reg_id, template_name="user/user_password_reset.html"):
+    user = None
+    """
+	1. Get the pass_reset object: 
+		password_reset = PasswordReset.objects.get(reg_id=reg_id)
+	2. Get the user
+		user = password_reset.user
+	3. Check and set active and check if its been over one day already (expired)
+		if password_reset.active == False:
+			return render(request, template_name, {'expired':True})
+    """
+    try:
+        password_reset = PasswordReset.objects.get(reg_id=reg_id)
+    	user = password_reset.user
+    	if password_reset.done == True:
+	    state = "Password Reset link already completed or replaced. PLease generate another one"
+	    statesuccess = 0
+	    return render(request, 'login.html', {'user':user, 'expired':True, 'statesuccess':statesuccess, 'state':state})
+    except:
+	state = "Reset link not valid. Please request again."
+	statesuccess=0
+	return render(request, 'login.html', {'user':user,'expired':True,'statesuccess':statesuccess, 'state':state})
+	
+    if request.method=='POST':
+	post = request.POST
+	try:
+	    password_reset = PasswordReset.objects.get(reg_id = reg_id)
+	    if password_reset.done == True:
+		state = "Invalid Password Reset Link. This link has already been completed. PLease request resetting again."
+		statesuccess=0
+		return render_to_response('login.html',{'state':state,'statesuccess':statesuccess}, context_instance=RequestContext(request))
+	    password=post['password']
+            passwordagain=post['passwordagain']
+            if password != passwordagain:
+                password=None
+                state="The two passwords you gave do not match. Please try requesting again."
+		statesuccess=0
+		return render_to_response('login.html',{'state':state,'statesuccess':statesuccess}, context_instance=RequestContext(request))
+	    user.set_password(password)
+	    user.save()
+	    password_reset.done = True
+	    password_reset.save()
+	    all_user_password_reset = PasswordReset.objects.filter(user=password_reset.user, done=False)
+	    for every_user_password_reset in all_user_password_reset:
+		every_user_password_reset.done = True
+	    state = "User's Password updated."
+	    statesuccess=1
+	    return render_to_response('login.html',{'state':state,'statesuccess':statesuccess}, context_instance=RequestContext(request))
+	    
+	except Exception as e:
+	    print("Exception in resetting password:")
+	    print(e)
+	    state = "Invalid password reset link."
+	    statesuccess=0
+	    return render_to_response('login.html',{'state':state,'statesuccess':statesuccess}, context_instance=RequestContext(request))
+    return render(request, template_name, {'user':user, 'expired':False})
+    
+
+
 
 """External facing API to check username and password credentials in POST request. Used for external queries (eg: eXe)
 Returns 200: Login success
@@ -1987,6 +2153,16 @@ def create_user_website(username, email, password, first_name, last_name, websit
 
 def create_user_more(username, email, password, first_name, last_name, roleid, organisationid, date_of_birth, address, gender, phone_number, organisation_request):
     try:
+	#New feature request: If username, password BOTH null, generate it
+	if username is None or username == "":
+	    if password is None or password == "":
+		if first_name != "" and first_name != None and last_name != None:
+		    username = Organisation.objects.get(pk=organisationid).organisation_name.rsplit(' ')[0][:3].strip() +\
+			"_" + first_name.rsplit(' ')[0].strip() + last_name.rsplit(' ')[0].strip()
+		    password = username
+		    logger.info("New auto gen username: " + username)
+		
+	
     	user = User(username=username, email=email, first_name=first_name, last_name=last_name)
     	user.set_password(password)
     	user.save()

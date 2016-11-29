@@ -38,6 +38,7 @@
   	    $('#submit').puibutton();
 	    $('#deleteuser').puibutton();
 	    $('#id_last_activity_date').puiinputtext();
+	    $('#id_custom_roll_no').puiinputtext();
             });  
 
 	function disableusername() {
@@ -94,6 +95,9 @@
 	<!--{{upform.as_p}}-->
 	<label>Last Active On:</label>
 	{{upform.last_activity_date}}
+	<p></p>
+	<label>Student ID:</label>
+	{{upform.custom_roll_no}}
 	<p></p>
 
 	<button id="submit" type="submit" name="submit" value="submit-value">Update</button>

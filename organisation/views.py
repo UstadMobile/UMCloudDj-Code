@@ -767,7 +767,7 @@ def umpackage_delete(request, pk, template_name='organisation/umpackage_confirm_
 
 class MyCronJob(CronJobBase):
     #RUN_EVERY_MINS = 120 # every 2 hours
-    RUN_AT_TIMES = ['18:30']
+    RUN_AT_TIMES = ['20:30']
     #RUN_AT_TIMES = ['16:22']
 
     #schedule = Schedule(run_every_mins=RUN_EVERY_MINS)

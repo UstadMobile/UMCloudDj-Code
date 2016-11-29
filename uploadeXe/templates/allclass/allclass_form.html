@@ -159,6 +159,7 @@
 			
                         $('#submit').puibutton();
 			$('#makepdf').puibutton();
+			$('#attendanceform').puibutton();
                         $('#days').puiselectbutton({
                                 choices: [
                                         {label:'Monday', value:1},
@@ -188,14 +189,19 @@
 		//document.getElementById('allclassedit').submit;
 		location.href="/fetch/make_attendance_pdf/{{allclass.id}}";
     	}
+	
+	function showAttendanceForm(){
+		location.href="/allclassattendanceform/{{allclass.id}}";
+	}
 </script>
 {% endblock %}
 {% block title %}Edit Class{% endblock %}
 {% block content %}
 <p cass="error" style="color:red;"><i>{{state}}</i></p>
 
-<div style="margin-left: 35%">
+<div style="margin-left: 25%">
         <button id="makepdf" type="" name="makepdf" onclick="generateAttendanceSheet();">Generate Attendance Sheet</button>
+	<button id="attendanceform" type="" name="attendanceform" onclick="showAttendanceForm();">Take Attendance</button>
         <p></p>
     </div>
 <form id="allclassedit" method="post">{% csrf_token %}

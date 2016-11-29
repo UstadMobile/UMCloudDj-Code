@@ -47,7 +47,11 @@ from allclass.models import Enrollment
 
 from sheetmaker.models import status_label, organisation_status_label
 
+import uuid
+import requests
+
 logger = logging.getLogger(__name__)
+module_dir = os.path.dirname(__file__)
 
 ###################################
 # Allclass CRUD
@@ -382,6 +386,253 @@ def allclass_makepdf(request, allclass_id):
     logger.info("returning sheet..")
     return response
 
+"""
+Create Statement JSON
+create_statement_json(\
+                        first_teacher, \ #Authority
+                        "http://activitystrea.ms/schema/1.0/host", "hosted",\ #Verb
+                        "http://www.ustadmobile.com/activities/attended-class/" + allclass.id,\ #Object
+                        "Attended "+allclass.allclass_name+" class",\ #Object
+                        registration_id, \ #Registration
+                        None \ #Actor
+                        )
+"""
+def create_statement_dict(authority, verb_id, verb_name, object_id, \
+    object_name, registration_id, actor, timestamp_object):
+    timestamp = timestamp_object.strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+    statement_json = {}
+    statement_json['version'] = "1.0.1"
+    #.strftime("%Y-%m-%dT%H:%M:%S.%f+00:00")
+    #authority_profile = UserProfile.objects.get(user=authority)
+    if actor is None:
+	actor = authority
+
+    verb_json={}
+    verb_name_json={}
+    #statement_json['key'] = value
+    verb_json['id'] = verb_id
+    verb_name_json['en-US'] = verb_name
+    verb_json['display'] = verb_name_json
+
+    object_json={}
+    object_definition_json = {}
+    object_name_json = {}
+    object_name_json['en-US'] = object_name
+    object_definition_json['name'] = object_name_json
+    object_json['definition'] = object_definition_json
+    object_json['id'] = object_id
+    object_json['objectType'] = "Activity"
+    
+    authority_json = {}
+    authority_json['mbox'] = "mailto:" + authority.email
+    authority_json['name'] = authority.username
+    authority_json['objectType'] = "Agent"
+
+    context_json = {}
+    if registration_id is not None:
+	if actor is None:
+        	context_json['registration'] = registration_id
+	else:
+		instructor_account= {}
+		instructor_json = {}
+		instructor_account['homePage'] = "http://umcloud1.ustadmobile.com/umlrs/"
+		instructor_account['name'] = authority.username
+		instructor_json['account'] = instructor_account
+		instructor_json['objectType'] = "Agent"
+		context_json['registration'] = registration_id
+		context_json['instructor'] = instructor_json
+		
+
+    if actor is None:
+	actor = authority
+
+    actor_json = {}
+    actor_account = {}
+    actor_account['homePage'] = "http://umcloud1.ustadmobile.com/umlrs/"
+    actor_account['name'] = actor.username
+    actor_json['account'] = actor_account
+    actor_json['objectType'] = "Agent"
+
+    statement_json['object'] = object_json
+    statement_json['authority'] = authority_json
+    statement_json['verb'] = verb_json
+    statement_json['actor'] = actor_json
+    statement_json['context'] = context_json
+    statement_json['timestamp'] = timestamp
+
+    return statement_json
+
+
+"""
+This will show the attendance form to be taken online
+"""
+@login_required(login_url='/login/')
+def attendance_form(request, pk, template_name='allclass/attendance_form.html'):
+    organisation = User_Organisations.objects.get(\
+                        user_userid=request.user\
+                        ).organisation_organisationid;
+    allclass = get_object_or_404(Allclass, pk=pk)
+    form = AllclassForm(request.POST or None, \
+                                instance=allclass)
+
+    #Assigned Student mapping
+    student_role = Role.objects.get(pk=6)
+    if student_role.role_name != "Student":
+        student_role = Role.objects.get(role_name="Student")
+    allstudents = User.objects.filter(\
+        pk__in=User_Organisations.objects.filter(\
+            organisation_organisationid=organisation\
+                ).values_list('user_userid', flat=True)\
+        ).filter(\
+            pk__in=User_Roles.objects.filter(\
+                role_roleid=student_role).values_list(\
+                    'user_userid', flat=True))
+
+    #assignedstudents=allclass.students.all();
+    #Changed:
+    assignedstudents=allclass.students_all();
+
+
+    #Assigned Teachers mapping
+    teacher_role = Role.objects.get(pk=5)
+    if teacher_role.role_name != "Teacher":
+        teacher_role = Role.objects.get(role_name="Teacher")
+    allteachers = User.objects.filter(\
+        pk__in=User_Organisations.objects.filter(\
+            organisation_organisationid=organisation\
+                ).values_list('user_userid', flat=True)\
+        ).filter(\
+            pk__in=User_Roles.objects.filter(\
+                role_roleid=teacher_role).values_list(\
+                    'user_userid', flat=True))
+    assignedteachers=allclass.teachers.all();
+
+    allcourses=Course.objects.filter(organisation=organisation)
+    assignedcourses=Course.objects.filter(\
+                                allclasses__in =[allclass])
+    today = datetime.datetime.now().date().strftime("%b %d %Y")
+    a_list=[0,1,2,3]
+    dates = []
+    for every_item in a_list:
+	dates.append((datetime.datetime.now() - datetime.timedelta(days=every_item)).date().strftime("%b %d, %Y"))
+	
+
+
+    if request.method == 'POST':
+        post = request.POST;
+	print(post)
+	try:
+		attendance_date_id = int(post['date'])
+		attendance_date = datetime.datetime.now() - datetime.timedelta(days=attendance_date_id)
+		print("Attendance date time id: " + str(attendance_date_id))
+		print("Attendance date time: " + str(attendance_date))
+	except:
+		attendance_date = datetime.datetime.now()
+		print("Attendance date exception. Taking today..")
+	statements_to_send = []
+        if request.POST:
+		registration_dict = {}
+		registration_id = str(uuid.uuid4())
+		first_teacher = assignedteachers[0]
+		registration_dict = create_statement_dict(\
+			first_teacher, \
+			"http://activitystrea.ms/schema/1.0/host", "hosted",\
+			"http://www.ustadmobile.com/activities/attended-class/" + str(allclass.id),\
+			"Attended "+allclass.allclass_name+" class",\
+			registration_id, \
+			None, \
+			attendance_date \
+			)
+		registration_json = json.dumps(registration_dict)
+		#statements_to_send.append(registration_json)
+		statements_to_send.append(registration_dict)
+			
+	for key in request.POST:
+		student_dict = {}
+                if "_radio" in key:
+                        value=request.POST[key]
+                        userid, action = value.split("_")
+                        if action == '1':
+				#Attended
+                                logger.info("User Present")
+                                usertoattend=User.objects.get(pk=userid)
+				student_dict = create_statement_dict(\
+					first_teacher,\
+					"http://adlnet.gov/expapi/verbs/attended", "Attended",\
+					"http://www.ustadmobile.com/activities/attended-class/" + str(allclass.id),\
+					"Attended " + allclass.allclass_name + " class",\
+					registration_id,\
+					usertoattend,\
+					attendance_date \
+					)
+
+                        if action == '0':
+				#Skipped
+                                logger.info("User Absent ")
+                                usertoabsent=User.objects.get(pk=userid)
+				student_dict = create_statement_dict(\
+					first_teacher,\
+					"http://id.tincanapi.com/verb/skipped", "Skipped",\
+                                        "http://www.ustadmobile.com/activities/attended-class/" + str(allclass.id),\
+                                        "Attended " + allclass.allclass_name + " class",\
+                                        registration_id,\
+					usertoabsent,\
+					attendance_date\
+					)
+			student_json = json.dumps(student_dict)
+			#statements_to_send.append(student_json)
+			statements_to_send.append(student_dict)
+	#Send Statements
+	statements_to_send_json = json.dumps(statements_to_send)
+	headers = {'X-Experience-API-Version':'1.0.1'}
+	cred_file_path = os.path.join(module_dir, 'cred.txt')
+	cred_file = open(cred_file_path,  'r')
+	cred_lines=cred_file.readlines()
+	username=cred_lines[0].rstrip()
+	password=cred_lines[1].rstrip()
+	r = requests.post("https://umcloud1.ustadmobile.com/umlrs/statements", \
+		statements_to_send_json, headers=headers,\
+		auth=(username, password))
+	print("Result:")
+	print(r.status_code)
+	print(r)
+	
+		
+	return redirect ('allclass_table')
+
+	
+
+    pagetitle="Attendance Form for Class:" + allclass.allclass_name
+    tabletypeid="tblattendanceform"
+    table_headers_html=[]
+    table_headers_name=[]
+    table_headers_html.append("radio")
+    table_headers_name.append("Present")
+    table_headers_html.append("radio2")
+    table_headers_name.append("Absent")
+    table_headers_html.append("fields.first_name")
+    table_headers_name.append("First Name")
+    table_headers_html.append("fields.last_name")
+    table_headers_name.append("Last Name")
+    table_headers_html.append("fields.username")
+    table_headers_name.append("Username")
+
+    table_headers_html = zip(table_headers_html, table_headers_name)
+    logicpopulation = '{"pk":"{{c.pk}}","model":"{{c.model}}", "username":"{{c.fields.username}}","first_name":"{{c.fields.first_name}}"}{% if not forloop.last %},{% endif %}'
+
+    return render(request, template_name, \
+                {\
+                        'assigned_students':assignedstudents,\
+                        'assigned_teachers':assignedteachers,\
+                        'allclass':allclass,\
+			'today': today,\
+			'all_dates':zip(dates,a_list),\
+			'table_headers_html':table_headers_html,\
+			'pagetitle':pagetitle,\
+			'tabletypeid':tabletypeid,\
+                })
+
+    
 
 
 """
