@@ -704,6 +704,7 @@ def send_html_mail(subject, html_content, recipient_list, from_email):
 @csrf_exempt
 def request_password_reset(request):
     email_status = ""
+    """
     state, authresponse = login_basic_auth(request)
     if state == False:
         return authresponse
@@ -716,6 +717,14 @@ def request_password_reset(request):
         authresponse.write("Not logged in or unknown user.")
         return authresponse
     else:
+    """
+    if request.method=='POST':
+        post = request.POST
+        try:
+	    user = User.objects.get(username=post['username'])
+	    #Maybe we also get email..
+	except:
+	    user = None
         if user is not None:
 	    """
 		1. Create a new password_reset object with user, reg_id, active=True, date_created, date_accessed=NULL, date_modified=auto_add_now()
@@ -765,14 +774,17 @@ def request_password_reset(request):
                     print(e)
    	    	    email_status = "error"
             json_result = simplejson.dumps({
-                'email': email_status,
-		'reg_id': str(password_reset.reg_id) })
+                'email': email_status })
             return HttpResponse(json_result, mimetype="application/json")
 
         else:
             authresponse = HttpResponse(status=401)
             authresponse.write("Unable to get user.")
             return authresponse
+    else:
+	authresponse = HttpResponse(status=401)
+	authresponse.write("Not a POST request.")
+	return authresponse
 
 """ Password Reset Form"""
 @csrf_exempt
