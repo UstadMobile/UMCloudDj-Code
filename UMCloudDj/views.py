@@ -557,6 +557,9 @@ def user_create(request, template_name='user/user_create.html'):
 		    student_role = Role.objects.get(pk=6)
 		    
 		    if current_user_role == student_role:
+			#print(request.POST.getlist('target'))
+			#print(request.POST.get('target'))
+			#print(request.POST['target'])
 			selectedallclassids = request.POST.getlist('target');
 			
 		        for everyallclassid in selectedallclassids:
@@ -2174,7 +2177,26 @@ def create_user_more(username, email, password, first_name, last_name, roleid, o
 		    password = username
 		    logger.info("New auto gen username: " + username)
 		
-	
+	if email is None:
+	    email = ''
+	if address is None:
+	    address = ''
+	#if date_of_birth is None:
+	#    date_of_birth = ''
+	if phone_number is None:
+	    phone_number = ''
+	if gender is None:
+	    gender = 'F'
+	if user_exists(username):
+	    user = User.objects.get(username=username)
+	    user_profile = UserProfile.objects.get(user=user)
+	    if date_of_birth is not None:
+            	b=datetime.datetime.strptime(date_of_birth, '%m/%d/%Y').strftime('%Y-%m-%d')
+            	date_of_birth=b
+	    	user_profile.date_of_birth = date_of_birth
+		user_profile.save()
+	    #return user
+	    return None
     	user = User(username=username, email=email, first_name=first_name, last_name=last_name)
     	user.set_password(password)
     	user.save()
@@ -2205,14 +2227,16 @@ def create_user_more(username, email, password, first_name, last_name, roleid, o
     
     	    logger.info("User Role mapping success.")
 	    try:
-	    	b=datetime.datetime.strptime(date_of_birth, '%m/%d/%Y').strftime('%Y-%m-%d')
-            	date_of_birth=b
+		if date_of_birth is not None:
+	    	    b=datetime.datetime.strptime(date_of_birth, '%m/%d/%Y').strftime('%Y-%m-%d')
+            	    date_of_birth=b
 	    	user_profile = UserProfile(user=user, gender=gender, phone_number=phone_number, address=address, date_of_birth=date_of_birth, organisation_requested=organisation_request)
 	    	user_profile.admin_approved=True
 	    	user_profile.save()
 	    	logger.info("User Profile mapping success.")
-	    except:
+	    except Exception, rm:
 		logger.info("User Profile mapping could not be set")
+		logger.info(rm)
 		user_organisation.delete()
 		user_role.delete()
 		user.delete()
@@ -2223,8 +2247,11 @@ def create_user_more(username, email, password, first_name, last_name, roleid, o
 	    return None
 
     	return user
-    except:
+    except Exception, e:
 	logger.info("Something went wrong.")
+	logger.info(e)
+	if user:
+	    user.delete()
 	return None
 
 """Common function used by views to check if a user exists
@@ -2876,3 +2903,140 @@ def test_request(request):
     authresponse.write("Hello")
     return authresponse
     
+
+@csrf_exempt
+def create_new_user_public(request):
+    state, authresponse = login_basic_auth(request)
+    if state == False:
+        return authresponse
+    if state == True:
+        request.user = authresponse
+    try:
+        user=request.user
+    except:
+        authresponse = HttpResponse(status=401)
+        authresponse.write("Not logged in or unknown user.")
+        return authresponse
+    else:
+        if user is None:
+            authresponse = HttpResponse(status=401)
+            authresponse.write("Unable to get user authorized user")
+            return authresponse
+    try:
+        organisation = User_Organisations.objects.get(\
+            user_userid=user\
+            ).organisation_organisationid;
+
+        post = request.POST;
+        #username=post['username']
+	username = post.get('username', None)
+        #password=post['password']
+	password = post.get('password', None)
+        #passwordagain=post['passwordagain']
+	passwordagain = post.get('passwordagain', None)
+	email = post.get('email', None)
+	first_name = post.get('first_name', None)
+	last_name = post.get('last_name', None)
+	roleid = post.get('roleid', None)
+	if roleid is None:
+	    roleid=6
+	date_of_birth = post.get('dateofbirth', None)
+	print("Date of birth: " + str(date_of_birth))
+	address = post.get('address', None)
+	gender = post.get('gender', None)
+	phone_number = post.get('phonenumber', None)
+	student_id = post.get('student_id', None)
+        auto_generate_user = False
+        if username != "" and password != passwordagain:
+                password=None
+                state="The two passwords you gave do not match. Please try again."
+                authresponse = HttpResponse(status=401)
+                authresponse.write(state)
+                return authresponse
+
+	if user_exists(username):
+	    authresponse = HttpResponse(status=400)
+	    authresponse.write("Username already exists. Try a different name")
+	    return authresponse
+            #if username == "" or username is None:
+	else:
+	    user_profile = None
+	    user = None
+	    try:
+		"""
+                user = create_user_more(username=post['username'], \
+                                        email=post['email'], \
+                                        password=post['password'], \
+                                        first_name=post['first_name'], \
+                                        last_name=post['last_name'], \
+                                        roleid=post['role'], \
+                                        organisationid=organisation.id, \
+                                        date_of_birth=post['dateofbirth'], \
+                                        address=post['address'], \
+                                        gender=post['gender'], \
+                                        phone_number=post['phonenumber'], \
+                                        organisation_request=organisation)
+		"""
+		user = create_user_more(username, email, password, first_name, last_name,\
+			roleid,organisation.id, date_of_birth, address, gender,\
+				phone_number, organisation)
+		if user:
+		    #if student_id is not None or student_id != "":
+                    try:
+                        student_id = post['student_id']
+			
+                        user_profile = UserProfile.objects.get(user=user)
+                        user_profile.custom_roll_no = student_id
+                        user_profile.save()
+                    except:
+                        pass
+                    current_user_role = User_Roles.objects.get(\
+                                        user_userid=user.id).role_roleid;
+                    student_role = Role.objects.get(pk=6)
+
+                    if current_user_role == student_role:
+			#print(request.POST['allclasses_ids'])
+			#print(request.POST.getlist('allclasses_ids'))
+			#print(request.POST.get('allclasses_ids'))
+                        selectedallclassids = request.POST.getlist('allclasses_ids', None);
+			
+			selectedallclassid = request.POST.get('allclass_id', None)
+			if selectedallclassid is not None and selectedallclassid != "":
+				selectedallclass = Allclass.objects.get(pk=int(selectedallclassid))
+				selectedallclass.students_add(user)
+				selectedallclass.save()
+
+			
+                        for everyallclassid in selectedallclassids:
+                            everyallclass = Allclass.objects.get(pk=everyallclassid)
+                            #everyallclass.students.add(user)
+                            #Changed:
+                            everyallclass.students_add(user)
+                            everyallclass.save()
+			authresponse = HttpResponse(status = 200)
+			authresponse.write("Created user: " + str(user.username))
+			return authresponse
+		else:
+		    print("Could not create uer.")
+		    authresponse = HttpResponse(status=400)
+		    authresponse.write("Could not create user. If it already exists, its details updated.")
+		    return authresponse
+	    except Exception, f:
+		print("Exception creation user: " )
+		print(f)
+		if user_profile:
+		    user_profile.delete()
+		if user:
+		    user.delete()
+		authresponse = HttpResponse(status=401)
+		authresponse.write("Could not create user: " + str(f))
+		return authresponse
+
+    except Exception as e:
+        print("Something went wrong in the user creation process")
+        print(e)
+	authresponse = HttpResponse(status=400)
+	authresponse.write("Error: " + str(e))
+	return authresponse
+
+

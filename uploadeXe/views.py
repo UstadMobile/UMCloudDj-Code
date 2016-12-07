@@ -11,7 +11,7 @@ from django.shortcuts import render_to_response, redirect, get_object_or_404
 import os 
 from uploadeXe.models import Package as Entry
 from uploadeXe.models import AcquisitionLink
-from uploadeXe.forms import ExeUploadForm
+from uploadeXe.forms import ExeUploadForm, ThumbnailUploadForm
 from uploadeXe.models import Course
 from uploadeXe.models import Categories
 from django.forms import ModelForm
@@ -126,7 +126,7 @@ Entry is Package which is a Block. This is the form for the block.
 class EntryForm(ModelForm):
     class Meta:
         model = Entry
-	fields = ('name',)
+	fields = ('name','thumbnail',)
 	
 """
 The view to render delete a particular block. 
@@ -613,6 +613,16 @@ def upload(request, template_name='myapp/upload_handle.html'):
           #For Every file uploaded
 	  for exefile in request.FILES.getlist('exefile'):
 	    print("In file.." + str(exefile))
+	    print("Checking thumbnail..")
+	    try:
+	        thumbnail = request.FILES.get('thumbnail')
+		print("Got Thumbnail!:")
+		print(thumbnail)
+		
+	    except:
+		thumbnail = None
+		print("No Thumbnail found. Setting to None.")
+	    data['thumbnail'] = thumbnail
             #This is the new thing
             return_value, newdoc, data_updated = handle_block_upload(exefile, data)
 	    print("Handle block upload done.")
@@ -900,6 +910,9 @@ def handle_block_upload(blockfile, data):
     #Assume POST validation and Form validation is run
     print("Creating Block object..")
     newdoc = Entry(exefile=blockfile)
+    if data['thumbnail'] is not None:
+	newdoc.thumbnail = data['thumbnail']
+
     uid = str(getattr(newdoc, 'exefile'))
     
     #Temporarily create the entry for the file uploaded.
@@ -2284,7 +2297,7 @@ class CourseForm(ModelForm):
     description = forms.CharField(required = False)
     class Meta:
         model = Course
-        fields = ('name', 'category','description', 'grade_level')
+        fields = ('name', 'category','description', 'grade_level', 'cover')
 
 """Course view to render all courses in a primeui table rendered
 by course template"""
@@ -2409,6 +2422,11 @@ def course_create(request, template_name='myapp/course_create.html'):
 		course = Course(name=course_name,\
 			     description=course_desc, publisher=course_publisher,\
 				 organisation=course_organisation)
+		cover = request.FILES.get('cover')
+		print("cover:")
+		print(cover)
+		if cover:
+		    course.cover = cover
 		course.save()
 	
 		for categoryid in categoryids:

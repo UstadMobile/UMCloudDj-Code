@@ -98,7 +98,12 @@
        		<select multiple="multiple" id="target" name="target">
        		</select>
 	</div>-->
-
+     {% if form.thumbnail.value %}
+     <label>Thumbnail image</label><p></p>
+        <img src='{{form.thumbnail.value.url}}'/><p></p>
+        {{form.cover}}
+        <p></p><p></p>
+    {% endif %}
      <h3>Package present in Course:</h3>
         <div id="presentincourses" >
                 <select multiple="multiple" id="source" name="source">

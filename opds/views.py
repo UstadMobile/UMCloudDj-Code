@@ -285,6 +285,17 @@ def assigned_courses(request):
 		    xmlreturn += "<updated>" + str(everycourse.upd_date.strftime('%Y-%m-%dT%H:%M:%SZ')) + "</updated>"
 		    xmlreturn += get_author_xml_snippet(everycourse.publisher)
 		    xmlreturn += "<content type=\"text\">" + everycourse.description + "</content>"
+		    if everycourse.cover:
+			appLocation = (os.path.dirname(os.path.realpath(__file__)))
+                        serverlocation=appLocation+'/../'
+                        mainappstring = "UMCloudDj/"
+			cover_file = serverlocation + mainappstring + "/media/" + str(everycourse.cover)
+			cover_href = "/media/" + str(everycourse.cover)
+			#Can use the above to verify that the file image exists..
+			#xmlreturn += "<link rel=\"http://opds-spec.org/image/thumbnail\" "
+			xmlreturn += "<link rel=\"http://www.ustadmobile.com/catalog/image/background\" "
+			xmlreturn += "href=\"" + cover_href + "\" "
+			xmlreturn += "type=\"image/png\" />"
 		    xmlreturn += "\n"
 		    xmlreturn += "</entry>"
 
@@ -383,6 +394,7 @@ def get_course(request):
                                 term=\"TESTING\"\
                                 label=\"TESTING\"/>\n"
                     xmlreturn += "<summary>" + o.name + "'s description" + "</summary>\n"
+
 		    try:
 		        for acquisition_link in entry.acquisitionlink.all().filter(active=True):
 			    print("In Acquisition Link : " + str(acquisition_link.id))
@@ -431,6 +443,19 @@ def get_course(request):
                                     xmlreturn += "<link rel=\"http://ustadmobile.com/epubrunner\"\n\
                                        href=\"" + preview_path + "\" \n\
                                         type=\"text/html;profile=opds-catalog;kind=acquisition\"/>"	
+			thumbnail_href = None
+                    	if o.thumbnail:
+                            appLocation = (os.path.dirname(os.path.realpath(__file__)))
+                            serverlocation=appLocation+'/../'
+                            mainappstring = "UMCloudDj/"
+                            thumbnail_file = serverlocation + mainappstring + "/media/" + str(o.thumbnail)
+                            #Can use the above to verify that the file exists..
+
+                            thumbnail_href = "/media/" + str(o.thumbnail)
+                            xmlreturn += "<link rel=\"http://opds-spec.org/image/thumbnail\" "
+                            xmlreturn += "href=\"" + thumbnail_href + "\" "
+                            xmlreturn += "type=\"image/png\" />"
+
 		    except Exception, e:
 			print("Error in Acquiring links.")
 			print(str(e))

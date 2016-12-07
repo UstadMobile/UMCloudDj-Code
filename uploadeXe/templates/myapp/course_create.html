@@ -98,7 +98,7 @@
                         <p cass="error" style="color:red;"><i>{{state}}</i></p>
         {% endif %}
 
-<form id="newcourseform" method="post">{% csrf_token %}
+<form id="newcourseform" method="post" enctype="multipart/form-data">{% csrf_token %}
     <h1>Create a New Course</h1>
     <div data-role="fieldcontain">
         <label for="course_name">Course Name:  </label><input type="text" name="course_name" id="course_name" value="" />
@@ -106,6 +106,10 @@
     <div data-role="fieldcontain">
         <label for="course_desc">Course Desc:  </label><input type="text" name="course_desc" id="course_desc" value="" />
     </div>
+    <h3>Choose a Cover<i>(Optional)</i></h3>
+         <p>
+           <input id="cover" name="cover" type="file"></input>
+         </p>
     <div data-role="fieldcontain">
         <label for="course_category">Category:  </label>{% all_root_categories %}
         <!--<input type="text" name="course_category" id="course_category" value="" />-->

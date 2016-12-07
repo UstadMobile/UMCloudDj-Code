@@ -49,6 +49,17 @@ def get_file_path(instance, filename):
    return os.path.join('eXeUpload/', filename)
 
 """
+method used by avatar upload file
+"""
+def get_image_path(instance, filename):
+    print(" Image path: " + str(filename))
+    ext = filename.split('.')[-1]
+    filename = "%s.%s" %(uuid.uuid4(), "um.") + filename
+    return os.path.join('eXeUpload/images/', filename)
+    #return os.path.join('eXeUpload/images/', str(instance.id), filename)
+
+
+"""
 Common function to update filenames to add timestamp instance. 
 Don't think this is used anywhere. Can be deleted.
 """
@@ -95,6 +106,7 @@ class Package(models.Model):
    lang = models.CharField(max_length = 100, null=True)
    subject = models.CharField(max_length = 200, null=True)
    micro_edition=models.BooleanField(default = False)
+   thumbnail=models.ImageField(upload_to=get_image_path, null=True)
    def __unicode__(self):
         return u'%s' % (self.name)
 
@@ -141,7 +153,7 @@ class Course(models.Model):
 			default="http://www.ustadmobile.com/um-tincan/course")
    grade_level = models.CharField(max_length=100, null=True)
    lang = models.CharField(max_length = 100, null=True)
-   
+   cover=models.ImageField(upload_to=get_image_path, null=True)
 
    def __unicode__(self):
         return u'%s' % (self.name)

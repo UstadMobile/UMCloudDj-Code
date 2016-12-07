@@ -6,4 +6,7 @@ class ExeUploadForm(forms.Form):
         label='Select .elp file'
 	#content_types = 'application/elp'
     )
-
+class ThumbnailUploadForm(forms.Form):
+    thumbnail = forms.FileField(
+	label='Select an image'
+    )

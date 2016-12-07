@@ -125,6 +125,12 @@
     <label>Course Description</label>
 	{{form.description}}
 	<p></p>
+    {% if form.cover.value %}
+    <label>Cover image</label><p></p>
+	<img src='{{form.cover.value.url}}'/><p></p>
+	{{form.cover}}
+	<p></p><p></p>
+    {% endif %}
     <label>Course Category</label>
 	{{form.category}}
 	<p></p>

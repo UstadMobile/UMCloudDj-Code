@@ -56,6 +56,7 @@ urlpatterns = patterns('',
 	url(r'^allclassstudents/(?P<pk>\d+)$', 'UMCloudDj.views.get_allclass_students', name='get_allclass_students'),
 	url(r'^request_password_reset/$', 'UMCloudDj.views.request_password_reset', name='request_password_reset'), #Needs basic auth
 	url(r'^reset_password/(?P<reg_id>[-\w]+)$', 'UMCloudDj.views.reset_password', name='reset_password'),#Password reset
+	url(r'^create_new_user_public/$','UMCloudDj.views.create_new_user_public', name='create_new_user_public'), #Public facing API to create users 
 	url(r'^umlrs/teacher_enroll_student/$', 'UMCloudDj.views.teacher_enroll_student', name='teacher_enroll_student'), #Public facing API for teachers enrolling students from within the APP
 
 	url(r'holiday_calendar_new/$', 'holiday.views.calendar_new', name='holiday_calendar_new'),
