@@ -126,7 +126,7 @@ Entry is Package which is a Block. This is the form for the block.
 class EntryForm(ModelForm):
     class Meta:
         model = Entry
-	fields = ('name','thumbnail',)
+	fields = ('name',)
 	
 """
 The view to render delete a particular block. 
@@ -275,6 +275,13 @@ def edit(request, pk, template_name='myapp/update.html'):
         url="/media/epubrunner/ustad_contentepubrunner.html?src=" + package_url + "&output=embed";
     else:
 	url = settings.MEDIA_URL + str(document.exefile)
+    
+    thumbnail = None
+    try:
+	thumbnail = document.thumbnail
+    except:
+	print("No thumbnail set.")
+	
 
     if form.is_valid():
 	form.save()
@@ -296,10 +303,20 @@ def edit(request, pk, template_name='myapp/update.html'):
 		everycourse.packages.add(document)
 		everycourse.save()
 	
-
+	try:
+	    new_thumbnail = request.FILES['new_thumbnail']
+	    print("New Thumbnail: " )
+	    print(new_thumbnail)
+	    document.thumbnail = new_thumbnail
+	    document.save()
+	except:
+	    print("No new thumbnail specified..")
 	return redirect('manage')
+    else:
+	print("Something wrong with the Model Form.")
 
     return render(request, template_name, {'form':form, \
+			'thumbnail': thumbnail,\
 			'url':url,'all_courses':allcourses, \
 			'assigned_courses':assignedcourses,\
 			'all_students':allstudents,\
@@ -2564,6 +2581,16 @@ def course_update(request, pk, template_name='myapp/course_form.html'):
 	        course.cat.add(category)
 	        course.save()
 
+	try:
+	    new_cover = request.FILES['cover']
+	    print("New Cover: " )
+	    print(new_cover)
+	    course.cover = new_cover
+	    course.save()
+	except:
+	    print("No new cover specified.")
+	
+	    
         return redirect('managecourses')
     return render(request, template_name, {'form':form, 'all_students':allstudents,\
 		 'assigned_students':assignedstudents,'all_packages':allpackages,\

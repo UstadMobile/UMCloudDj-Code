@@ -49,6 +49,9 @@ from sheetmaker.models import status_label, organisation_status_label
 
 import uuid
 import requests
+from django.conf import settings
+
+HOST_NAME = getattr(settings, "HOST_NAME", None)
 
 logger = logging.getLogger(__name__)
 module_dir = os.path.dirname(__file__)
@@ -435,7 +438,7 @@ def create_statement_dict(authority, verb_id, verb_name, object_id, \
 	else:
 		instructor_account= {}
 		instructor_json = {}
-		instructor_account['homePage'] = "http://umcloud1.ustadmobile.com/umlrs/"
+		instructor_account['homePage'] = HOST_NAME + "/umlrs/"
 		instructor_account['name'] = authority.username
 		instructor_json['account'] = instructor_account
 		instructor_json['objectType'] = "Agent"
@@ -448,7 +451,7 @@ def create_statement_dict(authority, verb_id, verb_name, object_id, \
 
     actor_json = {}
     actor_account = {}
-    actor_account['homePage'] = "http://umcloud1.ustadmobile.com/umlrs/"
+    actor_account['homePage'] = HOST_NAME + "/umlrs/"
     actor_account['name'] = actor.username
     actor_json['account'] = actor_account
     actor_json['objectType'] = "Agent"
@@ -590,7 +593,7 @@ def attendance_form(request, pk, template_name='allclass/attendance_form.html'):
 	cred_lines=cred_file.readlines()
 	username=cred_lines[0].rstrip()
 	password=cred_lines[1].rstrip()
-	r = requests.post("https://umcloud1.ustadmobile.com/umlrs/statements", \
+	r = requests.post(HOST_NAME + "/umlrs/statements", \
 		statements_to_send_json, headers=headers,\
 		auth=(username, password))
 	print("Result:")

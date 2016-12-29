@@ -116,7 +116,7 @@
 {% block content %}
 {% load templatetags %}
 
-<form method="post">{% csrf_token %}
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
     <!--{{ form.as_p }}-->
 
     <label>Course Name</label>
@@ -129,6 +129,10 @@
     <label>Cover image</label><p></p>
 	<img src='{{form.cover.value.url}}'/><p></p>
 	{{form.cover}}
+	<p></p><p></p>
+    {% else %}
+	<label>Cover image</label> <p></p>
+	New Cover Image: <input id="cover" name="cover" type="file" />
 	<p></p><p></p>
     {% endif %}
     <label>Course Category</label>

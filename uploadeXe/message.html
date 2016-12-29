@@ -1,0 +1,36 @@
+{% extends "newbase.html" %}
+{% block navigate %}
+<h2>Password Reset for {{user.first_name}} {{user.last_name}}</h2>
+<hr>
+<p></p>
+{% endblock %}
+
+{% block scriptjs %}
+<script type="text/javascript">
+          $(function() { 
+                        $('#password').puiinputtext();
+			$('#passwordagain').puiinputtext();
+                        $('#submit').puibutton();
+                }
+          ); 
+</script>
+{% endblock %}
+{% block title %}UstadMobile{% endblock %}
+{% block content %}
+	<div id="header2">
+                <p></p>
+                <a href="/home/"><img src="/media/images/logoUMlong.png" alt="Ustad_Mobile_UMCloud_logo" align=""/></a><i></i>
+                {% if current_user %}
+                        {{current_user}}
+                {% endif %}
+        </div>
+	{% if state %}
+		{% if statesuccess == 1 %}
+                	<p style="color:green;"><i><img src="/media/images/tick.png" alt="">{{state}}<i></p>
+		{% else %}
+			<p cass="error" style="color:red;"><i>{{state}}</i></p>
+		{% endif %}
+        {% endif %}
+
+
+{% endblock %}

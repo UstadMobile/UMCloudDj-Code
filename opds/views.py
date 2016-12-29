@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from django.contrib import auth
 from django.template import RequestContext
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from uploadeXe.models import Package as Document
 from uploadeXe.models import Course
 from uploadeXe.models import Ustadmobiletest
@@ -60,6 +61,8 @@ from django.utils.datastructures import MultiValueDictKeyError
 from random import randrange
 from os.path import basename
 
+HOST_NAME = getattr(settings, "HOST_NAME", None)
+
 logger = logging.getLogger(__name__)
 
 opds_xml_header="<?xml version=\"1.0\" encoding=\"UTF-8\"?> \n\
@@ -73,7 +76,7 @@ def get_opensearch_description():
 	  <ShortName>Ustad Mobile Search</ShortName>\n\
 	    <Description>Search Ustad Mobile's OPDS Catalog.</Description>\n\
 	      <Url type=\"application/atom+xml\"\n\
-	        template=\"http://umcloud1.ustadmobile.com/opds/public/opensearch?q={searchTerms}&amp;author={atom:author}\"/>\n\
+	        template=\"" + HOST_NAME + "/opds/public/opensearch?q={searchTerms}&amp;author={atom:author}\"/>\n\
 		  </OpenSearchDescription>\n"
     return opensearch_desc
 
@@ -81,7 +84,7 @@ def get_search_xml_snippet():
     search_snippet = "<link\n\
 			rel=\"search\"\n\
 			type=\"application/opensearchdescription+xml\"\n\
-			href=\"http://umcloud1.ustadmobile.com/opds/public/opensearch\"/>"
+			href=\"" + HOST_NAME + "/opds/public/opensearch\"/>"
     return search_snippet
 
 def get_public_xml_snippet(request):
@@ -92,7 +95,7 @@ def get_public_xml_snippet(request):
                               href=\"/opds/public/providers/\" \n\
                               type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>\n\
 			<updated>"+py_time_now+"</updated>\n\
-    			<id>http://umcloud1.ustadmobile.com/opds/public/</id> \n\
+    			<id>" + HOST_NAME + "/opds/public/</id> \n\
     			<content type=\"text\">Public courses from UMCloud</content> \n\
     			</entry>"
     return public_opds_xml_snippet
@@ -187,7 +190,7 @@ def root_view(request):
 	py_time_now = time.strftime('%Y-%m-%dT%H:%M:%SZ')
 	xmlreturn =opds_xml_header
 
-	xmlreturn += "  <id>http://umcloud1.ustadmobile.com/opds/</id>"
+	xmlreturn += "  <id>" + HOST_NAME + "/opds/</id>"
 
   	xmlreturn += "  <link rel=\"self\""
 	xmlreturn += "        href=\"/opds/\""
@@ -205,7 +208,7 @@ def root_view(request):
 	xmlreturn += "<title>My Assigned Courses</title>"
         xmlreturn += "<link rel=\"shelf\" href=\"/opds/assigned_courses/\" type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
 	xmlreturn += "<updated>"+py_time_now+"</updated>"
-	xmlreturn += "<id>http://umcloud1.ustadmobile.com/opds/assigned_courses/?userid=" + str(user.id) + "</id>"
+	xmlreturn += "<id>" + HOST_NAME + "/opds/assigned_courses/?userid=" + str(user.id) + "</id>"
         xmlreturn += "<content type=\"text\">All of " + user.first_name + " " + user.last_name + "'s assigned courses</content>"
 	xmlreturn += "\n"
 	xmlreturn += "</entry>"
@@ -242,7 +245,7 @@ def assigned_courses(request):
 
 	    xmlreturn = opds_xml_header
 
-	    xmlreturn += "<id>http://umcloud1.ustadmobile.com/opds/assigned_course/?userid="+str(request.user.id)+"</id>"
+	    xmlreturn += "<id>" + HOST_NAME + "/opds/assigned_course/?userid="+str(request.user.id)+"</id>"
 
 	    xmlreturn += "<link rel=\"start\"\n\
                 href=\"/opds/\"\n\
@@ -476,7 +479,7 @@ def public_view(request):
         py_time_now = time.strftime('%Y-%m-%dT%H:%M:%SZ')
         xmlreturn =opds_xml_header
 
-        xmlreturn += "  <id>http://umcloud1.ustadmobile.com/opds/public</id>"
+        xmlreturn += "  <id>" + HOST_NAME + "/opds/public</id>"
 
         xmlreturn += "  <link rel=\"self\""
         xmlreturn += "        href=\"/opds/public/\""
@@ -543,7 +546,7 @@ def public_view(request):
 def public_providers(request):
     py_time_now = time.strftime('%Y-%m-%dT%H:%M:%SZ')
     xmlreturn =opds_xml_header
-    xmlreturn += "  <id>http://umcloud1.ustadmobile.com/opds/public/providers</id>"
+    xmlreturn += "  <id>" + HOST_NAME + "/opds/public/providers</id>"
 
     xmlreturn += "  <link rel=\"self\""
     xmlreturn += "        href=\"/opds/public/providers/\""
@@ -588,7 +591,7 @@ def public_providers_categories(request, pk, ct):
         xmlreturn =opds_xml_header
         provider = Organisation.objects.get(pk=pk);
 
-        xmlreturn += "  <id>http://umcloud1.ustadmobile.com/opds/public/providers/"+pk+"</id>"
+        xmlreturn += "  <id>" + HOST_NAME + "/opds/public/providers/"+pk+"</id>"
 
         xmlreturn += "  <link rel=\"self\""
         xmlreturn += "        href=\"/opds/public/providers/"+pk+"\""
@@ -640,7 +643,7 @@ def public_providers_categories(request, pk, ct):
         provider = Organisation.objects.get(pk=pk);
         category = Categories.objects.get(pk=ct);
 
-        xmlreturn += "  <id>http://umcloud1.ustadmobile.com/opds/public/providers/" + pk + "/" + ct + "</id>"
+        xmlreturn += "  <id>" + HOST_NAME + "/opds/public/providers/" + pk + "/" + ct + "</id>"
 
         xmlreturn += "  <link rel=\"self\""
         xmlreturn += "        href=\"/opds/public/providers/"+pk+"\""
@@ -700,7 +703,7 @@ def public_categories_view(request):
         py_time_now = time.strftime('%Y-%m-%dT%H:%M:%SZ')
         xmlreturn =opds_xml_header
 
-        xmlreturn += "  <id>http://umcloud1.ustadmobile.com/opds/public/categories</id>"
+        xmlreturn += "  <id>" + HOST_NAME + "/opds/public/categories</id>"
 
         xmlreturn += "  <link rel=\"self\""
         xmlreturn += "        href=\"/opds/public/categories/\""
@@ -738,6 +741,97 @@ def public_categories_view(request):
         authresponse.write("Basic Authentication not present in request.")
         return authresponse
 
+@csrf_exempt
+def public_alphabetical_view(request):
+    logger.info("Getting public alphabetical view:")
+
+    try:
+        py_time_now = time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        xmlreturn =opds_xml_header
+
+        xmlreturn += "  <id>" + HOST_NAME + "/opds/public</id>"
+
+        xmlreturn += "  <link rel=\"self\""
+        xmlreturn += "        href=\"/opds/public/\""
+        xmlreturn += "        type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
+
+        xmlreturn += "  <link rel=\"start\""
+        xmlreturn += "        href=\"/opds/public/\""
+        xmlreturn += "        type=\"application/atom+xml;profile=opds-catalog;kind=navigation\"/>"
+
+        xmlreturn += get_search_xml_snippet()
+
+        xmlreturn += "<title>Ustad Mobile Public OPDS Catalog</title>"
+        #Should be replaced by actual update time not current.
+        xmlreturn += "<updated>"+py_time_now+"</updated>"
+        xmlreturn += "<author><name>Ustad Mobile Public Alphabetical</name><uri>http://www.ustadmobile.com</uri></author>"
+
+	all_public_providers = Organisation.objects.filter(public = True)
+	for every_provider in all_public_providers:
+	    logger.info("This Provider is public: " + str(every_provider.id))
+
+	try:
+		all_public_courses = Course.objects.filter(public=True).order_by('name')
+
+		# Shows 20 results per page
+    		paginator = Paginator(all_public_courses, 50)
+    		page = request.GET.get('page')
+    		try:
+        	    all_public_courses = paginator.page(page)
+    		except PageNotAnInteger:
+        	    all_public_courses=paginator.page(1)
+    		except EmptyPage:
+        	    all_public_courses = paginator.page(paginator.num_pages)
+
+
+	 	for everycourse in all_public_courses:
+                    xmlreturn += "\n"
+                    xmlreturn += "<entry>"
+                    xmlreturn += "<title>"+everycourse.name+"</title>"
+
+                    xmlreturn += "<link rel=\"subsection\"\n\
+                        href=\"/opds/course/?id=" + str(everycourse.tincanid) +'/'+ str(everycourse.id) + "\" \n\
+                        type=\"application/atom+xml;profile=opds-catalog;kind=acquisition\"/>"
+
+                    xmlreturn += "<id>" + str(everycourse.tincanid) + "/" + str(everycourse.id) + "</id>"
+                    xmlreturn += "<updated>" + str(everycourse.upd_date.strftime('%Y-%m-%dT%H:%M:%SZ')) + "</updated>"
+                    xmlreturn += get_author_xml_snippet(everycourse.publisher)
+                    xmlreturn += "<content type=\"text\">" + everycourse.description + "</content>"
+                    if everycourse.cover:
+                        appLocation = (os.path.dirname(os.path.realpath(__file__)))
+                        serverlocation=appLocation+'/../'
+                        mainappstring = "UMCloudDj/"
+                        cover_file = serverlocation + mainappstring + "/media/" + str(everycourse.cover)
+                        cover_href = "/media/" + str(everycourse.cover)
+                        #Can use the above to verify that the file image exists..
+                        #xmlreturn += "<link rel=\"http://opds-spec.org/image/thumbnail\" "
+                        xmlreturn += "<link rel=\"http://www.ustadmobile.com/catalog/image/background\" "
+                        xmlreturn += "href=\"" + cover_href + "\" "
+                        xmlreturn += "type=\"image/png\" />"
+                    xmlreturn += "\n"
+                    xmlreturn += "</entry>"
+
+                xmlreturn+="</feed>"
+	except:
+		logger.info("Exception in getting courses for alphabetical view.")
+		authresponse = HttpResponse(status=500)
+		authresponse.write("Getting courses for alphabetical order failed.")
+		return authresponse
+
+	
+	authresponse = HttpResponse(status=200)
+	authresponse.write(xmlreturn)
+	return authresponse
+    except Exception as aof:
+	logger.info("Exception in getting alphabetical view..")
+	
+	authresponse = HttpResponse(status=500)
+	authresponse.write("Getting alphabetical order failed. " + str(aof))
+	return authresponse
+
+    authresponse = HttpResponse(status=200)
+    authresponse.write("Under Construction")
+    return authresponse
 
 @csrf_exempt
 def public_category_view(request, pk):
@@ -746,7 +840,7 @@ def public_category_view(request, pk):
         py_time_now = time.strftime('%Y-%m-%dT%H:%M:%SZ')
         xmlreturn =opds_xml_header
 
-        xmlreturn += "  <id>http://umcloud1.ustadmobile.com/opds/public/categories/"+pk+"</id>"
+        xmlreturn += "  <id>" + HOST_NAME + "/opds/public/categories/"+pk+"</id>"
 
         xmlreturn += "  <link rel=\"self\""
         xmlreturn += "        href=\"/opds/public/categories/"+pk+"\""

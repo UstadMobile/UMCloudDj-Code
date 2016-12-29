@@ -82,7 +82,7 @@
 {% block title %}Edit Course{% endblock %}
 {% block content %}
 
-<form method="post">{% csrf_token %}
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
 	<!--{{ form.as_p }}-->
      <p></p>
      <label>Name</label>
@@ -98,12 +98,41 @@
        		<select multiple="multiple" id="target" name="target">
        		</select>
 	</div>-->
+     <!--
      {% if form.thumbnail.value %}
-     <label>Thumbnail image</label><p></p>
+     <label>Thumbnail</label>
+	<img src='{{form.thumbnail.value.url}}' /><p></p>
+	{{form.thumbnail}}
+	<br/>
+     {% else %}
+	<label>No Thumbnail Image</label> <br /> Change: <input id="new_thumbnail" name="new_thumbnail" type="file" />
+        <p></p><p></p>
+     {% endif %}
+     -->
+
+     <!--
+     {% if form.thumbnail.value %}
+        <label>Thumbnail image</label><p></p>
         <img src='{{form.thumbnail.value.url}}'/><p></p>
         {{form.cover}}
+	Currently: <a href="{{form.thumbnail.value.url}}">{{form.thumbnail.value.url}}</a> <br />Change: <input id="id_thumbnail" name="thumbnail" type="file" />
         <p></p><p></p>
+    {% else %}
+	<label>No Thumbnail Image</label> <br /> Change: <input id="id_thumbnail" name="thumbnail" type="file" />
+	<p></p><p></p>
+    {% endif %} 
+    -->
+    
+    {% if thumbnail %}
+	<label>Thumbnail</label> <p></p>
+	<img src='/media/{{thumbnail}}'/><p></p>
+	Currently: <a href="/media/{{thumbnail}}">/media/{{thumbnail}}</a> <br/> Change: <input id="new_thumbnail" name="new_thumbnail" type="file" />
+	<br/>
+    {% else %}
+	<label> Thumbnail</label> <br/> New: <input id="new_thumbnail" name="new_thumbnail" type="file" />
     {% endif %}
+
+
      <h3>Package present in Course:</h3>
         <div id="presentincourses" >
                 <select multiple="multiple" id="source" name="source">

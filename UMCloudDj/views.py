@@ -70,6 +70,9 @@ import random
 import string
 import phonenumbers
 import threading
+HOST_NAME = getattr(settings, "HOST_NAME", None)
+EMAIL_HOST= getattr(settings, "EMAIL_HOST", None)
+EMAIL_HOST_USER = getattr(settings, "EMAIL_HOST_USER", None)
 
 logger = logging.getLogger(__name__)
 ###################################
@@ -748,6 +751,7 @@ def request_password_reset(request):
 	    #Check if user has email address
 	    #user_email = UserProfile.objects.get(user=user).email
 	    user_email = user.email
+	    from_email = EMAIL_HOST_USER + "@" + EMAIL_HOST
 	    if user_email == None or user_email == "":
 		email_status = "noemail"
 	    else:
@@ -758,15 +762,15 @@ def request_password_reset(request):
 		    """
                     send_mail('UstadMobile Password Reset: ' + user.first_name + ' ' + user.last_name, \
                         '\nHi,\n\nYou recently requested a password reset. Please ignore this if you did not.' \
-                        + ' Click here to reset: https://umcloud1.ustadmobile.com/reset_password/' + \
-			str(password_reset.reg_id) + '\n\nRegards, \nUstad Mobile\ninfo@ustadmobile.com\n@ustadmobile', \
-                        'info@ustadmobile.com' , to_emails, fail_silently=False)
+                        + ' Click here to reset: ' + HOST_NAME + '/reset_password/' + \
+			str(password_reset.reg_id) + '\n\nRegards, \nUstad Mobile\n' + from_email + '\n@ustadmobile', \
+                        from_email , to_emails, fail_silently=False)
 		    """
 		    EmailThread('UstadMobile Password Reset: ' + user.first_name + ' ' + user.last_name,\
 				'\nHi,\n\nYou recently requested a password reset. Please ignore this if you did not.' \
-                        	+ ' Click here to reset: https://umcloud1.ustadmobile.com/reset_password/' + \
-				str(password_reset.reg_id) + '\n\nRegards, \nUstad Mobile\ninfo@ustadmobile.com\n@ustadmobile',\
-				to_emails, 'info@ustadmobile.com').start()
+                        	+ ' Click here to reset: ' + HOST_NAME + '/reset_password/' + \
+				str(password_reset.reg_id) + '\n\nRegards, \nUstad Mobile\n' + from_email + '\n@ustadmobile',\
+				to_emails, from_email).start()
 
 		    email_status="sent"
 		    
@@ -808,11 +812,11 @@ def reset_password(request, reg_id, template_name="user/user_password_reset.html
     	if password_reset.done == True:
 	    state = "Password Reset link already completed or replaced. PLease generate another one"
 	    statesuccess = 0
-	    return render(request, 'login.html', {'user':user, 'expired':True, 'statesuccess':statesuccess, 'state':state})
+	    return render(request, 'message.html', {'user':user, 'expired':True, 'statesuccess':statesuccess, 'state':state})
     except:
 	state = "Reset link not valid. Please request again."
 	statesuccess=0
-	return render(request, 'login.html', {'user':user,'expired':True,'statesuccess':statesuccess, 'state':state})
+	return render(request, 'message.html', {'user':user,'expired':True,'statesuccess':statesuccess, 'state':state})
 	
     if request.method=='POST':
 	post = request.POST
@@ -821,14 +825,14 @@ def reset_password(request, reg_id, template_name="user/user_password_reset.html
 	    if password_reset.done == True:
 		state = "Invalid Password Reset Link. This link has already been completed. PLease request resetting again."
 		statesuccess=0
-		return render_to_response('login.html',{'state':state,'statesuccess':statesuccess}, context_instance=RequestContext(request))
+		return render_to_response('message.html',{'state':state,'statesuccess':statesuccess}, context_instance=RequestContext(request))
 	    password=post['password']
             passwordagain=post['passwordagain']
             if password != passwordagain:
                 password=None
                 state="The two passwords you gave do not match. Please try requesting again."
 		statesuccess=0
-		return render_to_response('login.html',{'state':state,'statesuccess':statesuccess}, context_instance=RequestContext(request))
+		return render_to_response('message.html',{'state':state,'statesuccess':statesuccess}, context_instance=RequestContext(request))
 	    user.set_password(password)
 	    user.save()
 	    password_reset.done = True
@@ -836,9 +840,9 @@ def reset_password(request, reg_id, template_name="user/user_password_reset.html
 	    all_user_password_reset = PasswordReset.objects.filter(user=password_reset.user, done=False)
 	    for every_user_password_reset in all_user_password_reset:
 		every_user_password_reset.done = True
-	    state = "User's Password updated."
+	    state = "User's Password updated. You can now return to the app and login."
 	    statesuccess=1
-	    return render_to_response('login.html',{'state':state,'statesuccess':statesuccess}, context_instance=RequestContext(request))
+	    return render_to_response('message.html',{'state':state,'statesuccess':statesuccess}, context_instance=RequestContext(request))
 	    
 	except Exception as e:
 	    print("Exception in resetting password:")
@@ -1157,7 +1161,7 @@ def invite_to_course(request):
 			    if sender == "":
 				sender=user.username
 			    invitation_id=str(invitation.invitation_id)
-			    hostname="http://umcloud1.ustadmobile.com"
+			    hostname = HOST_NAME
 			    devhostname="http://54.77.18.106:8004"
 			    try:
 				logger.info(socket.gethostname())
