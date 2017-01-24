@@ -1,3 +1,6 @@
+v1.4.201
+-Fixed small bug in accessing attendance report by registration id when no statements were found for that reg id. Added a checker that shows that there was no data received for that reg it yet.
+
 v1.4.200
 -Made opds work better with host for different host names set in settings.py
 -Alphabetical order for courses with pagination support

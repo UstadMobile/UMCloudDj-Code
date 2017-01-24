@@ -1368,9 +1368,20 @@ def get_registration_attendance(registration_id):
                 context_registration = registration_id).exclude(\
                     verb__in = hosted_verb).order_by('timestamp')
     timestamp = ""
+
+    if not allstudents_statements_per_registration:
+	print("No statements found for this registration id (yet).")
+	ordered_students_attendance = []
+	all_students = []
+	reg_allclass = None
+	timestamp = None
+	return ordered_students_attendance, all_students, reg_allclass, timestamp
     try:
+	print("Hi, getting class from the registration id.")
         #Get class
         a = allstudents_statements_per_registration[0].object_activity.activity_id.strip()
+	print("a: ")
+	print(a)
         timestamp = allstudents_statements_per_registration[0].timestamp
         pos = a.find(attended_activity_string)
         pos = pos + len(attended_activity_string)
