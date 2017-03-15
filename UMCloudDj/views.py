@@ -2961,12 +2961,89 @@ def create_new_user_public(request):
 	if user_exists(username):
 	    authresponse = HttpResponse(status=400)
 	    authresponse.write("Username already exists. Try a different name")
+	    print("User already exists: " + str(username));
 	    return authresponse
             #if username == "" or username is None:
 	else:
 	    user_profile = None
 	    user = None
+	    
 	    try:
+
+		"""
+		We have to check if the custom roll no is already in the system. 
+		"""
+		student_id = ""
+		try:
+		    student_id = post['student_id']
+		except:
+		    pass
+		if student_id is not None or student_id != "":
+		    print("Checking if student already in system by custom id: " + str(student_id))
+		    print("Hey!")
+		    org_student_ids=UserProfile.objects.filter(\
+			user=User.objects.filter(\
+			    pk__in=User_Organisations.objects.filter(\
+				organisation_organisationid=organisation).values_list(\
+				'user_userid', flat=True)\
+			    )\
+		    	).values_list('custom_roll_no', flat=True)
+		    print("Got org student ids:" )
+		    print(org_student_ids)
+		    print("Checking..")
+
+		    if student_id in org_student_ids:
+			print("Could not create uer. Custom Student Id already in system")
+                    	authresponse = HttpResponse(status=400)
+                    	authresponse.write("Could not create user: " + str(username) + \
+			    " its Custom roll no. already exists in the system (" + str(student_id) + ").")
+
+			user_profiles=UserProfile.objects.filter(\
+                         user=User.objects.filter(\
+                            pk__in=User_Organisations.objects.filter(\
+                                organisation_organisationid=organisation).values_list(\
+                                'user_userid', flat=True)\
+                            ), custom_roll_no=str(student_id)\
+                        )
+			print("Found matching user profiles:")
+			print(user_profiles)
+			existing_user = user_profiles[0].user
+			print("Found user: " + str(existing_user))
+
+			try:
+			    selectedallclassids = request.POST.getlist('allclasses_ids', None);
+
+			    selectedallclassid = request.POST.get('allclass_id', None)
+			    if selectedallclassid is not None and selectedallclassid != "":
+				selectedallclass = Allclass.objects.get(pk=int(selectedallclassid))
+				print("The class: " +str(selectedallclass))
+				if existing_user not in selectedallclass.students_all():
+				    selectedallclass.students_add(existing_user)
+				    #selectedallclass.save()
+				    print("User added to class.")
+
+
+			    for everyallclassid in selectedallclassids:
+				everyallclass = Allclass.objects.get(pk=everyallclassid)
+				#everyallclass.students.add(existing_user)
+				#Changed:
+				if existin_user not in everyallclass.students_all():
+				    everyallclass.students_add(existing_user)
+				    #everyallclass.save()
+				    print("User added to allclass.")
+			    authresponse = HttpResponse(status = 200)
+			    authresponse.write("Student ID already exists in the organisation. Updated class mapping for existing user: " + str(existing_user))
+	  		    return authresponse
+			except Exception, cm:
+			    authresponse = HttpResponse(status=400)
+            		    authresponse.write("Unable to update existing user class mapping." + str(cm))
+                    	return authresponse
+		    else:
+			print("Student id is unique. Will continue to add this user.")
+			
+		   
+		    
+		
 		"""
                 user = create_user_more(username=post['username'], \
                                         email=post['email'], \

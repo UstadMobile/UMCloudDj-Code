@@ -1,3 +1,7 @@
+v1.4.3
+-Attendance Excel Report bug fixes (show attendance for "un-enrolled" students as well, account for no students in a class)
+-Allclass View fix: doesn't mess up editing a class with days and students assigned.
+
 v1.4.201
 -Fixed small bug in accessing attendance report by registration id when no statements were found for that reg id. Added a checker that shows that there was no data received for that reg it yet.
 

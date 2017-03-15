@@ -58,6 +58,11 @@ class Allclass(models.Model):
         enrollment__allclass = self).order_by('enrollment__roll_number')
         return allstudents
 
+    def students_all_ever(self):
+	allstudents_ever = User.objects.filter(enrollment__allclass = \
+	    self).order_by('enrollment__roll_number')
+	return allstudents_ever
+
     def students_add(self, student):
         try:
             #Will throw exception if student isnt already enrolled
@@ -67,6 +72,7 @@ class Allclass(models.Model):
                 enroll.active = True
                 enroll.save()
         except Exception, e:
+	    print("Exception in class's students add : " + str(e))
             enroll = Enrollment(user = student, allclass = self, active = True)
 	    enroll.roll_number = get_next_roll_number(self)
 	    enroll.save()

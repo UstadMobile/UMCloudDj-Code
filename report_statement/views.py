@@ -1228,6 +1228,7 @@ def attendance_selection(request):
 """Common function to get registrations per class for a given date range/statements
 """
 def get_allclass_registrations(date_since, date_until, allclass):
+    print(" get_allclass_registrations() from date: " + str(date_since) + " to " + str(date_until) + " for class: " + str(allclass))
     allclass_id = str(allclass.id);
     attended_activity_string = "http://www.ustadmobile.com/activities/attended-class/"
     activity_id_string = attended_activity_string + allclass_id
@@ -1251,11 +1252,12 @@ def get_allclass_registrations(date_since, date_until, allclass):
         timestamp__range = [date_since, date_until],\
             object_activity__in = attendance_activity,\
                 verb__in=hosted_verb).distinct('context_registration')
-    print("Okay, we are about to find the difference between the timestamps..")
+    #print("Okay, we are about to find the difference between the timestamps..")
     for every_registration in all_registrations:
         all_teachers.append(every_registration.user)
 	all_dates.append(every_registration.timestamp)
 
+	"""
 	print("Timestamp @ LRS: ")
 	print(every_registration.timestamp)
 	print("Timestampe @ taken:")
@@ -1264,9 +1266,11 @@ def get_allclass_registrations(date_since, date_until, allclass):
 	print(every_registration.stored)
 	print("Stored @ taken:")
 	print(every_registration.full_statement['stored'])
+	"""
     #print("All registrations for class: " + allclass.allclass_name + \
     #    " from " + str(date_since) + " to " + str(date_until) + " : ")
     #print(all_registrations)
+    print("For allclass: " + str(allclass.allclass_name) + " no. of teachers: " + str(len(all_teachers)))
     return all_registrations, all_teachers, all_dates
 
 """Report: Attendance Get Registration for selection
@@ -1377,11 +1381,11 @@ def get_registration_attendance(registration_id):
 	timestamp = None
 	return ordered_students_attendance, all_students, reg_allclass, timestamp
     try:
-	print("Hi, getting class from the registration id.")
+	#print("Hi, getting class from the registration id.")
         #Get class
         a = allstudents_statements_per_registration[0].object_activity.activity_id.strip()
-	print("a: ")
-	print(a)
+	#print("a: ")
+	#print(a)
         timestamp = allstudents_statements_per_registration[0].timestamp
         pos = a.find(attended_activity_string)
         pos = pos + len(attended_activity_string)
@@ -1593,13 +1597,21 @@ def get_termday_in_daterange(date_since, date_until, termday_allclass):
     Student Attendance list 
 """
 def get_attendance_daily(date_since, date_until, attendance_class):
+    print("get_attendance_daily() from date: " + str(date_since) + " to " + str(date_until) + " for class: " + str(attendance_class))
     #Get everyday in date range
     everydays = get_everyday_in_daterange(date_since, date_until)
     date_attendance_dict = {}
     #Get all registrations and date
     all_registrations, all_teachers, all_dates = \
     	get_allclass_registrations(date_since, date_until, attendance_class)
-
+    print("All reg len: " + str(len(all_registrations)))
+    """
+	We need to get the latest registration per date. Thats the respons of get_allclass_registrations 
+	as it return all_registrations 
+	Well maybe not cause that gets every reg there is. 
+    """
+    print(" all dates: ")
+    print(all_dates)
     for reg, this_datetime in zip(all_registrations, all_dates):
 	this_date = this_datetime.date()
 	reg_id = reg.context_registration
@@ -1609,7 +1621,15 @@ def get_attendance_daily(date_since, date_until, attendance_class):
 	all_students_attendance, all_students, allclass_from_reg, timestamp = \
 	    get_registration_attendance(reg_id);
 	#date_attendance_dict[this_date] = all_students_attendance;
-	date_attendance_dict[this_date] = zip(all_students_attendance, all_students)
+
+	this_date_from_all_dates = []
+	for every_date in all_dates:
+	    if every_date.date() == this_date:
+		this_date_from_all_dates.append(every_date)
+	if this_datetime == max(this_date_from_all_dates):
+	    print("This is max date: " + str(this_datetime) + " for reg id: " + str(reg_id))
+	    date_attendance_dict[this_date] = zip(all_students_attendance, all_students)
+	#date_attendance_dict[this_date] = zip(all_students_attendance, all_students)
     return date_attendance_dict;
 
 
@@ -1817,6 +1837,10 @@ def attendance_excel(request):
         #students = every_class.students.all()
 	#Changed:
 	students = every_class.students_all()
+
+	#Get students that were enrolled in the past as well:
+	students = every_class.students_all_ever()
+
         if not students:
             worksheet_class.write(class_student_verb_row_number,0, "No Students Assigned", format)
         student_names = []
@@ -1891,8 +1915,21 @@ def attendance_excel(request):
 			class_student_verb_start = class_student_verb_start + 1
 
 		    class_student_verb_start = 11
+
+		    print("Debugging..")
+		    print(list(students))
+		    print("every class attendance: " )
+		    print(every_class_attendance)
+		
 	    	    #Loop through the list and add attendance below
 	    	    for everyStudentAttendance, everyStudent in every_class_attendance:
+			print("Current Student: " + str(everyStudent) + " id: " + str(everyStudent.id))
+			if everyStudent not in list(students):
+			    print("Student has been removed from the list.. or student " + str(everyStudent) + \
+				" with id: " + str(everyStudent.id) + " was never in class: " + str(every_class) + " ever.")
+			    worksheet_class.write(entryIndex, class_date_start_column_number,\
+                                "-", format);
+			    continue
 	    	        #Go one level down
 			entryIndex = class_student_verb_row_number + list(students).index(everyStudent)
 		   	if everyStudentAttendance.verb == "Attended":
@@ -1971,8 +2008,15 @@ def attendance_excel(request):
 	worksheet_summary.write(summary_row_class_number, 1, str(every_class), format)
 	#worksheet_summary.write(summary_row_class_number, 2, len(stu
 	worksheet_summary.write_formula('C'+str(summary_row_class_number + 1), "=ROWS('"+str(every_class).strip()+"'!A12:A"+str(students_end_row_num)+")")
-	worksheet_summary.write_formula('D'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C3", percentage_format)
-	worksheet_summary.write_formula('E'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C4", percentage_format)
+	if not students:
+	    #worksheet_summary.write_formula('D'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C3", percentage_format)
+            #worksheet_summary.write_formula('E'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C4", percentage_format)
+	    worksheet_summary.write('D'+str(summary_row_class_number + 1), "-")
+	    worksheet_summary.write('E'+str(summary_row_class_number + 1), "-")
+	    worksheet_summary.write('F'+str(summary_row_class_number + 1), "No students assigned")
+	else:
+	    worksheet_summary.write_formula('D'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C3", percentage_format)
+	    worksheet_summary.write_formula('E'+str(summary_row_class_number + 1), "='"+str(every_class).strip()+"'!C4", percentage_format)
 
 	
 

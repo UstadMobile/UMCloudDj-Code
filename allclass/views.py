@@ -750,7 +750,9 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 	date_now = datetime.datetime.now()
 	#Changed:
 	#Maybe get rid of the add bit here
-        for everystudentid in studentidspicklist:
+	print("Assigned Students list: " + str(studentidspicklist) + " with len: " + str(len(studentidspicklist)))
+	if len(studentidspicklist) > 0: 
+            for everystudentid in studentidspicklist:
                 currentstudent=User.objects.get(\
 			pk=everystudentid)
 		students_worked_on.append(currentstudent)
@@ -760,6 +762,8 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 		allclass.students_add(currentstudent)
 		"""
                 #allclass.save()
+	else:
+	    students_worked_on = assigned_students
 
 	students_to_remove = list(set(assigned_students) - set(students_worked_on))
 	for every_student_to_remove in students_to_remove:
@@ -803,6 +807,10 @@ def allclass_update(request, pk, template_name='allclass/allclass_form.html'):
 	days_ids = request.POST.getlist('days')
 	print("Mapping days for this class..");
 
+	if days_ids != None:
+	    print("Clearing all the days..")
+	    allclass.days.clear()
+	    allclass.save()
 	for day_id in days_ids:
 		this_day = Weekday.objects.get(pk=day_id)
 		this_week_day_time = Week_Day_Time(day=this_day)
