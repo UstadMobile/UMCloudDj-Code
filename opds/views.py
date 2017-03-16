@@ -385,7 +385,8 @@ def get_course(request):
 		    entry = o;
 		    xmlreturn += "<entry>\n"
                     xmlreturn += "<title>" + o.name +"</title>\n"
-                    xmlreturn += "<id>"+o.tincanid+'/'+o.elpid+"</id>\n"
+                    #xmlreturn += "<id>"+o.tincanid+'/'+o.elpid+"</id>\n" #Changed 16th MArch 2017
+		    xmlreturn += "<id>"+o.elpid+"</id>\n"
                     xmlreturn += "<updated>"+str(o.upd_date.strftime('%Y-%m-%dT%H:%M:%SZ'))+"</updated>\n"
                     xmlreturn += get_author_xml_snippet(o.publisher)
                     xmlreturn += "\n"
@@ -944,7 +945,8 @@ def get_public_course(request):
             entry = o;
             xmlreturn += "<entry>\n"
             xmlreturn += "<title>" + o.name +"</title>\n"
-            xmlreturn += "<id>"+o.tincanid+'/'+o.elpid+"</id>\n"
+            #xmlreturn += "<id>"+o.tincanid+'/'+o.elpid+"</id>\n" #Changed on 16 March 2017
+	    xmlreturn += "<id>"+o.elpid+"</id>\n"
             xmlreturn += "<updated>"+str(o.upd_date.strftime('%Y-%m-%dT%H:%M:%SZ'))+"</updated>\n"
             xmlreturn += get_author_xml_snippet(o.publisher)
             xmlreturn += "\n"

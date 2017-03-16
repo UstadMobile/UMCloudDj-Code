@@ -1228,7 +1228,7 @@ def attendance_selection(request):
 """Common function to get registrations per class for a given date range/statements
 """
 def get_allclass_registrations(date_since, date_until, allclass):
-    print(" get_allclass_registrations() from date: " + str(date_since) + " to " + str(date_until) + " for class: " + str(allclass))
+    #print(" get_allclass_registrations() from date: " + str(date_since) + " to " + str(date_until) + " for class: " + str(allclass))
     allclass_id = str(allclass.id);
     attended_activity_string = "http://www.ustadmobile.com/activities/attended-class/"
     activity_id_string = attended_activity_string + allclass_id
@@ -1270,7 +1270,7 @@ def get_allclass_registrations(date_since, date_until, allclass):
     #print("All registrations for class: " + allclass.allclass_name + \
     #    " from " + str(date_since) + " to " + str(date_until) + " : ")
     #print(all_registrations)
-    print("For allclass: " + str(allclass.allclass_name) + " no. of teachers: " + str(len(all_teachers)))
+    #print("For allclass: " + str(allclass.allclass_name) + " no. of teachers: " + str(len(all_teachers)))
     return all_registrations, all_teachers, all_dates
 
 """Report: Attendance Get Registration for selection
@@ -1435,6 +1435,10 @@ def get_registration_attendance(registration_id):
         else:
             all_students_attendance.append(Student(actor_real_name, actor_name, verb, actor_student_id, fingerprinted, ""))
             #print("For student: " + actor_name + " -> " + verb + " -> fingerprinted: " + fingerprinted +  " " )
+
+    #for every_at in all_students_attendance:
+    #	print("Student: " + str(every_at.username) + " verb: " + str(every_at.verb))
+	
     #Debug
     #print("Students attended: ")
     #print(len(all_students))
@@ -1447,19 +1451,35 @@ def get_registration_attendance(registration_id):
 
     #for every_student_attendance in all_student_attendance:
     ordered_students_attendance=[]
-    for every_student in reg_allclass.students.all():
+    #for every_student in reg_allclass.students.all(): #Changed 16th March 2017
+   
+    all_students_in_order = reg_allclass.students_all_ever()
+
+    for every_student in all_students_in_order:
+	#print("/////////////" + str(every_student) + "////////////////")
 	actor_real_name = every_student.first_name + " " + every_student.last_name
 	every_student_id = UserProfile.objects.get(user=every_student).custom_roll_no
+
 	found = False
 	for every_student_attendance in all_students_attendance:
-	    if every_student_attendance.username == every_student.username:
+	    #print("Checking : " + str(every_student_attendance.username.strip()) )
+	    if every_student_attendance.username.strip() == every_student.username.strip():
 		found = True
 		ordered_students_attendance.append(every_student_attendance)
+		break
 	if found == False:
+	    print("Student: " + str(every_student) + " not found in : " + str(every_student_attendance))
 	    ordered_students_attendance.append(Student(actor_real_name,\
 		every_student.username, "-", every_student_id, "", ""))
+
+
+    print("Un sorted attendance length: " + str(len(all_students_attendance)) +\
+	 " vs ordered length: " + str(len(ordered_students_attendance)) +\
+	    " of student list length: " + str(len(all_students)) + " & student list in order: " +\
+		str(len(all_students_in_order)))
+
     #return all_students_attendance, all_students, reg_allclass, timestamp
-    return ordered_students_attendance, all_students, reg_allclass, timestamp
+    return ordered_students_attendance, all_students_in_order, reg_allclass, timestamp
     
 
 """ Gets all dates everyday between (and inclusive) of 
@@ -1597,22 +1617,25 @@ def get_termday_in_daterange(date_since, date_until, termday_allclass):
     Student Attendance list 
 """
 def get_attendance_daily(date_since, date_until, attendance_class):
-    print("get_attendance_daily() from date: " + str(date_since) + " to " + str(date_until) + " for class: " + str(attendance_class))
+    #print("get attendance_daily() from date: " + str(date_since) + " to " + str(date_until) + " for class: " + str(attendance_class))
     #Get everyday in date range
     everydays = get_everyday_in_daterange(date_since, date_until)
     date_attendance_dict = {}
     #Get all registrations and date
     all_registrations, all_teachers, all_dates = \
     	get_allclass_registrations(date_since, date_until, attendance_class)
-    print("All reg len: " + str(len(all_registrations)))
+    #print("All reg len: " + str(len(all_registrations)))
     """
 	We need to get the latest registration per date. Thats the respons of get_allclass_registrations 
 	as it return all_registrations 
 	Well maybe not cause that gets every reg there is. 
     """
-    print(" all dates: ")
-    print(all_dates)
+    #print(" all dates: ")
+    #print(all_dates)
     for reg, this_datetime in zip(all_registrations, all_dates):
+	all_students_attendance = []
+	all_students = []
+
 	this_date = this_datetime.date()
 	reg_id = reg.context_registration
 	#print("For reg id: " + reg_id + ", Checking if the date: " + str(this_date) + " is a holiday in class: " + str(allclass))
@@ -1626,10 +1649,19 @@ def get_attendance_daily(date_since, date_until, attendance_class):
 	for every_date in all_dates:
 	    if every_date.date() == this_date:
 		this_date_from_all_dates.append(every_date)
+
+	all_reg_ids = []
+	for every_student in all_students:
+	    all_reg_ids.append(reg_id)
+
 	if this_datetime == max(this_date_from_all_dates):
-	    print("This is max date: " + str(this_datetime) + " for reg id: " + str(reg_id))
-	    date_attendance_dict[this_date] = zip(all_students_attendance, all_students)
+	    #print("This is max date: " + str(this_datetime) + " for reg id: " + str(reg_id))
+	    date_attendance_dict[this_date] = zip(all_students_attendance, all_students, all_reg_ids)
 	#date_attendance_dict[this_date] = zip(all_students_attendance, all_students)
+
+	#for every_at in all_students_attendance:
+	#    print("Student: " + str(every_at.username) + " verb -> " + str(every_at.verb))
+
     return date_attendance_dict;
 
 
@@ -1841,6 +1873,7 @@ def attendance_excel(request):
 	#Get students that were enrolled in the past as well:
 	students = every_class.students_all_ever()
 
+
         if not students:
             worksheet_class.write(class_student_verb_row_number,0, "No Students Assigned", format)
         student_names = []
@@ -1884,11 +1917,14 @@ def attendance_excel(request):
 	    #Add the attendance for this date 
 	    if termdate in every_class_date_attendance_dict:
 	    	every_class_attendance = every_class_date_attendance_dict[termdate];
-		print("Attendance taken for date : " + str(termdate))
+		print("")
+		print("Term date : " + str(termdate))
+		#for every_at, b, c in every_class_attendance:
+		#    print("Student: " + str(every_at.username) + " verb --> " + str(every_at.verb))
 		
 	        if every_class_attendance:
-		    print("Got attendance for " + str(every_class) +\
-			 " class for date " + str(termdate))
+		    #print("Got attendance for " + str(every_class) +\
+		    #	 " class for date " + str(termdate))
 		    #print(every_class_attendance)
 
 		    """
@@ -1915,53 +1951,89 @@ def attendance_excel(request):
 			class_student_verb_start = class_student_verb_start + 1
 
 		    class_student_verb_start = 11
-
-		    print("Debugging..")
-		    print(list(students))
-		    print("every class attendance: " )
-		    print(every_class_attendance)
-		
+		    
+  		    #print(every_class_attendance)
+		    #"""
 	    	    #Loop through the list and add attendance below
-	    	    for everyStudentAttendance, everyStudent in every_class_attendance:
-			print("Current Student: " + str(everyStudent) + " id: " + str(everyStudent.id))
+	    	    for everyStudentAttendance, everyStudent, reg_id in every_class_attendance:
+			#print("Current Student: " + str(everyStudent) + " id: " + str(everyStudent.id))
 			if everyStudent not in list(students):
 			    print("Student has been removed from the list.. or student " + str(everyStudent) + \
 				" with id: " + str(everyStudent.id) + " was never in class: " + str(every_class) + " ever.")
 			    worksheet_class.write(entryIndex, class_date_start_column_number,\
                                 "-", format);
+			    class_student_verb_start = class_student_verb_start + 1
 			    continue
 	    	        #Go one level down
 			entryIndex = class_student_verb_row_number + list(students).index(everyStudent)
-		   	if everyStudentAttendance.verb == "Attended":
-		    	    #Add P
-			    """
-			    worksheet_class.write(class_student_verb_start, class_date_start_column_number,\
-			    	"P", format);
-			    """
+		   	if everyStudentAttendance.verb.strip() == "Attended":
+			    #print("Student: " + str(everyStudent) + " is Present. (regid: " + reg_id + ")")
 			    worksheet_class.write(entryIndex, class_date_start_column_number,\
                                 "P", format);
 			    
-		    	elif everyStudentAttendance.verb == "Skipped":
+		    	elif everyStudentAttendance.verb.strip() == "Skipped":
 		    	    #Add A 
-			    """
-			    worksheet_class.write(class_student_verb_start, class_date_start_column_number,\
-                                "A", format);
-			    """
 			    worksheet_class.write(entryIndex, class_date_start_column_number,\
                                 "A", format);
 			    pass
 			else:
+			    #print("Unable to get attendance status for : " + str(everyStudent) )
+			    #print("Its verb is: " + str(everyStudentAttendance.verb))
 			    #Add -
 			    worksheet_class.write(entryIndex, class_date_start_column_number,\
                                 "-", format);
 			class_student_verb_start = class_student_verb_start + 1
+		    #"""
+
+		    """
+		    all_students_in_order = every_class.students_all_ever()
+
+		    for everyStudentAttendance, everyStudent, reg_id in every_class_attendance:
+			print("Student: " + str(everyStudentAttendance.username) + " = " + str(everyStudent.username) + " verb >> " + str(everyStudentAttendance.verb))
+			#for every_student in all_students_in_order:
+
+		    print("//////////////////////////NEW/////////////////////////")
+		    entryIndex = class_student_verb_row_number;
+		    for every_student in all_students_in_order:
+			found = False
+			everyStudentAttendance = None
+			for every_StudentAttendance, everyStudent, reg_id in every_class_attendance:
+			    if every_StudentAttendance.username.strip() == every_student.username.strip():
+				found = True
+				everyStudentAttendance = every_StudentAttendance
+				if everyStudentAttendance.verb.strip() == "Attended":
+                            	    print("Student: " + str(every_student) + " is Present. (regid: " + reg_id + ")")
+                            	    worksheet_class.write(entryIndex, class_date_start_column_number,\
+                            	        "P", format);
+
+                        	elif everyStudentAttendance.verb.strip() == "Skipped":
+                            	    #Add A
+			    	    print("Student: " + str(every_student) + " is Absent.")
+                            	    worksheet_class.write(entryIndex, class_date_start_column_number,\
+                            	        "A", format);
+                        	else:
+                            	    print("Unable to get proper verb status for : " + str(every_student) )
+                            	    print("Its verb is: " + str(everyStudentAttendance.verb))
+                            	    #Add -
+                            	    worksheet_class.write(entryIndex, class_date_start_column_number,\
+                            	        "-", format);
+				break
+				
+			if found == False:
+			    print("Unable to get attendance for user: " + str(every_student.username) + " - ing it.")
+			    worksheet_class.write(entryIndex, class_date_start_column_number,\
+                                "-", format);
+			class_student_verb_start = class_student_verb_start + 1
+			entryIndex = entryIndex + 1
+		    """
+				
 		else:
 		    print("Found, but not taken. Please debug..");
 
 	    else:
 		#number_students = len(every_class.students.all())
 		#Changed:
- 		number_students = len(every_class.students_all())
+ 		number_students = len(every_class.students_all_ever())
 		date_letter = xlsx_colnum_string(class_date_start_column_number + 1)
 		worksheet_class.set_column(date_letter + ':' + date_letter, 9, format)
 		#worksheet.write(row, col, every_value, format);
@@ -2059,7 +2131,7 @@ def attendance_registration_students(request, registration_id, template_name='at
   	table_headers_html.append("fingerprinted")
         table_headers_name.append("Fingerprinted")
         table_headers_html = zip(\
-        table_headers_html, table_headers_name)
+            table_headers_html, table_headers_name)
 
         data={}
 	data['yaxis'] = all_students_attendance

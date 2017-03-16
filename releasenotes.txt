@@ -1,3 +1,6 @@
+v1.4.4
+-Fixed mis-match of attendance in attendance excel report
+
 v1.4.3
 -Attendance Excel Report bug fixes (show attendance for "un-enrolled" students as well, account for no students in a class)
 -Allclass View fix: doesn't mess up editing a class with days and students assigned.
