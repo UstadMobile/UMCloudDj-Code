@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from django.shortcuts import render
 
 from django.core.context_processors import csrf
@@ -35,6 +38,9 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.pagesizes import letter, A4
 from sheetmaker.attendancesheet import AttendanceSheet
+
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 from uploadeXe.models import DateTime
 from uploadeXe.models import Weekday
@@ -314,6 +320,14 @@ def split_list(list, chunk_size):
 		list = list[chunk_size:]
 	return result_list
 
+def whatisthis(s):
+    if isinstance(s, str):
+        print "ordinary string"
+    elif isinstance(s, unicode):
+        print "unicode string"
+    else:
+        print "not a string"
+
 """
 This will start the Class Attendance Sheet PDF generation for class given
 """
@@ -330,6 +344,9 @@ def allclass_makepdf(request, allclass_id):
     if allclass_org != organisation:
 	return redirect('allclass_table')
     logger.info("Generating pdf..")
+
+    pdfmetrics.registerFont(TTFont("DejaVuSans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
+
     #student_list = allclass.students.all()
     #Changed:
     student_list = allclass.students_all()
@@ -338,7 +355,33 @@ def allclass_makepdf(request, allclass_id):
     student_name_list = []
 
     for every_student in student_list:
-	student_name_list.append(every_student.first_name + " " + every_student.last_name)
+	#student_name_list.append(every_student.first_name + " " + every_student.last_name)
+	add_this = every_student.first_name + " " + every_student.last_name
+	print("Type of add_this variable:")
+	print(type(add_this))
+	maybe_add_this = add_this.encode('utf-8').decode('utf-8')
+	student_name_list.append(add_this)
+	print(student_name_list)
+
+	"""
+	name_test=u'ﺲﺸﻤﺷﺓ'
+	name_test_encoded = name_test.encode('utf-8')
+	print(name_test_encoded)
+	student_name_list.append(name_test)
+	"""
+
+	"""
+	print("Value:")
+	#print(every_student.first_name)
+	print("Value type:")
+	print(type(every_student.first_name))
+	print("Encode utf")
+	print(every_student.first_name.encode('utf-8'))
+	print("Decode utf")
+	#print(every_student.first_name.decode('utf-8'))
+	print("Encode ascii")
+	#print(every_student.first_name.encode('ascii'))
+	"""
 
     logger.info("Number of students: " + str(len(student_name_list)))
     response = HttpResponse(content_type = "application/pdf")
@@ -381,7 +424,7 @@ def allclass_makepdf(request, allclass_id):
 			#status_labels = ["Present", "Late", "Excused", "Absent"],\
 			title = str(allclass.allclass_name + \
 				", ID: " + str(allclass.id) + ", Page " + str(i) +"/"+ \
-				str(len(split_student_name_list))))
+				str(len(split_student_name_list))), label_font="DejaVuSans")
 	sheet.render_to_canvas(canvas)
 	logger.info("Sheet Created")
     #sheet.make_canvas(response)

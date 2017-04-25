@@ -8,6 +8,9 @@ from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib.utils import simpleSplit
+import unicodedata
+from bidi.algorithm import get_display
+from arabic_rtlize.process import rtlize
 
 class AttendanceSheet(object):
     '''
@@ -141,7 +144,7 @@ class AttendanceSheet(object):
             
         canvas.showPage()
         
-    def _render_om_row(self, canvas, index, name, x, y):
+    def _render_om_row(self, canvas, line_number, name, x, y):
         '''
         Render an optical mark row
         canvas - the canvas to render to
@@ -151,21 +154,62 @@ class AttendanceSheet(object):
         '''
         canvas.setStrokeColorRGB(0, 0, 0)
         canvas.setLineWidth(1)
-        label = "%s: %s" % (str(index), name)
-        label_width = stringWidth(label, self.label_font, self.label_font_size)
+        label = "%s: %s" % (str(line_number), name)
+
+        wrkText=unicode(label)
+
+        isArabic=False
+        isBidi=False
+    
+        for c in wrkText:
+            cat=unicodedata.bidirectional(unicode(c))
+    
+            if cat=="AL" or cat=="AN":
+                isArabic=True
+                isBidi=True
+                break
+            elif cat=="R" or cat=="RLE" or cat=="RLO":
+                isBidi=True
+    
+        if isArabic:
+            wrkText=rtlize(wrkText)
+	    name = rtlize(name)
+	    #label = "%s: %s" % (str(line_number), name)
+	    label = rtlize(label)
+            #wrkText=arabic_rtlize.process.shape(wrkText)                    
+    
+        if isBidi:
+            #wrkText=get_display(wrkText)
+            pass
+        
+        label_width = stringWidth(wrkText, self.label_font, self.label_font_size)
         if label_width > self.om_row_name_width:
             #trim the middle initials
             names = name.split()
+	    #names = wrkText.split()
             name = ""
-            for indx in range(len(names)):
-                if indx == 0 or indx == len(names)-1:
-                    name += names[indx] + " "
+            for index in range(len(names)):
+                if index == 0 or index == len(names)-1:
+                    name += names[index] + " "
                 else:
-                    name += names[indx][:1] + ". "
+                    name += names[index][:1] + ". "
+	    label = simpleSplit("%s: %s" % (str(line_number), name), self.label_font, self.label_font_size, self.om_row_name_width)[0]
+	    if isArabic:
+		name = ""
+	        for index in range(len(names)):
+                    if index == 0 or index == len(names)-1:
+                    	name += names[index] + " "
+                    else:
+                    	name += names[index][(len(names[index]) - 1):] + ". "
+		
                     
-            label = simpleSplit("%s: %s" % (str(index), name), self.label_font, 
+                label = simpleSplit("%s :%s" % (name, str(line_number)), self.label_font, 
                                 self.label_font_size, self.om_row_name_width)[0]
-        canvas.drawString(x, y+2, label)
+	    
+             
+        
+        #canvas.drawString(x, y+2, wrkText)
+	canvas.drawString(x, y+2, label)
         canvas.line(x, y, x + self.om_row_name_width - (self.om_diameter/2), y)
         
         om_x_start = x + self.om_row_name_width
